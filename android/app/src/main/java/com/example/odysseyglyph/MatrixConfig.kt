@@ -8,11 +8,9 @@ object MatrixConfig {
 
     // Get the logical matrix size to render at
     fun getMatrixSize(context: Context): Int {
-        val prefs = context.getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE)
-        val simulate4aPro = prefs.getBoolean("simulate_4a_pro", false)
         val hardwareSize = getHardwareMatrixSize()
-        // Render at 13x13 if we are on a 4a Pro natively, OR if we are simulating it on a Phone 3
-        return if (simulate4aPro || hardwareSize == MATRIX_SIZE_PHONE_4A_PRO) {
+        // Render at 13x13 if we are on a 4a Pro natively
+        return if (hardwareSize == MATRIX_SIZE_PHONE_4A_PRO) {
             MATRIX_SIZE_PHONE_4A_PRO
         } else {
             MATRIX_SIZE_PHONE_3

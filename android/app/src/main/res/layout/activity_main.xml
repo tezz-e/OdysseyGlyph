@@ -326,22 +326,7 @@
                         app:tint="?attr/colorOnSurfaceVariant" />
                 </LinearLayout>
 
-                <LinearLayout
-                    android:id="@+id/simulatorCard"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:paddingVertical="@dimen/spacing_medium"
-                    android:layout_marginBottom="@dimen/spacing_large">
-                    
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/switchSimulator"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="4A PRO SIMULATOR MODE (13x13)"
-                        android:fontFamily="@font/jetbrains_mono"
-                        android:textAppearance="?attr/textAppearanceTitleMedium" />
-                </LinearLayout>
+
 
 
 
