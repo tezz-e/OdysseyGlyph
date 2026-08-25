@@ -6,18 +6,26 @@ object MatrixConfig {
     const val MATRIX_SIZE_PHONE_3 = 25
     const val MATRIX_SIZE_PHONE_4A_PRO = 13
 
-    // Get the current simulated matrix size from preferences
+    // Get the logical matrix size to render at
     fun getMatrixSize(context: Context): Int {
         val prefs = context.getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE)
         val simulate4aPro = prefs.getBoolean("simulate_4a_pro", false)
-        return if (simulate4aPro) MATRIX_SIZE_PHONE_4A_PRO else MATRIX_SIZE_PHONE_3
+        val hardwareSize = getHardwareMatrixSize()
+        // Render at 13x13 if we are on a 4a Pro natively, OR if we are simulating it on a Phone 3
+        return if (simulate4aPro || hardwareSize == MATRIX_SIZE_PHONE_4A_PRO) {
+            MATRIX_SIZE_PHONE_4A_PRO
+        } else {
+            MATRIX_SIZE_PHONE_3
+        }
     }
     
-    // Real hardware matrix size, ignoring simulator mode
+    // Real hardware matrix size, detecting the device model dynamically
     fun getHardwareMatrixSize(): Int {
-        // If we want dynamic detection in the future based on Build.MODEL:
-        // if (android.os.Build.MODEL.contains("4a Pro")) return MATRIX_SIZE_PHONE_4A_PRO
-        return MATRIX_SIZE_PHONE_3 // Assume Phone 3 hardware for this specific build/device
+        // "A069P" is the Nothing Phone (4a) Pro which has a 13x13 matrix
+        if (android.os.Build.MODEL.contains("A069P")) {
+            return MATRIX_SIZE_PHONE_4A_PRO
+        }
+        return MATRIX_SIZE_PHONE_3 // Assume Phone 3 (25x25) for other devices
     }
 
     // Safely format a byte array for the physical hardware, upscaling if needed
