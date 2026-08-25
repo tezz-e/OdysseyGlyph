@@ -49,7 +49,7 @@
                 android:id="@+id/switchMaster"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="ENABLE LIVE LYRICS"
+                android:text="RUN IN BACKGROUND"
                 android:fontFamily="@font/jetbrains_mono"
                 android:textAppearance="?attr/textAppearanceTitleMedium"
                 android:layout_marginBottom="@dimen/spacing_large" />

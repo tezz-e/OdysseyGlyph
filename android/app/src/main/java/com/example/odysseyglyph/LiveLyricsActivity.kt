@@ -94,11 +94,10 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         optionsContainer = findViewById(R.id.optionsContainer)
         
         switchMaster.isChecked = prefs.getBoolean("live_lyrics_enabled", false)
-        optionsContainer.visibility = if (switchMaster.isChecked) View.VISIBLE else View.GONE
+        optionsContainer.visibility = View.VISIBLE
         
         switchMaster.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean("live_lyrics_enabled", isChecked).apply()
-            optionsContainer.visibility = if (isChecked) View.VISIBLE else View.GONE
             if (isChecked) {
                 prefs.edit().putString("last_used_service", "live_lyrics").apply()
                 val stopVisualizer = Intent(this, VisualizerService::class.java).apply { action = "STOP_VISUALIZER" }

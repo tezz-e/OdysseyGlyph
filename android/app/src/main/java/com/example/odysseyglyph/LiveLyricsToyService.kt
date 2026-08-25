@@ -75,10 +75,9 @@ class LiveLyricsToyService : Service(), MusicPlaybackState.StateChangeListener, 
         override fun run() {
             if (!isRegistered) return
             
-            val isEnabled = prefs.getBoolean("live_lyrics_enabled", false)
             val lyricsToUse = MusicPlaybackState.manualOverrideLyrics ?: currentParsedLyrics
             
-            if (!isEnabled || !MusicPlaybackState.hasActiveSession || !MusicPlaybackState.isPlaying) {
+            if (!MusicPlaybackState.hasActiveSession || !MusicPlaybackState.isPlaying) {
                 if (lastFrameHash != -1) {
                     glyphManager?.turnOff()
                     lastFrameHash = -1
