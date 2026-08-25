@@ -34,6 +34,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var toolbar: MaterialToolbar
     private lateinit var launcherGroup: LinearLayout
     private lateinit var btnSelectVideo: MaterialButton
+    private lateinit var switchSimulator: MaterialSwitch
     private lateinit var videoContainer: FrameLayout
     private lateinit var videoView: CenteredVideoView
     private lateinit var imageView: CenteredImageView
@@ -229,6 +230,7 @@ class MainActivity : AppCompatActivity() {
         
         audioCard = findViewById(R.id.audioCard)
         switchIncludeAudio = findViewById(R.id.switchIncludeAudio)
+        switchSimulator = findViewById(R.id.switchSimulator)
         
         btnAdvancedToggle = findViewById(R.id.btnAdvancedToggle)
         
@@ -275,6 +277,8 @@ class MainActivity : AppCompatActivity() {
             prefs.edit().putBoolean("include_audio", isChecked).apply()
         }
 
+        switchSimulator.isChecked = prefs.getBoolean("simulate_4a_pro", false)
+        switchSimulator.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean("simulate_4a_pro", isChecked).apply()
             cropOverlay.invalidate()
         }
