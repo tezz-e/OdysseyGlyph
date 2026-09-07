@@ -60,8 +60,7 @@
 
     <style name="Widget.Odyssey.Tooltip" parent="Widget.Material3.Tooltip">
         <item name="android:textAppearance">@style/TextAppearance.Odyssey.Tooltip</item>
-        <item name="backgroundTint">@color/colorSurfaceVariant</item>
-        <item name="shapeAppearance">@style/ShapeAppearance.Odyssey.Sharp</item>
+        <item name="backgroundTint">@android:color/transparent</item>
     </style>
     
     <style name="TextAppearance.Odyssey.Tooltip" parent="TextAppearance.Material3.BodySmall">
