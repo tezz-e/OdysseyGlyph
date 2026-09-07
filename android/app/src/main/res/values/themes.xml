@@ -57,4 +57,15 @@
         <item name="android:textSize">36sp</item>
         <item name="android:letterSpacing">0.1</item>
     </style>
+
+    <style name="Widget.Odyssey.Tooltip" parent="Widget.Material3.Tooltip">
+        <item name="android:textAppearance">@style/TextAppearance.Odyssey.Tooltip</item>
+        <item name="backgroundTint">@color/colorOnSurface</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Odyssey.Sharp</item>
+    </style>
+    
+    <style name="TextAppearance.Odyssey.Tooltip" parent="TextAppearance.Material3.Tooltip">
+        <item name="android:fontFamily">@font/jetbrains_mono</item>
+        <item name="android:textColor">@color/colorBackground</item>
+    </style>
 </resources>
