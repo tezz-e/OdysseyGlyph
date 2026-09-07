@@ -146,7 +146,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             prefs.edit().putInt("live_sync_offset", offsetMs).apply()
         }
         
-        val savedFontStyle = prefs.getInt("live_font_style", 0)
+        val savedFontStyle = prefs.getInt("live_font_style", 2)
         currentFontStyle = when (savedFontStyle) {
             1 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
             2 -> GlyphFontEngine.FontStyle.PIXEL_TINY
