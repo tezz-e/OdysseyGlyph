@@ -269,11 +269,13 @@
                 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnCustomizeFallback"
-                style="?attr/materialButtonOutlinedStyle"
+                style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="CUSTOMIZE FALLBACK VISUAL"
                 android:fontFamily="@font/jetbrains_mono"
+                app:cornerRadius="0dp"
+                android:paddingVertical="12dp"
                 android:layout_marginBottom="@dimen/spacing_large" />
             
             <com.google.android.material.button.MaterialButton
