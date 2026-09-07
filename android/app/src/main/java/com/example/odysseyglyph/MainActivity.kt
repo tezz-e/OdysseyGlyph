@@ -34,7 +34,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var toolbar: MaterialToolbar
     private lateinit var launcherGroup: LinearLayout
     private lateinit var btnSelectVideo: MaterialButton
-    private lateinit var switchSimulator: MaterialSwitch
     private lateinit var videoContainer: FrameLayout
     private lateinit var videoView: CenteredVideoView
     private lateinit var imageView: CenteredImageView
@@ -161,12 +160,7 @@ class MainActivity : AppCompatActivity() {
         val widgetProvider = android.content.ComponentName(this, OdysseyWidgetProvider::class.java)
         val isWidgetAdded = appWidgetManager.getAppWidgetIds(widgetProvider).isNotEmpty()
         
-        val quickAccessSection = findViewById<View>(R.id.quickAccessSection)
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            quickAccessSection.visibility = if (isTileAdded || isWidgetAdded) View.GONE else View.VISIBLE
-        } else {
-            quickAccessSection.visibility = if (isWidgetAdded) View.GONE else View.VISIBLE
-        }
+        syncQuickAccessState(isTileAdded, isWidgetAdded)
         syncSlotState()
         checkToysManagerVisibility()
         if (currentMediaType == 0) {
@@ -230,7 +224,6 @@ class MainActivity : AppCompatActivity() {
         
         audioCard = findViewById(R.id.audioCard)
         switchIncludeAudio = findViewById(R.id.switchIncludeAudio)
-        switchSimulator = findViewById(R.id.switchSimulator)
         
         btnAdvancedToggle = findViewById(R.id.btnAdvancedToggle)
         
@@ -277,12 +270,6 @@ class MainActivity : AppCompatActivity() {
             prefs.edit().putBoolean("include_audio", isChecked).apply()
         }
 
-        switchSimulator.isChecked = prefs.getBoolean("simulate_4a_pro", false)
-        switchSimulator.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("simulate_4a_pro", isChecked).apply()
-            cropOverlay.invalidate()
-        }
-
         val btnAddTileMain = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddTileMain)
         btnAddTileMain.setOnClickListener {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
@@ -297,7 +284,10 @@ class MainActivity : AppCompatActivity() {
                         if (result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED || 
                             result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED) {
                             prefs.edit().putBoolean("tile_added", true).apply()
-                            findViewById<View>(R.id.quickAccessSection).visibility = View.GONE
+                            val appWidgetManager = android.appwidget.AppWidgetManager.getInstance(this)
+                            val widgetProvider = android.content.ComponentName(this, OdysseyWidgetProvider::class.java)
+                            val isWidgetAdded = appWidgetManager.getAppWidgetIds(widgetProvider).isNotEmpty()
+                            syncQuickAccessState(true, isWidgetAdded)
                         } else {
                             Snackbar.make(findViewById(android.R.id.content), "Failed to add tile.", Snackbar.LENGTH_SHORT).applyNothingStyle().show()
                         }
@@ -320,6 +310,9 @@ class MainActivity : AppCompatActivity() {
                         android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
                     )
                     appWidgetManager.requestPinAppWidget(myProvider, null, successCallback)
+                    // We optimistically mark as added — the widget added flow is fire-and-forget
+                    val isTileAdded = prefs.getBoolean("tile_added", false)
+                    syncQuickAccessState(isTileAdded, true)
                 } else {
                     Snackbar.make(findViewById(android.R.id.content), "Your launcher does not support automatic widget pinning. Please add it manually from your launcher's widget menu.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
                 }
@@ -572,6 +565,31 @@ class MainActivity : AppCompatActivity() {
         val slot = prefs.getInt("selected_slot", 1)
         val slotText = if (slot == 4) "Gallery Only" else "Slot $slot"
         slotSpinner.setText(slotText, false)
+    }
+
+    private fun syncQuickAccessState(isTileAdded: Boolean, isWidgetAdded: Boolean) {
+        val quickAccessSection = findViewById<View>(R.id.quickAccessSection)
+        val btnTile = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddTileMain)
+        val btnWidget = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddWidgetMain)
+
+        // On pre-Tiramisu the tile button isn't supported; treat it as always done
+        val tileSupported = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU
+        val effectiveTileDone = !tileSupported || isTileAdded
+
+        if (tileSupported) {
+            btnTile.isEnabled = !isTileAdded
+            btnTile.text = if (isTileAdded) "QS TILE (ADDED)" else "QS TILE"
+            btnTile.alpha = if (isTileAdded) 0.45f else 1.0f
+        } else {
+            btnTile.visibility = View.GONE
+        }
+
+        btnWidget.isEnabled = !isWidgetAdded
+        btnWidget.text = if (isWidgetAdded) "WIDGET (ADDED)" else "WIDGET"
+        btnWidget.alpha = if (isWidgetAdded) 0.45f else 1.0f
+
+        // Only hide the whole section when there is nothing left to add
+        quickAccessSection.visibility = if (effectiveTileDone && isWidgetAdded) View.GONE else View.VISIBLE
     }
 
     private fun checkToysManagerVisibility() {

@@ -112,7 +112,7 @@
                     android:textColor="#FFFFFF"
                     android:layout_marginBottom="@dimen/spacing_medium" />
 
-                <!-- Quick Access Section (hides once tile is added) -->
+                <!-- Quick Access Section (hides once both are added) -->
                 <LinearLayout
                     android:id="@+id/quickAccessSection"
                     android:layout_width="match_parent"
