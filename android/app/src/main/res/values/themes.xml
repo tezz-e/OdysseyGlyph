@@ -60,7 +60,14 @@
 
     <style name="Widget.Odyssey.Tooltip" parent="Widget.Material3.Tooltip">
         <item name="android:textAppearance">@style/TextAppearance.Odyssey.Tooltip</item>
-        <item name="backgroundTint">@android:color/transparent</item>
+        <item name="backgroundTint">@color/colorBackground</item>
+    </style>
+    
+    <style name="ThemeOverlay.Odyssey.Slider" parent="">
+        <item name="colorPrimary">@color/colorOnSurface</item>
+        <item name="colorOnPrimary">@color/colorBackground</item>
+        <item name="colorPrimaryContainer">@color/colorSurfaceVariant</item>
+        <item name="colorOnPrimaryContainer">@color/colorOnSurface</item>
     </style>
     
     <style name="TextAppearance.Odyssey.Tooltip" parent="TextAppearance.Material3.BodySmall">
