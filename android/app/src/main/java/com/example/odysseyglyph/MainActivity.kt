@@ -578,15 +578,15 @@ class MainActivity : AppCompatActivity() {
 
         if (tileSupported) {
             btnTile.isEnabled = !isTileAdded
-            btnTile.text = if (isTileAdded) "QS TILE (ADDED)" else "QS TILE"
             btnTile.alpha = if (isTileAdded) 0.45f else 1.0f
+            btnTile.setIconResource(if (isTileAdded) R.drawable.ic_check else R.drawable.ic_settings)
         } else {
             btnTile.visibility = View.GONE
         }
 
         btnWidget.isEnabled = !isWidgetAdded
-        btnWidget.text = if (isWidgetAdded) "WIDGET (ADDED)" else "WIDGET"
         btnWidget.alpha = if (isWidgetAdded) 0.45f else 1.0f
+        btnWidget.setIconResource(if (isWidgetAdded) R.drawable.ic_check else R.drawable.ic_folder)
 
         // Only hide the whole section when there is nothing left to add
         quickAccessSection.visibility = if (effectiveTileDone && isWidgetAdded) View.GONE else View.VISIBLE
