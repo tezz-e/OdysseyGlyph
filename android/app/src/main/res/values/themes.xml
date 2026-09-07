@@ -61,16 +61,10 @@
     <style name="Widget.Odyssey.Tooltip" parent="Widget.Material3.Tooltip">
         <item name="android:textAppearance">@style/TextAppearance.Odyssey.Tooltip</item>
         <item name="backgroundTint">@color/colorBackground</item>
+        <item name="android:textColor">@color/colorOnSurface</item>
     </style>
     
-    <style name="ThemeOverlay.Odyssey.Slider" parent="">
-        <item name="colorPrimary">@color/colorOnSurface</item>
-        <item name="colorOnPrimary">@color/colorBackground</item>
-        <item name="colorPrimaryContainer">@color/colorSurfaceVariant</item>
-        <item name="colorOnPrimaryContainer">@color/colorOnSurface</item>
-    </style>
-    
-    <style name="TextAppearance.Odyssey.Tooltip" parent="TextAppearance.Material3.BodySmall">
+    <style name="TextAppearance.Odyssey.Tooltip" parent="TextAppearance.Material3.Tooltip">
         <item name="android:fontFamily">@font/ndot57</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textColor">@color/colorOnSurface</item>
