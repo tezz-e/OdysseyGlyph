@@ -7,7 +7,7 @@
     <string name="toy_name_3">Odyssey Slot 3</string>
     <string name="toy_summary">Custom Glyph Animation</string>
     <string name="toy_name_live">Odyssey Live</string>
-    <string name="toy_summary_live">Live Spotify Lyrics</string>
+    <string name="toy_summary_live">Real-time Music Lyrics</string>
     
     <string-array name="playback_modes">
         <item>LOOP</item>
