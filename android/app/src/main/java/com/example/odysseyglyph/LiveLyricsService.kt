@@ -326,7 +326,11 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
         } catch (e: Exception) {}
         
         if (!VisualizerService.isRunning) {
-            glyphManager?.unInit()
+            try {
+                glyphManager?.unInit()
+            } catch (e: Exception) {
+                // Ignore service not registered error on unbind
+            }
         }
         glyphManager = null
         super.onDestroy()
