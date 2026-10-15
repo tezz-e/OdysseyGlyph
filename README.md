@@ -32,7 +32,7 @@ Somewhere in that process, the pipeline stopped caring what video I gave it. So 
 
 Real footage, cropped with a pinch and a pan, and still readable at 25 pixels wide. The reason is the downsampling method, covered below.
 
-Lyrics scrolling across the matrix. Live Lyrics and Lyric Studio share the same renderer, so they look identical on the phone. Full recordings with audio are included in [`docs/`](docs/), and more discussion is on the [Nothing Community thread](https://nothing.community/d/61270-i-built-an-app-that-converts-any-video-into-a-glyph-matrix-animation).
+Lyrics scrolling across the matrix. Live Lyrics and Lyric Studio share the same renderer, so they look identical on the phone. More clips of it running on actual hardware are on my Instagram: [@tezze301](https://www.instagram.com/tezze301/), with full recordings in [`docs/`](docs/) and discussion on the [Nothing Community thread](https://nothing.community/d/61270-i-built-an-app-that-converts-any-video-into-a-glyph-matrix-animation).
 
 ---
 
