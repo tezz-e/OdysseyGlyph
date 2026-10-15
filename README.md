@@ -1,3 +1,9 @@
+<p align="center">
+  <a href="https://odyssey-glyph.vercel.app/">
+    <img src="docs/banner.png" alt="Glyph Odyssey Banner" width="100%" />
+  </a>
+</p>
+
 ```
 GLYPH ODYSSEY
 video → 25×25 LED matrix  ·  on-device  ·  GNU GPLv3
