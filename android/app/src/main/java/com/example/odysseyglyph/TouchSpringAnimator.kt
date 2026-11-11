@@ -31,20 +31,18 @@ object TouchSpringAnimator {
         val springX: SpringAnimation,
         val springY: SpringAnimation,
         var pressedScale: Float,
-        var restingScale: Float,
-        val springTransX: SpringAnimation? = null,
-        val springTransY: SpringAnimation? = null,
-        val springRotX: SpringAnimation? = null,
-        val springRotY: SpringAnimation? = null
+        var restingScale: Float
     )
 
     private val springRegistry = WeakHashMap<View, SpringHolder>()
 
     /**
-     * Attaches Apple Liquid Glass anchored gooey spring physics.
-     * The view remains anchored to its layout socket (strictly leashed within 18dp displacement),
-     * fluidly stretching along the user's drag vector with viscous rubber-band resistance and 3D tilt.
-     * On release, it snaps back to (0, 0) with a bouncy harmonic spring settling and haptic detents.
+     * Attaches Apple-style anchored rubber stretch physics.
+     * The card remains firmly anchored to its surface position (strictly zero translation).
+     * Strictly no 3D tilt/rotation to prevent competing visual effects.
+     * The base stays pinned while the shape elastically stretches toward user input with
+     * Poisson volume compensation.
+     * On release, it snaps back with rubbery harmonic oscillation and haptic detents.
      */
     @SuppressLint("ClickableViewAccessibility")
     fun attachLiquidGlass(
@@ -55,20 +53,11 @@ object TouchSpringAnimator {
     ) {
         val density = view.resources.displayMetrics.density
 
+        // Rubbery harmonic spring: fast mechanical snapback with subtle elastic wobble
         val scaleForce = SpringForce().apply {
-            stiffness = 340f
-            dampingRatio = 0.62f // Bouncy, juicy harmonic spring with overshoot
+            stiffness = 320f
+            dampingRatio = 0.55f // Elastic rubber wobble on release
             finalPosition = DEFAULT_RESTING_SCALE
-        }
-        val transForce = SpringForce().apply {
-            stiffness = 380f
-            dampingRatio = 0.60f // Elastic snapback to anchor point
-            finalPosition = 0f
-        }
-        val rotForce = SpringForce().apply {
-            stiffness = 380f
-            dampingRatio = 0.68f
-            finalPosition = 0f
         }
 
         val springX = SpringAnimation(view, DynamicAnimation.SCALE_X).setSpring(SpringForce().apply {
@@ -81,38 +70,19 @@ object TouchSpringAnimator {
             dampingRatio = scaleForce.dampingRatio
             finalPosition = DEFAULT_RESTING_SCALE
         })
-        val springTransX = SpringAnimation(view, DynamicAnimation.TRANSLATION_X).setSpring(SpringForce().apply {
-            stiffness = transForce.stiffness
-            dampingRatio = transForce.dampingRatio
-            finalPosition = 0f
-        })
-        val springTransY = SpringAnimation(view, DynamicAnimation.TRANSLATION_Y).setSpring(SpringForce().apply {
-            stiffness = transForce.stiffness
-            dampingRatio = transForce.dampingRatio
-            finalPosition = 0f
-        })
-        val springRotX = SpringAnimation(view, DynamicAnimation.ROTATION_X).setSpring(SpringForce().apply {
-            stiffness = rotForce.stiffness
-            dampingRatio = rotForce.dampingRatio
-            finalPosition = 0f
-        })
-        val springRotY = SpringAnimation(view, DynamicAnimation.ROTATION_Y).setSpring(SpringForce().apply {
-            stiffness = rotForce.stiffness
-            dampingRatio = rotForce.dampingRatio
-            finalPosition = 0f
-        })
 
-        view.cameraDistance = 8000f * density
+        // Strictly anchored base - the card NEVER moves/translates across the screen
+        // Strictly flat plane - zero 3D tilt/rotation
+        view.translationX = 0f
+        view.translationY = 0f
+        view.rotationX = 0f
+        view.rotationY = 0f
 
         val holder = SpringHolder(
             springX = springX,
             springY = springY,
             pressedScale = pressedScale,
-            restingScale = DEFAULT_RESTING_SCALE,
-            springTransX = springTransX,
-            springTransY = springTransY,
-            springRotX = springRotX,
-            springRotY = springRotY
+            restingScale = DEFAULT_RESTING_SCALE
         )
         springRegistry[view] = holder
 
@@ -125,57 +95,63 @@ object TouchSpringAnimator {
         val touchSlop = 20f * density
 
         view.setOnTouchListener { v, event ->
+            val w = v.width.toFloat()
+            val h = v.height.toFloat()
+            val cx = w / 2f
+            val cy = h / 2f
+
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     downRawX = event.rawX
                     downRawY = event.rawY
-                    v.pivotX = v.width / 2f
-                    v.pivotY = v.height / 2f
-                    holder.springX.animateToFinalPosition(holder.pressedScale)
-                    holder.springY.animateToFinalPosition(holder.pressedScale)
-                    v.vibrateTick()
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    val dx = event.rawX - downRawX
-                    val dy = event.rawY - downRawY
-                    val rawDist = Math.hypot(dx.toDouble(), dy.toDouble()).toFloat()
 
-                    // Strict Apple-style anchored leash (max 18dp displacement from anchor position)
-                    val maxLeash = 18f * density
-                    val pullSens = 0.32f
-                    // Asymptotic hyperbolic rubber-band resistance curve: dampedDist strictly bounded in [0, maxLeash)
-                    val dampedDist = maxLeash * (1.0f - (1.0f / (1.0f + (rawDist * pullSens / maxLeash))))
+                    val nx = if (cx > 0) ((event.x - cx) / cx).coerceIn(-1f, 1f) else 0f
+                    val ny = if (cy > 0) ((event.y - cy) / cy).coerceIn(-1f, 1f) else 0f
 
-                    val angle = Math.atan2(dy.toDouble(), dx.toDouble())
-                    val tx = (dampedDist * Math.cos(angle)).toFloat()
-                    val ty = (dampedDist * Math.sin(angle)).toFloat()
+                    // Anchored base: pivot stays pinned on the opposite side of input
+                    v.pivotX = cx - (nx * cx * 0.70f)
+                    v.pivotY = cy - (ny * cy * 0.70f)
 
-                    // Viscous liquid fluid stretch: elongates along pull axis, subtly compresses orthogonal axis
-                    val stretchFactor = (dampedDist / maxLeash) * 0.08f
-                    val cos2 = (Math.cos(angle) * Math.cos(angle)).toFloat()
-                    val sin2 = (Math.sin(angle) * Math.sin(angle)).toFloat()
-
-                    val targetScaleX = holder.pressedScale + (stretchFactor * cos2) - (stretchFactor * 0.35f * sin2)
-                    val targetScaleY = holder.pressedScale + (stretchFactor * sin2) - (stretchFactor * 0.35f * cos2)
-
-                    // Directional 3D perspective tilt proportional to pull
-                    val targetRotY = (tx / maxLeash * 6.0f).coerceIn(-6.5f, 6.5f)
-                    val targetRotX = (-ty / maxLeash * 6.0f).coerceIn(-6.5f, 6.5f)
+                    val targetScaleX = holder.pressedScale * (1.0f + Math.abs(nx) * 0.05f)
+                    val targetScaleY = holder.pressedScale * (1.0f + Math.abs(ny) * 0.05f)
 
                     holder.springX.animateToFinalPosition(targetScaleX)
                     holder.springY.animateToFinalPosition(targetScaleY)
-                    holder.springTransX?.animateToFinalPosition(tx)
-                    holder.springTransY?.animateToFinalPosition(ty)
-                    holder.springRotX?.animateToFinalPosition(targetRotX)
-                    holder.springRotY?.animateToFinalPosition(targetRotY)
+                    v.vibrateTick()
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (cx > 0 && cy > 0) {
+                        val nx = ((event.x - cx) / cx).coerceIn(-1.25f, 1.25f)
+                        val ny = ((event.y - cy) / cy).coerceIn(-1.25f, 1.25f)
+
+                        // Base remains glued to surface at opposite side:
+                        val targetPivotX = cx - (nx * cx * 0.75f).coerceIn(-cx * 0.85f, cx * 0.85f)
+                        val targetPivotY = cy - (ny * cy * 0.75f).coerceIn(-cy * 0.85f, cy * 0.85f)
+                        v.pivotX = targetPivotX
+                        v.pivotY = targetPivotY
+
+                        // Rubber stretch: stretches toward finger, orthogonal axis thins slightly
+                        val stretchX = Math.abs(nx) * 0.09f
+                        val stretchY = Math.abs(ny) * 0.09f
+                        val targetScaleX = holder.pressedScale * (1.0f + stretchX - stretchY * 0.30f)
+                        val targetScaleY = holder.pressedScale * (1.0f + stretchY - stretchX * 0.30f)
+
+                        holder.springX.animateToFinalPosition(targetScaleX)
+                        holder.springY.animateToFinalPosition(targetScaleY)
+                    }
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    // Rubber spring snapback to resting scale with elastic oscillation
                     holder.springX.animateToFinalPosition(holder.restingScale)
                     holder.springY.animateToFinalPosition(holder.restingScale)
-                    holder.springTransX?.animateToFinalPosition(0f)
-                    holder.springTransY?.animateToFinalPosition(0f)
-                    holder.springRotX?.animateToFinalPosition(0f)
-                    holder.springRotY?.animateToFinalPosition(0f)
+
+                    // Smoothly reset pivot to center as the spring settles
+                    v.postDelayed({
+                        if (holder.springX.spring.finalPosition == holder.restingScale) {
+                            v.pivotX = v.width / 2f
+                            v.pivotY = v.height / 2f
+                        }
+                    }, 240)
 
                     if (event.actionMasked == MotionEvent.ACTION_UP) {
                         val dx = Math.abs(event.rawX - downRawX)
@@ -266,8 +242,6 @@ object TouchSpringAnimator {
         springRegistry[view]?.let { holder ->
             if (holder.springX.isRunning) holder.springX.cancel()
             if (holder.springY.isRunning) holder.springY.cancel()
-            if (holder.springRotX?.isRunning == true) holder.springRotX.cancel()
-            if (holder.springRotY?.isRunning == true) holder.springRotY.cancel()
         }
         view.scaleX = DEFAULT_RESTING_SCALE
         view.scaleY = DEFAULT_RESTING_SCALE

@@ -60,30 +60,33 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
     }
 
     // Text paints
-    private val ndotTypeface: Typeface by lazy {
+    private val boldTypeface: Typeface by lazy {
         try {
-            androidx.core.content.res.ResourcesCompat.getFont(context, R.font.ndot57) ?: Typeface.MONOSPACE
+            androidx.core.content.res.ResourcesCompat.getFont(context, R.font.geist_bold)
+                ?: Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
         } catch (_: Exception) {
-            Typeface.MONOSPACE
+            Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
         }
     }
 
     private val unselectedTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#888888")
-        textSize = 12f * resources.displayMetrics.scaledDensity
+        color = Color.parseColor("#C0C0C0")
+        textSize = 13f * resources.displayMetrics.scaledDensity
         textAlign = Paint.Align.CENTER
-        letterSpacing = 0.08f
+        letterSpacing = 0.04f
+        isFakeBoldText = true
     }
     private val selectedTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.BLACK
-        textSize = 12f * resources.displayMetrics.scaledDensity
+        textSize = 13f * resources.displayMetrics.scaledDensity
         textAlign = Paint.Align.CENTER
-        letterSpacing = 0.08f
+        letterSpacing = 0.04f
+        isFakeBoldText = true
     }
 
     init {
         try {
-            val tf = ndotTypeface
+            val tf = boldTypeface
             unselectedTextPaint.typeface = tf
             selectedTextPaint.typeface = tf
         } catch (_: Exception) {}

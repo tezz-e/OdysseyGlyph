@@ -22,11 +22,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="GLYPH MATRIX"
-        android:fontFamily="@font/ndot57"
-        app:fontFamily="@font/ndot57"
+        android:fontFamily="@font/font_geist"
+        app:fontFamily="@font/font_geist"
+        android:textStyle="bold"
         android:textColor="#EA3323"
         android:textSize="11sp"
-        android:letterSpacing="0.10"
+        android:letterSpacing="0.08"
         android:layout_marginBottom="4dp" />
 
     <!-- Title -->
@@ -46,7 +47,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Choose reactive LED patterns rendered across the rear 25×25 matrix."
-        android:textColor="#888888"
+        android:fontFamily="@font/font_geist"
+        app:fontFamily="@font/font_geist"
+        android:textColor="#A0A0A0"
         android:textSize="12sp"
         android:layout_marginBottom="16dp" />
 
@@ -66,10 +69,11 @@
         app:cornerRadius="16dp"
         android:backgroundTint="#EA3323"
         android:textColor="#FFFFFF"
-        android:fontFamily="@font/ndot57"
-        app:fontFamily="@font/ndot57"
-        android:textSize="13sp"
-        android:letterSpacing="0.08"
+        android:fontFamily="@font/font_geist"
+        app:fontFamily="@font/font_geist"
+        android:textStyle="bold"
+        android:textSize="14sp"
+        android:letterSpacing="0.06"
         android:text="APPLY PATTERN" />
 
 </LinearLayout>

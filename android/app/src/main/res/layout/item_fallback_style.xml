@@ -30,10 +30,11 @@
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
                 android:text="AUDIO"
-                android:fontFamily="@font/ndot57"
-                app:fontFamily="@font/ndot57"
-                android:textSize="8sp"
-                android:letterSpacing="0.08"
+                android:fontFamily="@font/font_geist"
+                app:fontFamily="@font/font_geist"
+                android:textStyle="bold"
+                android:textSize="9sp"
+                android:letterSpacing="0.06"
                 android:textColor="#EA3323" />
 
             <View
@@ -64,11 +65,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="PATTERN"
-            android:fontFamily="@font/ndot57"
-            app:fontFamily="@font/ndot57"
-            android:textSize="10sp"
-            android:letterSpacing="0.06"
-            android:textColor="#888888"
+            android:fontFamily="@font/font_geist"
+            app:fontFamily="@font/font_geist"
+            android:textStyle="bold"
+            android:textSize="11sp"
+            android:letterSpacing="0.04"
+            android:textColor="#C0C0C0"
             android:singleLine="true"
             android:ellipsize="end" />
 

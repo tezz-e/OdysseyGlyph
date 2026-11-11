@@ -56,9 +56,12 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="OFFLINE // STANDBY"
-                    android:textColor="#888888"
+                    android:fontFamily="@font/font_geist"
+                    app:fontFamily="@font/font_geist"
+                    android:textStyle="bold"
+                    android:textColor="#AAAAAA"
                     android:textSize="11sp"
-                    android:letterSpacing="0.04" />
+                    android:letterSpacing="0.06" />
             </LinearLayout>
 
             <com.google.android.material.materialswitch.MaterialSwitch
@@ -128,8 +131,12 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Rear Matrix"
-                                android:textColor="#888888"
+                                android:fontFamily="@font/font_geist"
+                                app:fontFamily="@font/font_geist"
+                                android:textStyle="bold"
+                                android:textColor="#B0B0B0"
                                 android:textSize="11sp"
+                                android:letterSpacing="0.04"
                                 android:layout_marginTop="6dp" />
                         </LinearLayout>
 
@@ -155,8 +162,12 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Audio Scope"
-                                android:textColor="#888888"
+                                android:fontFamily="@font/font_geist"
+                                app:fontFamily="@font/font_geist"
+                                android:textStyle="bold"
+                                android:textColor="#B0B0B0"
                                 android:textSize="11sp"
+                                android:letterSpacing="0.04"
                                 android:layout_marginTop="6dp" />
                         </LinearLayout>
                     </LinearLayout>
@@ -167,19 +178,22 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="WAITING FOR MUSIC..."
-                        android:fontFamily="@font/ndot57"
-                        app:fontFamily="@font/ndot57"
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
+                        android:textStyle="bold"
                         android:textColor="#FFFFFF"
-                        android:textSize="14sp"
-                        android:letterSpacing="0.06" />
+                        android:textSize="15sp"
+                        android:letterSpacing="0.04" />
 
                     <TextView
                         android:id="@+id/tvTrackInfo"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Play any track in Spotify, YouTube Music, or your local player."
-                        android:textColor="#888888"
-                        android:textSize="12sp"
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
+                        android:textColor="#A0A0A0"
+                        android:textSize="13sp"
                         android:layout_marginTop="2dp" />
                 </LinearLayout>
             </FrameLayout>
@@ -249,10 +263,11 @@
                         android:layout_height="wrap_content"
                         android:text="ANIMATION STYLE"
                         android:textColor="#FFFFFF"
-                        android:fontFamily="@font/ndot57"
-                        app:fontFamily="@font/ndot57"
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
+                        android:textStyle="bold"
                         android:textSize="13sp"
-                        android:letterSpacing="0.08"
+                        android:letterSpacing="0.06"
                         android:layout_marginBottom="10dp" />
 
                     <com.example.odysseyglyph.LiquidGlassSegmentedBar
@@ -274,20 +289,22 @@
                             android:layout_height="wrap_content"
                             android:text="SYNC OFFSET"
                             android:textColor="#FFFFFF"
-                            android:fontFamily="@font/ndot57"
-                            app:fontFamily="@font/ndot57"
+                            android:fontFamily="@font/font_geist"
+                            app:fontFamily="@font/font_geist"
+                            android:textStyle="bold"
                             android:textSize="13sp"
-                            android:letterSpacing="0.08" />
+                            android:letterSpacing="0.06" />
 
                         <TextView
                             android:id="@+id/tvSyncOffset"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="0ms (Exact)"
-                            android:fontFamily="@font/jetbrains_mono"
-                            app:fontFamily="@font/jetbrains_mono"
-                            android:textColor="#888888"
-                            android:textSize="12sp"
+                            android:fontFamily="@font/font_geist"
+                            app:fontFamily="@font/font_geist"
+                            android:textStyle="bold"
+                            android:textColor="#FFFFFF"
+                            android:textSize="13sp"
                             android:layout_marginEnd="8dp" />
 
                         <TextView
@@ -295,13 +312,14 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="RESET"
-                            android:fontFamily="@font/ndot57"
-                            app:fontFamily="@font/ndot57"
+                            android:fontFamily="@font/font_geist"
+                            app:fontFamily="@font/font_geist"
+                            android:textStyle="bold"
                             android:textColor="#EA3323"
-                            android:textSize="10sp"
-                            android:letterSpacing="0.08"
-                            android:paddingHorizontal="8dp"
-                            android:paddingVertical="3dp"
+                            android:textSize="11sp"
+                            android:letterSpacing="0.06"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="4dp"
                             android:background="@drawable/bg_glass_pill" />
                     </LinearLayout>
 
@@ -332,10 +350,11 @@
                         android:layout_height="wrap_content"
                         android:text="TYPEFACE"
                         android:textColor="#FFFFFF"
-                        android:fontFamily="@font/ndot57"
-                        app:fontFamily="@font/ndot57"
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
+                        android:textStyle="bold"
                         android:textSize="13sp"
-                        android:letterSpacing="0.08"
+                        android:letterSpacing="0.06"
                         android:layout_marginBottom="10dp" />
 
                     <com.example.odysseyglyph.LiquidGlassSegmentedBar
@@ -370,17 +389,20 @@
                                 android:layout_height="wrap_content"
                                 android:text="FALLBACK VISUALIZER"
                                 android:textColor="#FFFFFF"
-                                android:fontFamily="@font/ndot57"
-                                app:fontFamily="@font/ndot57"
+                                android:fontFamily="@font/font_geist"
+                                app:fontFamily="@font/font_geist"
+                                android:textStyle="bold"
                                 android:textSize="14sp"
-                                android:letterSpacing="0.08" />
+                                android:letterSpacing="0.06" />
 
                             <TextView
                                 android:id="@+id/tvFallbackDesc"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Animated pattern when lyrics are unavailable."
-                                android:textColor="#888888"
+                                android:fontFamily="@font/font_geist"
+                                app:fontFamily="@font/font_geist"
+                                android:textColor="#B0B0B0"
                                 android:textSize="12sp"
                                 android:layout_marginTop="2dp" />
                         </LinearLayout>
@@ -397,11 +419,13 @@
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
                         android:text="CUSTOMIZE PATTERN"
-                        android:fontFamily="@font/ndot57"
-                        app:fontFamily="@font/ndot57"
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
+                        android:textStyle="bold"
+                        android:textSize="13sp"
                         android:letterSpacing="0.06"
                         android:textColor="#FFFFFF"
-                        app:strokeColor="#24FFFFFF"
+                        app:strokeColor="#33FFFFFF"
                         app:cornerRadius="12dp"
                         android:layout_marginTop="12dp" />
                 </LinearLayout>
@@ -422,11 +446,13 @@
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
                         android:text="TOYS MANAGER"
-                        android:fontFamily="@font/ndot57"
-                        app:fontFamily="@font/ndot57"
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
+                        android:textStyle="bold"
+                        android:textSize="13sp"
                         android:letterSpacing="0.06"
                         android:textColor="#FFFFFF"
-                        app:strokeColor="#24FFFFFF"
+                        app:strokeColor="#33FFFFFF"
                         app:cornerRadius="12dp" />
 
                     <com.google.android.material.button.MaterialButton
@@ -437,11 +463,13 @@
                         android:layout_weight="1"
                         android:layout_marginStart="4dp"
                         android:text="QUICK TILE"
-                        android:fontFamily="@font/ndot57"
-                        app:fontFamily="@font/ndot57"
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
+                        android:textStyle="bold"
+                        android:textSize="13sp"
                         android:letterSpacing="0.06"
                         android:textColor="#FFFFFF"
-                        app:strokeColor="#24FFFFFF"
+                        app:strokeColor="#33FFFFFF"
                         app:cornerRadius="12dp" />
                 </LinearLayout>
 
