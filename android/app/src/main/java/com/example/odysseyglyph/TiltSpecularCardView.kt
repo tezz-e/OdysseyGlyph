@@ -4,9 +4,9 @@ import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
 import android.util.AttributeSet
@@ -18,8 +18,11 @@ import android.widget.FrameLayout
 
 /**
  * TiltSpecularCardView
- * Tactile glass card with Apple-style subtle specular crescent gloss and
- * anchored gooey rubber deformation that preserves screen bounds.
+ * Tactile glass card following sdegenaar/liquid_glass_widgets architecture:
+ * - ZERO glow at rest (completely clean smoked glass; no static gradient bands).
+ * - Touch-responsive optical specular glow centered directly at the contact point.
+ * - Aspect-ratio normalized jelly stretch & squash with signed smoothstep pivot gliding.
+ * - Dynamic screen bounds detection preventing border clipping.
  */
 class TiltSpecularCardView @JvmOverloads constructor(
     context: Context,
@@ -35,8 +38,9 @@ class TiltSpecularCardView @JvmOverloads constructor(
     private val clipPath = Path()
     private val rectF = RectF()
 
-    private var touchXNorm: Float = 0.5f
-    private var glossIntensity: Float = 0.35f
+    private var touchX: Float = 0f
+    private var touchY: Float = 0f
+    private var glossIntensity: Float = 0.0f // 0.0f at rest — zero gradient or artifact when idle
     private var glossFadeAnimator: ValueAnimator? = null
     private var returnAnimator: ValueAnimator? = null
 
@@ -48,6 +52,14 @@ class TiltSpecularCardView @JvmOverloads constructor(
         setWillNotDraw(false)
     }
 
+    private fun signedSmoothStep(x: Float, edge: Float): Float {
+        if (edge <= 0.001f) return 0f
+        val t = (x / edge).coerceIn(-1.0f, 1.0f)
+        val a = Math.abs(t)
+        val smooth = a * a * (3.0f - 2.0f * a)
+        return if (t >= 0f) smooth else -smooth
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
@@ -55,10 +67,11 @@ class TiltSpecularCardView @JvmOverloads constructor(
                 glossFadeAnimator?.cancel()
                 downX = event.x
                 downY = event.y
-                if (width > 0) touchXNorm = (event.x / width).coerceIn(0.15f, 0.85f)
+                touchX = event.x
+                touchY = event.y
 
                 glossFadeAnimator = ValueAnimator.ofFloat(glossIntensity, 1.0f).apply {
-                    duration = 140
+                    duration = 120
                     interpolator = DecelerateInterpolator()
                     addUpdateListener { va ->
                         glossIntensity = va.animatedValue as Float
@@ -72,7 +85,15 @@ class TiltSpecularCardView @JvmOverloads constructor(
                 return true
             }
             MotionEvent.ACTION_MOVE -> {
-                if (width > 0) touchXNorm = (event.x / width).coerceIn(0.15f, 0.85f)
+                val dx = event.x - touchX
+                val dy = event.y - touchY
+                if (dx * dx + dy * dy >= 9f) { // 3px deadband filter
+                    touchX = event.x
+                    touchY = event.y
+                    if (glossIntensity < 0.95f) {
+                        glossIntensity = 1.0f
+                    }
+                }
                 updateRubber(event.x, event.y)
                 super.onTouchEvent(event)
                 return true
@@ -102,17 +123,35 @@ class TiltSpecularCardView @JvmOverloads constructor(
     }
 
     private fun updateRubber(x: Float, y: Float) {
-        val centerX = width / 2f
-        val centerY = height / 2f
-        if (centerX > 0 && centerY > 0) {
-            val normX = ((x - centerX) / centerX).coerceIn(-1.25f, 1.25f)
-            val normY = ((y - centerY) / centerY).coerceIn(-1.25f, 1.25f)
+        val w = width.toFloat()
+        val h = height.toFloat()
+        val deltaX = x - downX
+        val deltaY = y - downY
+        val absDx = Math.abs(deltaX)
+        val absDy = Math.abs(deltaY)
 
-            // Dynamic anchored base: pivot stays pinned on the opposite side of input
-            val targetPivotX = (centerX - (normX * centerX * 0.70f)).coerceIn(width * 0.08f, width * 0.92f)
-            val targetPivotY = (centerY - (normY * centerY * 0.70f)).coerceIn(height * 0.08f, height * 0.92f)
-            pivotX = targetPivotX
-            pivotY = targetPivotY
+        if (w > 0 && h > 0 && (absDx > 0.001f || absDy > 0.001f)) {
+            val density = resources.displayMetrics.density
+
+            // Aspect-ratio normalization from sdegenaar/liquid_glass_widgets
+            val refDim = kotlin.math.max(w, h)
+            val relativeX = if (refDim > 0f) absDx / refDim else 0f
+            val relativeY = if (refDim > 0f) absDy / refDim else 0f
+
+            val aspectRatio = w / h
+            val xDamping = if (aspectRatio > 1.0f) (1.0f / aspectRatio).coerceIn(0.20f, 1.0f) else 1.0f
+            val yDamping = if (aspectRatio < 1.0f) aspectRatio.coerceIn(0.20f, 1.0f) else 1.0f
+
+            val stretchIntensity = 0.50f
+            val squashFactor = 0.30f
+            val stretchX = 1.0f + (relativeX * stretchIntensity * xDamping).coerceIn(0.0f, 0.22f)
+            val stretchY = 1.0f + (relativeY * stretchIntensity * yDamping).coerceIn(0.0f, 0.22f)
+            val squashX = 1.0f - (relativeY * squashFactor * xDamping).coerceIn(0.0f, 0.12f)
+            val squashY = 1.0f - (relativeX * squashFactor * yDamping).coerceIn(0.0f, 0.12f)
+
+            // Smooth pivot glide through center using signed smoothstep
+            pivotX = w * (0.5f - signedSmoothStep(deltaX, 24f * density) * 0.5f)
+            pivotY = h * (0.5f - signedSmoothStep(deltaY, 24f * density) * 0.5f)
 
             // Screen bounds detection: dynamically compute maximum safe stretch
             val loc = IntArray(2)
@@ -124,19 +163,15 @@ class TiltSpecularCardView @JvmOverloads constructor(
             val distTop = loc[1].coerceAtLeast(0)
             val distBottom = (screenH - (loc[1] + height)).coerceAtLeast(0)
 
-            val maxStretchX = if (width - targetPivotX > 1f) (distRight * 0.70f) / (width - targetPivotX) else 0.08f
-            val maxSafeScaleX = 1.0f + minOf(maxStretchX, if (targetPivotX > 1f) (distLeft * 0.70f) / targetPivotX else 0.08f).coerceIn(0.0f, 0.08f)
+            val maxStretchX = if (w - pivotX > 1f) (distRight * 0.70f) / (w - pivotX) else 0.08f
+            val maxSafeScaleX = 1.0f + minOf(maxStretchX, if (pivotX > 1f) (distLeft * 0.70f) / pivotX else 0.08f).coerceIn(0.0f, 0.08f)
 
-            val maxStretchY = if (height - targetPivotY > 1f) (distBottom * 0.70f) / (height - targetPivotY) else 0.08f
-            val maxSafeScaleY = 1.0f + minOf(maxStretchY, if (targetPivotY > 1f) (distTop * 0.70f) / targetPivotY else 0.08f).coerceIn(0.0f, 0.08f)
+            val maxStretchY = if (h - pivotY > 1f) (distBottom * 0.70f) / (h - pivotY) else 0.08f
+            val maxSafeScaleY = 1.0f + minOf(maxStretchY, if (pivotY > 1f) (distTop * 0.70f) / pivotY else 0.08f).coerceIn(0.0f, 0.08f)
 
-            // Asymmetric Poisson rubber stretch
-            val stretchX = Math.abs(normX) * 0.12f
-            val stretchY = Math.abs(normY) * 0.12f
-            scaleX = (0.94f * (1.0f + stretchX - stretchY * 0.48f)).coerceIn(0.86f, maxSafeScaleX)
-            scaleY = (0.94f * (1.0f + stretchY - stretchX * 0.48f)).coerceIn(0.86f, maxSafeScaleY)
+            scaleX = (0.94f * (stretchX * squashX)).coerceIn(0.85f, maxSafeScaleX)
+            scaleY = (0.94f * (stretchY * squashY)).coerceIn(0.85f, maxSafeScaleY)
 
-            // Strictly flat plane: zero 3D tilt/rotation
             rotationY = 0f
             rotationX = 0f
             invalidate()
@@ -148,8 +183,8 @@ class TiltSpecularCardView @JvmOverloads constructor(
         val startScaleY = scaleY
 
         glossFadeAnimator?.cancel()
-        glossFadeAnimator = ValueAnimator.ofFloat(glossIntensity, 0.35f).apply {
-            duration = 280
+        glossFadeAnimator = ValueAnimator.ofFloat(glossIntensity, 0.0f).apply {
+            duration = 220
             interpolator = AccelerateDecelerateInterpolator()
             addUpdateListener { va ->
                 glossIntensity = va.animatedValue as Float
@@ -179,6 +214,7 @@ class TiltSpecularCardView @JvmOverloads constructor(
 
     override fun onDrawForeground(canvas: Canvas) {
         super.onDrawForeground(canvas)
+        if (glossIntensity <= 0.001f) return
         val w = width.toFloat()
         val h = height.toFloat()
         if (w <= 0 || h <= 0) return
@@ -193,25 +229,26 @@ class TiltSpecularCardView @JvmOverloads constructor(
         val save = canvas.save()
         canvas.clipPath(clipPath)
 
-        // 1. Apple-style Liquid Glass Top Bezel Specular Crescent (subtle gloss, NOT a pointer spotlight)
-        val glossHeight = (h * 0.40f).coerceAtLeast(16f * density)
-        val topAlpha = (26 * glossIntensity).toInt().coerceIn(0, 255)
-        val midAlpha = (10 * glossIntensity).toInt().coerceIn(0, 255)
-        specularPaint.shader = LinearGradient(
-            w * touchXNorm, 0f,
-            w * touchXNorm, glossHeight,
+        // 1. Dynamic optical touch glow centered directly at the touch location
+        val shortSide = kotlin.math.min(w, h)
+        val radius = (shortSide * 0.85f).coerceIn(48f * density, 180f * density)
+
+        val centerAlpha = (45 * glossIntensity).toInt().coerceIn(0, 255)
+        val midAlpha = (16 * glossIntensity).toInt().coerceIn(0, 255)
+        specularPaint.shader = RadialGradient(
+            touchX, touchY, radius,
             intArrayOf(
-                Color.argb(topAlpha, 255, 255, 255),
+                Color.argb(centerAlpha, 255, 255, 255),
                 Color.argb(midAlpha, 255, 255, 255),
                 Color.argb(0, 255, 255, 255)
             ),
             floatArrayOf(0.0f, 0.45f, 1.0f),
             Shader.TileMode.CLAMP
         )
-        canvas.drawRect(0f, 0f, w, glossHeight, specularPaint)
+        canvas.drawCircle(touchX, touchY, radius, specularPaint)
 
-        // 2. Refractive Specular Rim (Apple continuous curvature highlight)
-        val rimAlpha = (22 * glossIntensity).toInt().coerceIn(0, 255)
+        // 2. Refractive continuous-curvature rim highlight while touched
+        val rimAlpha = (24 * glossIntensity).toInt().coerceIn(0, 255)
         rimPaint.color = Color.argb(rimAlpha, 255, 255, 255)
         canvas.drawRoundRect(rectF, cornerRadius, cornerRadius, rimPaint)
 
