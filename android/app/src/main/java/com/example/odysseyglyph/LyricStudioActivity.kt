@@ -134,7 +134,7 @@ class LyricStudioActivity : AppCompatActivity() {
         WindowInsetsUtil.applySystemBarsPadding(scrollView, applyBottom = true, overlayView = navDockContainer)
 
         findViewById<LiquidGlassSegmentedBar>(R.id.globalNavDock)?.let { navBar ->
-            OdysseyNavDockHelper.attach(this, navBar, 2)
+            OdysseyNavDockHelper.attach(this, navBar, 1)
         }
         
         prefs = getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE)
@@ -160,7 +160,7 @@ class LyricStudioActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        findViewById<LiquidGlassSegmentedBar>(R.id.globalNavDock)?.selectSegment(2, notify = false)
+        findViewById<LiquidGlassSegmentedBar>(R.id.globalNavDock)?.selectSegment(1, notify = false)
     }
 
     private fun bindViews() {

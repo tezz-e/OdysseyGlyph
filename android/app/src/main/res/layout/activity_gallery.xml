@@ -38,10 +38,12 @@
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
-                android:text="Gallery"
+                android:text="PRESET VAULT"
                 android:fontFamily="@font/ndot57"
+                app:fontFamily="@font/ndot57"
                 android:textColor="#FFFFFF"
                 android:textSize="22sp"
+                android:letterSpacing="0.08"
                 android:paddingStart="8dp" />
 
             <TextView

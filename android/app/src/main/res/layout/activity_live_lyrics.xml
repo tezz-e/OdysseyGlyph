@@ -38,10 +38,12 @@
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
-                android:text="Live Lyrics"
+                android:text="LIVE LYRICS"
                 android:fontFamily="@font/ndot57"
+                app:fontFamily="@font/ndot57"
                 android:textColor="#FFFFFF"
                 android:textSize="22sp"
+                android:letterSpacing="0.08"
                 android:paddingStart="8dp" />
 
             <com.google.android.material.materialswitch.MaterialSwitch
@@ -148,11 +150,12 @@
                         android:id="@+id/tvStatus"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Waiting for music"
-                        android:fontFamily="@font/jetbrains_mono"
+                        android:text="WAITING FOR MUSIC..."
+                        android:fontFamily="@font/ndot57"
+                        app:fontFamily="@font/ndot57"
                         android:textColor="#FFFFFF"
                         android:textSize="14sp"
-                        android:textStyle="bold" />
+                        android:letterSpacing="0.06" />
 
                     <TextView
                         android:id="@+id/tvTrackInfo"
@@ -228,11 +231,12 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Animation Style"
+                        android:text="ANIMATION STYLE"
                         android:textColor="#FFFFFF"
-                        android:fontFamily="@font/jetbrains_mono"
+                        android:fontFamily="@font/ndot57"
+                        app:fontFamily="@font/ndot57"
                         android:textSize="13sp"
-                        android:textStyle="bold"
+                        android:letterSpacing="0.08"
                         android:layout_marginBottom="10dp" />
 
                     <com.example.odysseyglyph.LiquidGlassSegmentedBar
@@ -252,11 +256,12 @@
                             android:layout_width="0dp"
                             android:layout_weight="1"
                             android:layout_height="wrap_content"
-                            android:text="Sync Offset"
+                            android:text="SYNC OFFSET"
                             android:textColor="#FFFFFF"
-                            android:fontFamily="@font/jetbrains_mono"
+                            android:fontFamily="@font/ndot57"
+                            app:fontFamily="@font/ndot57"
                             android:textSize="13sp"
-                            android:textStyle="bold" />
+                            android:letterSpacing="0.08" />
 
                         <TextView
                             android:id="@+id/tvSyncOffset"
@@ -264,6 +269,7 @@
                             android:layout_height="wrap_content"
                             android:text="0ms"
                             android:fontFamily="@font/jetbrains_mono"
+                            app:fontFamily="@font/jetbrains_mono"
                             android:textColor="#888888"
                             android:textSize="12sp" />
                     </LinearLayout>
@@ -293,11 +299,12 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Typeface"
+                        android:text="TYPEFACE"
                         android:textColor="#FFFFFF"
-                        android:fontFamily="@font/jetbrains_mono"
+                        android:fontFamily="@font/ndot57"
+                        app:fontFamily="@font/ndot57"
                         android:textSize="13sp"
-                        android:textStyle="bold"
+                        android:letterSpacing="0.08"
                         android:layout_marginBottom="10dp" />
 
                     <com.example.odysseyglyph.LiquidGlassSegmentedBar
@@ -330,10 +337,12 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Fallback Visualizer"
+                                android:text="FALLBACK VISUALIZER"
                                 android:textColor="#FFFFFF"
+                                android:fontFamily="@font/ndot57"
+                                app:fontFamily="@font/ndot57"
                                 android:textSize="14sp"
-                                android:textStyle="bold" />
+                                android:letterSpacing="0.08" />
 
                             <TextView
                                 android:id="@+id/tvFallbackDesc"
@@ -356,7 +365,10 @@
                         style="?attr/materialButtonOutlinedStyle"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
-                        android:text="Customize Pattern"
+                        android:text="CUSTOMIZE PATTERN"
+                        android:fontFamily="@font/ndot57"
+                        app:fontFamily="@font/ndot57"
+                        android:letterSpacing="0.06"
                         android:textColor="#FFFFFF"
                         app:strokeColor="#24FFFFFF"
                         app:cornerRadius="12dp"
@@ -378,7 +390,10 @@
                         android:layout_height="48dp"
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
-                        android:text="Toys Manager"
+                        android:text="TOYS MANAGER"
+                        android:fontFamily="@font/ndot57"
+                        app:fontFamily="@font/ndot57"
+                        android:letterSpacing="0.06"
                         android:textColor="#FFFFFF"
                         app:strokeColor="#24FFFFFF"
                         app:cornerRadius="12dp" />
@@ -390,7 +405,10 @@
                         android:layout_height="48dp"
                         android:layout_weight="1"
                         android:layout_marginStart="4dp"
-                        android:text="Quick Tile"
+                        android:text="QUICK TILE"
+                        android:fontFamily="@font/ndot57"
+                        app:fontFamily="@font/ndot57"
+                        android:letterSpacing="0.06"
                         android:textColor="#FFFFFF"
                         app:strokeColor="#24FFFFFF"
                         app:cornerRadius="12dp" />

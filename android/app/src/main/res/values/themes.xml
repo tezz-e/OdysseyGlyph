@@ -59,12 +59,14 @@
     
     <style name="TextAppearance.Odyssey.CollapsedTitle" parent="TextAppearance.Material3.TitleLarge">
         <item name="android:fontFamily">@font/ndot57</item>
+        <item name="fontFamily">@font/ndot57</item>
         <item name="android:textSize">28sp</item>
         <item name="android:letterSpacing">0.1</item>
     </style>
 
     <style name="TextAppearance.Odyssey.ExpandedTitle" parent="TextAppearance.Material3.DisplayMedium">
         <item name="android:fontFamily">@font/ndot57</item>
+        <item name="fontFamily">@font/ndot57</item>
         <item name="android:textSize">36sp</item>
         <item name="android:letterSpacing">0.1</item>
     </style>

@@ -121,15 +121,9 @@ class MainActivity : AppCompatActivity() {
         
         val scrollView = findViewById<ScrollView>(R.id.scrollView)
         val appBar = findViewById<com.google.android.material.appbar.AppBarLayout>(R.id.appBarLayout)
-        val navDockContainer = findViewById<View>(R.id.navDockContainer)
         WindowInsetsUtil.applySystemBarsPadding(appBar, applyTop = true, applyBottom = false)
-        WindowInsetsUtil.applySystemBarsPadding(navDockContainer, applyBottom = true)
-        WindowInsetsUtil.applySystemBarsPadding(scrollView, applyBottom = true, overlayView = navDockContainer)
+        WindowInsetsUtil.applySystemBarsPadding(scrollView, applyBottom = true, overlayView = bottomActionBar)
         WindowInsetsUtil.applySystemBarsPadding(bottomActionBar, applyBottom = true)
-        
-        findViewById<LiquidGlassSegmentedBar>(R.id.globalNavDock)?.let { navBar ->
-            OdysseyNavDockHelper.attach(this, navBar, 0)
-        }
         
         bottomActionBar.addOnLayoutChangeListener { _, _, top, _, bottom, _, oldTop, _, oldBottom ->
             if ((bottom - top) != (oldBottom - oldTop)) {
@@ -218,7 +212,6 @@ class MainActivity : AppCompatActivity() {
         }
         syncSlotState()
         checkToysManagerVisibility()
-        findViewById<LiquidGlassSegmentedBar>(R.id.globalNavDock)?.selectSegment(0, notify = false)
         if (currentMediaType == 0) {
             videoView.start()
         }
@@ -623,7 +616,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupVideo(uri: Uri) {
         launcherGroup.visibility = View.GONE
-        findViewById<View>(R.id.navDockContainer)?.visibility = View.GONE
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setDisplayShowHomeEnabled(true)
 
@@ -651,7 +643,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupGif(uri: Uri) {
         launcherGroup.visibility = View.GONE
-        findViewById<View>(R.id.navDockContainer)?.visibility = View.GONE
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setDisplayShowHomeEnabled(true)
 
@@ -668,7 +659,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupStaticImage(uri: Uri) {
         launcherGroup.visibility = View.GONE
-        findViewById<View>(R.id.navDockContainer)?.visibility = View.GONE
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setDisplayShowHomeEnabled(true)
 
@@ -687,7 +677,6 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.setDisplayShowHomeEnabled(false)
         
         launcherGroup.visibility = View.VISIBLE
-        findViewById<View>(R.id.navDockContainer)?.visibility = View.VISIBLE
         settingsPanel.visibility = View.GONE
         trimmerCard.visibility = View.GONE
         btnProcess.visibility = View.GONE

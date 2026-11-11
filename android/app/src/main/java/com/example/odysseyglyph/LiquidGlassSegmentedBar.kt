@@ -60,17 +60,33 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
     }
 
     // Text paints
+    private val ndotTypeface: Typeface by lazy {
+        try {
+            androidx.core.content.res.ResourcesCompat.getFont(context, R.font.ndot57) ?: Typeface.MONOSPACE
+        } catch (_: Exception) {
+            Typeface.MONOSPACE
+        }
+    }
+
     private val unselectedTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.parseColor("#888888")
         textSize = 12f * resources.displayMetrics.scaledDensity
-        typeface = Typeface.MONOSPACE
         textAlign = Paint.Align.CENTER
+        letterSpacing = 0.08f
     }
     private val selectedTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.BLACK
         textSize = 12f * resources.displayMetrics.scaledDensity
-        typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
         textAlign = Paint.Align.CENTER
+        letterSpacing = 0.08f
+    }
+
+    init {
+        try {
+            val tf = ndotTypeface
+            unselectedTextPaint.typeface = tf
+            selectedTextPaint.typeface = tf
+        } catch (_: Exception) {}
     }
 
     // Geometry
@@ -270,7 +286,7 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
             } else {
                 unselectedTextPaint
             }
-            canvas.drawText(segments[i], textX, textY, paint)
+            canvas.drawText(segments[i].uppercase(), textX, textY, paint)
         }
     }
 }

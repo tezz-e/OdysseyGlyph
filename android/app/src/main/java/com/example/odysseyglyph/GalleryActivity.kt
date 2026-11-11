@@ -61,7 +61,7 @@ class GalleryActivity : AppCompatActivity() {
         WindowInsetsUtil.applySystemBarsPadding(rvPresets, applyBottom = true, overlayView = navDockContainer)
 
         findViewById<LiquidGlassSegmentedBar>(R.id.globalNavDock)?.let { navBar ->
-            OdysseyNavDockHelper.attach(this, navBar, 3)
+            OdysseyNavDockHelper.attach(this, navBar, 2)
         }
         tvEmpty = findViewById(R.id.tvEmpty)
         layoutEmptyState = findViewById(R.id.layoutEmptyState)
@@ -74,7 +74,7 @@ class GalleryActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        findViewById<LiquidGlassSegmentedBar>(R.id.globalNavDock)?.selectSegment(3, notify = false)
+        findViewById<LiquidGlassSegmentedBar>(R.id.globalNavDock)?.selectSegment(2, notify = false)
     }
 
     private fun loadPresets() {

@@ -38,10 +38,12 @@
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
-                android:text="Lyric Studio"
+                android:text="LYRIC STUDIO"
                 android:fontFamily="@font/ndot57"
+                app:fontFamily="@font/ndot57"
                 android:textColor="#FFFFFF"
                 android:textSize="22sp"
+                android:letterSpacing="0.08"
                 android:paddingStart="8dp" />
         </LinearLayout>
 
@@ -94,7 +96,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="GLYPH MATRIX"
-                            android:fontFamily="@font/jetbrains_mono"
+                            android:fontFamily="@font/ndot57"
+                            app:fontFamily="@font/ndot57"
                             android:textColor="#EA3323"
                             android:textSize="11sp"
                             android:letterSpacing="0.08" />
@@ -104,10 +107,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Choose a song"
-                            android:fontFamily="@font/jetbrains_mono"
+                            android:fontFamily="@font/ndot57"
+                            app:fontFamily="@font/ndot57"
                             android:textColor="#FFFFFF"
                             android:textSize="17sp"
-                            android:textStyle="bold"
+                            android:letterSpacing="0.06"
                             android:layout_marginTop="6dp" />
 
                         <TextView
