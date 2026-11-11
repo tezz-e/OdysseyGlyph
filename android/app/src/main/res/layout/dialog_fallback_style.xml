@@ -4,42 +4,72 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="24dp"
-    android:background="?attr/colorSurface">
+    android:background="@drawable/bg_sheet_glass"
+    android:paddingHorizontal="20dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="24dp">
 
+    <!-- Centered Drag Handle -->
+    <View
+        android:layout_width="36dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="18dp"
+        android:background="@drawable/bg_glass_pill" />
+
+    <!-- Category Tag -->
     <TextView
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="VISUALIZATION"
-        android:fontFamily="@font/jetbrains_mono"
-        android:textAppearance="?attr/textAppearanceTitleMedium"
-        android:textColor="?attr/colorOnSurfaceVariant"
+        android:text="GLYPH MATRIX"
+        android:fontFamily="@font/ndot57"
+        app:fontFamily="@font/ndot57"
+        android:textColor="#EA3323"
+        android:textSize="11sp"
+        android:letterSpacing="0.10"
         android:layout_marginBottom="4dp" />
 
+    <!-- Title -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Every visual reacts to the music (except static note)."
-        android:fontFamily="@font/jetbrains_mono"
-        android:textAppearance="?attr/textAppearanceBodySmall"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        android:layout_marginBottom="24dp" />
+        android:text="VISUALIZER PATTERNS"
+        android:fontFamily="@font/ndot57"
+        app:fontFamily="@font/ndot57"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
+        android:letterSpacing="0.06"
+        android:layout_marginBottom="4dp" />
 
+    <!-- Subtitle -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Choose reactive LED patterns rendered across the rear 25×25 matrix."
+        android:textColor="#888888"
+        android:textSize="12sp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- 3x3 Grid of Visualizer Patterns -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvFallbackStyles"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:overScrollMode="never" />
+        android:overScrollMode="never"
+        android:layout_marginBottom="16dp" />
 
+    <!-- Action Button -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnApplyFallback"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        app:cornerRadius="4dp"
-        android:backgroundTint="#FF2020"
+        android:layout_height="52dp"
+        app:cornerRadius="16dp"
+        android:backgroundTint="#EA3323"
         android:textColor="#FFFFFF"
-        android:fontFamily="@font/jetbrains_mono"
-        android:text="APPLY VISUAL" />
+        android:fontFamily="@font/ndot57"
+        app:fontFamily="@font/ndot57"
+        android:textSize="13sp"
+        android:letterSpacing="0.08"
+        android:text="APPLY PATTERN" />
 
 </LinearLayout>
