@@ -3,11 +3,7 @@
     <!-- Base Pure Neutral Glass Substrate (Achromatic: R == G == B) -->
     <item>
         <shape android:shape="rectangle">
-            <gradient
-                android:angle="270"
-                android:startColor="#181818"
-                android:endColor="#101010"
-                android:type="linear" />
+            <solid android:color="#141414" />
             <corners android:radius="22dp" />
         </shape>
     </item>

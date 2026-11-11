@@ -46,10 +46,14 @@ object TouchSpringAnimator {
      * - On release, smoothly dissolves back to 0.0f at the release location.
      */
     class LiquidGlassGlossDrawable(private val targetView: View) : android.graphics.drawable.Drawable() {
-        private val glossPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+        private val glossPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            isDither = true
+            isFilterBitmap = true
+        }
         private val rimPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
             style = android.graphics.Paint.Style.STROKE
             strokeWidth = targetView.resources.displayMetrics.density * 1.0f
+            isDither = true
         }
         private val clipPath = android.graphics.Path()
         private val rectF = android.graphics.RectF()
@@ -120,15 +124,24 @@ object TouchSpringAnimator {
             val saveCount = canvas.save()
             canvas.clipPath(clipPath)
 
-            // 1. Apple / Nothing OS Liquid Glass Ambient Luma Lift (iOS 26/27 ambientBaseLightDark)
-            // Even, optical illumination across the entire squircle shape — strictly NO circular spotlight discs or radial blobs
-            val fillAlpha = (18 * glossIntensity).toInt().coerceIn(0, 255)
-            glossPaint.shader = null
-            glossPaint.color = android.graphics.Color.argb(fillAlpha, 255, 255, 255)
-            canvas.drawRoundRect(rectF, cornerRadius, cornerRadius, glossPaint)
+            // 1. Subtle Fingertip Specular Gloss (localized directly at touch point, following sdegenaar/liquid_glass_widgets)
+            // Delicate, soft specular highlight with smooth cosine falloff and dither to eliminate banding rings
+            val glossRadius = 80f * density
+            val peakAlpha = (28 * glossIntensity).toInt().coerceIn(0, 255)
+            val midAlpha = (12 * glossIntensity).toInt().coerceIn(0, 255)
+            val colors = intArrayOf(
+                android.graphics.Color.argb(peakAlpha, 255, 255, 255),
+                android.graphics.Color.argb(midAlpha, 255, 255, 255),
+                android.graphics.Color.argb(0, 255, 255, 255)
+            )
+            val stops = floatArrayOf(0.0f, 0.45f, 1.0f)
+            glossPaint.shader = android.graphics.RadialGradient(
+                touchX, touchY, glossRadius, colors, stops, android.graphics.Shader.TileMode.CLAMP
+            )
+            canvas.drawCircle(touchX, touchY, glossRadius, glossPaint)
 
-            // 2. Refractive Specular Hairline Rim (iOS 27 rimLight hairline highlight)
-            val rimAlpha = (34 * glossIntensity).toInt().coerceIn(0, 255)
+            // 2. Refractive Specular Squircle Hairline Rim (iOS 27 rimLight hairline highlight)
+            val rimAlpha = (36 * glossIntensity).toInt().coerceIn(0, 255)
             rimPaint.color = android.graphics.Color.argb(rimAlpha, 255, 255, 255)
             canvas.drawRoundRect(rectF, cornerRadius, cornerRadius, rimPaint)
 

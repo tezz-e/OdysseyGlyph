@@ -30,10 +30,14 @@ class TiltSpecularCardView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
-    private val specularPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val specularPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        isDither = true
+        isFilterBitmap = true
+    }
     private val rimPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = resources.displayMetrics.density * 1.0f
+        isDither = true
     }
     private val clipPath = Path()
     private val rectF = RectF()
@@ -229,15 +233,23 @@ class TiltSpecularCardView @JvmOverloads constructor(
         val save = canvas.save()
         canvas.clipPath(clipPath)
 
-        // 1. Apple / Nothing OS Liquid Glass Ambient Luma Lift (iOS 26/27 ambientBaseLightDark)
-        // Even, optical illumination across the entire squircle shape — strictly NO circular spotlight discs or radial blobs
-        val fillAlpha = (18 * glossIntensity).toInt().coerceIn(0, 255)
-        specularPaint.shader = null
-        specularPaint.color = Color.argb(fillAlpha, 255, 255, 255)
-        canvas.drawRoundRect(rectF, cornerRadius, cornerRadius, specularPaint)
+        // 1. Subtle Fingertip Specular Gloss (localized directly at touch point, following sdegenaar/liquid_glass_widgets)
+        val glossRadius = 80f * density
+        val peakAlpha = (28 * glossIntensity).toInt().coerceIn(0, 255)
+        val midAlpha = (12 * glossIntensity).toInt().coerceIn(0, 255)
+        val colors = intArrayOf(
+            Color.argb(peakAlpha, 255, 255, 255),
+            Color.argb(midAlpha, 255, 255, 255),
+            Color.argb(0, 255, 255, 255)
+        )
+        val stops = floatArrayOf(0.0f, 0.45f, 1.0f)
+        specularPaint.shader = RadialGradient(
+            touchX, touchY, glossRadius, colors, stops, Shader.TileMode.CLAMP
+        )
+        canvas.drawCircle(touchX, touchY, glossRadius, specularPaint)
 
-        // 2. Refractive Specular Hairline Rim (iOS 27 rimLight hairline highlight)
-        val rimAlpha = (34 * glossIntensity).toInt().coerceIn(0, 255)
+        // 2. Refractive Specular Squircle Hairline Rim (iOS 27 rimLight hairline highlight)
+        val rimAlpha = (36 * glossIntensity).toInt().coerceIn(0, 255)
         rimPaint.color = Color.argb(rimAlpha, 255, 255, 255)
         canvas.drawRoundRect(rectF, cornerRadius, cornerRadius, rimPaint)
 
