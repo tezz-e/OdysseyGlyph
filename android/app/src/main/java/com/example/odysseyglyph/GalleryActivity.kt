@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
@@ -42,11 +43,17 @@ class GalleryActivity : AppCompatActivity() {
         WindowInsetsUtil.applySystemBarsPadding(appBarLayout, applyTop = true)
 
         btnBack = findViewById(R.id.btnBack)
-        btnBack.setOnClickListener { finish() }
+        btnBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         TouchSpringAnimator.attach(btnBack)
 
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
-        toolbar?.setNavigationOnClickListener { finish() }
+        toolbar?.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                finish()
+            }
+        })
 
         rvPresets = findViewById(R.id.rvPresets)
         WindowInsetsUtil.applySystemBarsPadding(rvPresets, applyBottom = true)
@@ -275,8 +282,8 @@ class PresetAdapter(
         
         holder.itemView.setOnClickListener { onClick(p) }
         holder.btnQuickDelete.setOnClickListener { onDelete(p) }
-        holder.itemView.applyLiquidGlass(enableStretch = true)
-        holder.btnQuickDelete.applyLiquidGlass(enableStretch = true)
+        holder.itemView.applyLiquidGlass(pressedScale = 0.98f)
+        holder.btnQuickDelete.applyLiquidGlass(pressedScale = 0.95f)
         
         // Load thumbnail from bin file
         val context = holder.itemView.context

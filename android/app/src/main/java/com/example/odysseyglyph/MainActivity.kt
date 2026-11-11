@@ -7,8 +7,10 @@ import android.content.SharedPreferences
 import android.graphics.Matrix
 import android.net.Uri
 import android.os.Bundle
+import android.view.MenuItem
 import android.view.View
 import android.widget.*
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AlertDialog
@@ -132,6 +134,29 @@ class MainActivity : AppCompatActivity() {
         setupListeners()
         setupBentoConsole()
         syncSlotState()
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (launcherGroup.visibility != View.VISIBLE) {
+                    if (isRendering.get()) {
+                        cancelProcessing()
+                    }
+                    resetToLauncher()
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                    isEnabled = true
+                }
+            }
+        })
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) {
+            onBackPressedDispatcher.onBackPressed()
+            return true
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     private fun setupBentoConsole() {
@@ -140,35 +165,33 @@ class MainActivity : AppCompatActivity() {
             val beam = BorderBeamDrawable()
             it.foreground = beam
             beam.start()
-            it.applyLiquidGlass(enableStretch = true)
+            it.applyLiquidGlass(pressedScale = 0.98f)
         }
 
         findViewById<View>(R.id.cardMediaPipeline)?.let { card ->
-            card.applyLiquidGlass(enableStretch = true)
+            card.applyLiquidGlass(pressedScale = 0.98f)
             card.setOnClickListener { btnSelectVideo.performClick() }
         }
 
         findViewById<View>(R.id.cardLyricStudio)?.let { card ->
-            card.applyLiquidGlass(enableStretch = true)
+            card.applyLiquidGlass(pressedScale = 0.98f)
             card.setOnClickListener { btnLaunchLyricStudio.performClick() }
         }
 
         findViewById<View>(R.id.cardVisualizer)?.let { card ->
-            card.applyLiquidGlass(enableStretch = true)
+            card.applyLiquidGlass(pressedScale = 0.98f)
             card.setOnClickListener { btnLaunchVisualizer.performClick() }
         }
 
-        findViewById<View>(R.id.quickAccessSection)?.applyLiquidGlass(enableStretch = true)
-
-        btnSelectVideo.applyLiquidGlass(enableStretch = true)
-        btnLaunchLyricStudio.applyLiquidGlass(enableStretch = true)
-        btnLaunchVisualizer.applyLiquidGlass(enableStretch = true)
-        btnLaunchLiveLyrics.applyLiquidGlass(enableStretch = true)
-        findViewById<View>(R.id.btnAddTileMain)?.applyLiquidGlass(enableStretch = true)
-        findViewById<View>(R.id.btnAddWidgetMain)?.applyLiquidGlass(enableStretch = true)
-        findViewById<View>(R.id.btnVaultMain)?.applyLiquidGlass(enableStretch = true)
-        btnProcess.applyLiquidGlass(enableStretch = true)
-        btnCancel.applyLiquidGlass(enableStretch = true)
+        btnSelectVideo.applyLiquidGlass(pressedScale = 0.96f)
+        btnLaunchLyricStudio.applyLiquidGlass(pressedScale = 0.96f)
+        btnLaunchVisualizer.applyLiquidGlass(pressedScale = 0.96f)
+        btnLaunchLiveLyrics.applyLiquidGlass(pressedScale = 0.96f)
+        findViewById<View>(R.id.btnAddTileMain)?.applyLiquidGlass(pressedScale = 0.96f)
+        findViewById<View>(R.id.btnAddWidgetMain)?.applyLiquidGlass(pressedScale = 0.96f)
+        findViewById<View>(R.id.btnVaultMain)?.applyLiquidGlass(pressedScale = 0.96f)
+        btnProcess.applyLiquidGlass(pressedScale = 0.96f)
+        btnCancel.applyLiquidGlass(pressedScale = 0.96f)
     }
 
     private fun updateScrollViewPadding() {

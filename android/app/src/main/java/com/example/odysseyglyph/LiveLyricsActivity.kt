@@ -12,6 +12,7 @@ import android.os.Looper
 import android.provider.Settings
 import android.view.View
 import android.widget.*
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
@@ -68,10 +69,16 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         prefs = getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE)
         
         btnBack = findViewById(R.id.btnBack)
-        btnBack.setOnClickListener { finish() }
+        btnBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
-        toolbar?.setNavigationOnClickListener { finish() }
+        toolbar?.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                finish()
+            }
+        })
 
         heroTelemetryCard = findViewById(R.id.heroTelemetryCard)
         liveMatrixMirror = findViewById(R.id.liveMatrixMirror)
@@ -111,11 +118,11 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         btnOpenManager = findViewById(R.id.btnOpenManager)
         btnAddTile = findViewById(R.id.btnAddTile)
         
-        btnGrantPermission.applyLiquidGlass(enableStretch = true)
-        btnOpenManager.applyLiquidGlass(enableStretch = true)
-        btnAddTile.applyLiquidGlass(enableStretch = true)
-        heroTelemetryCard.applyLiquidGlass(enableStretch = true)
-        findViewById<View>(R.id.btnCustomizeFallback).applyLiquidGlass(enableStretch = true)
+        btnGrantPermission.applyLiquidGlass(pressedScale = 0.96f)
+        btnOpenManager.applyLiquidGlass(pressedScale = 0.96f)
+        btnAddTile.applyLiquidGlass(pressedScale = 0.96f)
+        heroTelemetryCard.applyLiquidGlass(pressedScale = 0.98f)
+        findViewById<View>(R.id.btnCustomizeFallback).applyLiquidGlass(pressedScale = 0.96f)
         
         optionsContainer = findViewById(R.id.optionsContainer)
         

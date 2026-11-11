@@ -19,6 +19,7 @@ import android.text.TextWatcher
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AlertDialog
@@ -188,8 +189,28 @@ class LyricStudioActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        btnBack.setOnClickListener { finish() }
-        toolbar.setNavigationOnClickListener { finish() }
+        btnBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
+        toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (editorPanel.visibility == View.VISIBLE) {
+                    // Navigate back from lyric editor to song search list
+                    editorPanel.visibility = View.GONE
+                    previewCard.visibility = View.GONE
+                    successActionsContainer.visibility = View.GONE
+                    selectedTrack = null
+                    val currentQuery = etSearch.text.toString()
+                    if (currentQuery.length > 2) {
+                        performSearch(currentQuery)
+                    }
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                    isEnabled = true
+                }
+            }
+        })
 
         // Start glowing laser perimeter beam on hero teleprompter
         heroTeleprompterCard.let {
@@ -200,10 +221,6 @@ class LyricStudioActivity : AppCompatActivity() {
 
         // Attach touch spring physics
         TouchSpringAnimator.attach(btnBack)
-        TouchSpringAnimator.attach(btnAttachAudio)
-        TouchSpringAnimator.attach(btnRender)
-        TouchSpringAnimator.attach(btnOpenGallerySuccess)
-        TouchSpringAnimator.attach(btnOpenManager)
 
         // Waveform Scrubber
         waveformScrubber.setOnScrubListener { fraction ->
@@ -252,11 +269,11 @@ class LyricStudioActivity : AppCompatActivity() {
             updateWysiwygPreview()
         }
 
-        heroTeleprompterCard.applyLiquidGlass(enableStretch = true)
-        btnRender.applyLiquidGlass(enableStretch = true)
-        btnAttachAudio.applyLiquidGlass(enableStretch = true)
-        btnOpenManager.applyLiquidGlass(enableStretch = true)
-        btnOpenGallerySuccess.applyLiquidGlass(enableStretch = true)
+        heroTeleprompterCard.applyLiquidGlass(pressedScale = 0.98f)
+        btnRender.applyLiquidGlass(pressedScale = 0.96f)
+        btnAttachAudio.applyLiquidGlass(pressedScale = 0.96f)
+        btnOpenManager.applyLiquidGlass(pressedScale = 0.96f)
+        btnOpenGallerySuccess.applyLiquidGlass(pressedScale = 0.96f)
 
         // Sliders
         rangeSlider.addOnChangeListener { slider, _, _ ->

@@ -32,8 +32,6 @@ object TouchSpringAnimator {
         val springY: SpringAnimation,
         var pressedScale: Float,
         var restingScale: Float,
-        val springTransX: SpringAnimation? = null,
-        val springTransY: SpringAnimation? = null,
         val springRotX: SpringAnimation? = null,
         val springRotY: SpringAnimation? = null
     )
@@ -41,33 +39,29 @@ object TouchSpringAnimator {
     private val springRegistry = WeakHashMap<View, SpringHolder>()
 
     /**
-     * Attaches full Apple Liquid Glass stretch, tilt, and spring physics to a View.
-     * When touched, the view compresses; when pulled/dragged, it elastically stretches
-     * along the pull vector with fluid rubber-band resistance and 3D perspective tilt.
-     * On release, it rebounds with damped harmonic oscillation and haptic detents.
+     * Attaches Apple Liquid Glass press compression, 3D perspective tilt, and snapback physics.
+     * The view remains strictly anchored at its layout position (zero translation), responding
+     * fluidly with depth compression and subtle directional 3D tilt tracking the user's touch.
+     * Moving outside the view bounds gracefully cancels the press; releasing snaps back crisply
+     * with high-stiffness harmonic settling and haptic detents.
      */
     @SuppressLint("ClickableViewAccessibility")
     fun attachLiquidGlass(
         view: View,
-        pressedScale: Float = 0.93f,
-        enableStretch: Boolean = true,
+        pressedScale: Float = 0.96f,
+        enableStretch: Boolean = false,
         onTouchListener: View.OnTouchListener? = null
     ) {
         val density = view.resources.displayMetrics.density
 
         val scaleForce = SpringForce().apply {
-            stiffness = 280f
-            dampingRatio = 0.55f // Bouncy harmonic spring with overshoot
+            stiffness = 450f
+            dampingRatio = 0.78f // Snappy, firm Apple mechanical snapback
             finalPosition = DEFAULT_RESTING_SCALE
         }
-        val transForce = SpringForce().apply {
-            stiffness = 320f
-            dampingRatio = 0.62f
-            finalPosition = 0f
-        }
         val rotForce = SpringForce().apply {
-            stiffness = 380f
-            dampingRatio = 0.70f
+            stiffness = 400f
+            dampingRatio = 0.75f
             finalPosition = 0f
         }
 
@@ -81,16 +75,6 @@ object TouchSpringAnimator {
             dampingRatio = scaleForce.dampingRatio
             finalPosition = DEFAULT_RESTING_SCALE
         })
-        val springTransX = SpringAnimation(view, DynamicAnimation.TRANSLATION_X).setSpring(SpringForce().apply {
-            stiffness = transForce.stiffness
-            dampingRatio = transForce.dampingRatio
-            finalPosition = 0f
-        })
-        val springTransY = SpringAnimation(view, DynamicAnimation.TRANSLATION_Y).setSpring(SpringForce().apply {
-            stiffness = transForce.stiffness
-            dampingRatio = transForce.dampingRatio
-            finalPosition = 0f
-        })
         val springRotX = SpringAnimation(view, DynamicAnimation.ROTATION_X).setSpring(SpringForce().apply {
             stiffness = rotForce.stiffness
             dampingRatio = rotForce.dampingRatio
@@ -102,15 +86,16 @@ object TouchSpringAnimator {
             finalPosition = 0f
         })
 
+        // Anchor view firmly in place - zero translation
         view.cameraDistance = 8000f * density
+        view.translationX = 0f
+        view.translationY = 0f
 
         val holder = SpringHolder(
             springX = springX,
             springY = springY,
             pressedScale = pressedScale,
             restingScale = DEFAULT_RESTING_SCALE,
-            springTransX = springTransX,
-            springTransY = springTransY,
             springRotX = springRotX,
             springRotY = springRotY
         )
@@ -120,66 +105,63 @@ object TouchSpringAnimator {
             view.isClickable = true
         }
 
-        var downRawX = 0f
-        var downRawY = 0f
-        val touchSlop = 24f * density
-
         view.setOnTouchListener { v, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
-                    downRawX = event.rawX
-                    downRawY = event.rawY
                     v.pivotX = v.width / 2f
                     v.pivotY = v.height / 2f
                     holder.springX.animateToFinalPosition(holder.pressedScale)
                     holder.springY.animateToFinalPosition(holder.pressedScale)
+
+                    val halfW = v.width / 2f
+                    val halfH = v.height / 2f
+                    if (halfW > 0 && halfH > 0) {
+                        val relX = ((event.x - halfW) / halfW).coerceIn(-1f, 1f)
+                        val relY = ((event.y - halfH) / halfH).coerceIn(-1f, 1f)
+                        holder.springRotY?.animateToFinalPosition(relX * 3.5f)
+                        holder.springRotX?.animateToFinalPosition(-relY * 3.5f)
+                    }
                     v.vibrateTick()
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    if (enableStretch) {
-                        val dx = event.rawX - downRawX
-                        val dy = event.rawY - downRawY
-                        val dist = Math.hypot(dx.toDouble(), dy.toDouble()).toFloat()
+                    val halfW = v.width / 2f
+                    val halfH = v.height / 2f
+                    val isInside = event.x in 0f..v.width.toFloat() &&
+                            event.y in 0f..v.height.toFloat()
 
-                        // Apple rubber-band resistance damping
-                        val resistance = 1.0f + (dist / (240f * density))
-                        val tx = dx / resistance
-                        val ty = dy / resistance
-
-                        // Incompressible viscous fluid stretch (elongate along pull, thin across width)
-                        val stretchX = Math.min(0.20f, Math.abs(dx) / (320f * density))
-                        val compressY = Math.min(0.06f, Math.abs(dx) / (640f * density))
-                        val stretchY = Math.min(0.20f, Math.abs(dy) / (320f * density))
-                        val compressX = Math.min(0.06f, Math.abs(dy) / (640f * density))
-
-                        val targetScaleX = holder.pressedScale + stretchX - compressX
-                        val targetScaleY = holder.pressedScale + stretchY - compressY
-
-                        val targetRotY = (tx / (20f * density) * 4f).coerceIn(-9f, 9f)
-                        val targetRotX = (-ty / (20f * density) * 4f).coerceIn(-9f, 9f)
-
-                        holder.springX.animateToFinalPosition(targetScaleX)
-                        holder.springY.animateToFinalPosition(targetScaleY)
-                        holder.springTransX?.animateToFinalPosition(tx)
-                        holder.springTransY?.animateToFinalPosition(ty)
-                        holder.springRotX?.animateToFinalPosition(targetRotX)
-                        holder.springRotY?.animateToFinalPosition(targetRotY)
+                    if (isInside && halfW > 0 && halfH > 0) {
+                        val relX = ((event.x - halfW) / halfW).coerceIn(-1f, 1f)
+                        val relY = ((event.y - halfH) / halfH).coerceIn(-1f, 1f)
+                        holder.springRotY?.animateToFinalPosition(relX * 3.5f)
+                        holder.springRotX?.animateToFinalPosition(-relY * 3.5f)
+                        if (holder.springX.spring.finalPosition != holder.pressedScale) {
+                            holder.springX.animateToFinalPosition(holder.pressedScale)
+                            holder.springY.animateToFinalPosition(holder.pressedScale)
+                        }
+                    } else {
+                        // Touch dragged outside: smoothly uncompress and level tilt (cancels press)
+                        if (holder.springX.spring.finalPosition != holder.restingScale) {
+                            holder.springX.animateToFinalPosition(holder.restingScale)
+                            holder.springY.animateToFinalPosition(holder.restingScale)
+                            holder.springRotX?.animateToFinalPosition(0f)
+                            holder.springRotY?.animateToFinalPosition(0f)
+                        }
                     }
                 }
                 MotionEvent.ACTION_UP -> {
                     holder.springX.animateToFinalPosition(holder.restingScale)
                     holder.springY.animateToFinalPosition(holder.restingScale)
-                    holder.springTransX?.animateToFinalPosition(0f)
-                    holder.springTransY?.animateToFinalPosition(0f)
                     holder.springRotX?.animateToFinalPosition(0f)
                     holder.springRotY?.animateToFinalPosition(0f)
-                    v.vibrateDetent()
+                    val isInside = event.x in 0f..v.width.toFloat() &&
+                            event.y in 0f..v.height.toFloat()
+                    if (isInside) {
+                        v.vibrateDetent()
+                    }
                 }
                 MotionEvent.ACTION_CANCEL -> {
                     holder.springX.animateToFinalPosition(holder.restingScale)
                     holder.springY.animateToFinalPosition(holder.restingScale)
-                    holder.springTransX?.animateToFinalPosition(0f)
-                    holder.springTransY?.animateToFinalPosition(0f)
                     holder.springRotX?.animateToFinalPosition(0f)
                     holder.springRotY?.animateToFinalPosition(0f)
                 }
@@ -257,15 +239,21 @@ object TouchSpringAnimator {
     }
 
     /**
-     * Cancels active springs and resets view scale to 1.0f.
+     * Cancels active springs and resets view scale and rotation to resting state.
      */
     fun cancel(view: View) {
         springRegistry[view]?.let { holder ->
             if (holder.springX.isRunning) holder.springX.cancel()
             if (holder.springY.isRunning) holder.springY.cancel()
+            if (holder.springRotX?.isRunning == true) holder.springRotX.cancel()
+            if (holder.springRotY?.isRunning == true) holder.springRotY.cancel()
         }
         view.scaleX = DEFAULT_RESTING_SCALE
         view.scaleY = DEFAULT_RESTING_SCALE
+        view.rotationX = 0f
+        view.rotationY = 0f
+        view.translationX = 0f
+        view.translationY = 0f
     }
 
     /**
@@ -390,11 +378,11 @@ fun View.attachTouchSpring(
 }
 
 /**
- * Idiomatic extension function to attach Apple Liquid Glass stretch, tilt, and spring physics.
+ * Idiomatic extension function to attach Apple Liquid Glass press compression, tilt, and spring physics.
  */
 fun View.applyLiquidGlass(
-    enableStretch: Boolean = true,
-    pressedScale: Float = 0.93f
+    enableStretch: Boolean = false,
+    pressedScale: Float = 0.96f
 ): View {
     TouchSpringAnimator.attachLiquidGlass(this, pressedScale = pressedScale, enableStretch = enableStretch)
     return this

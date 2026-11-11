@@ -29,8 +29,9 @@
         <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.Odyssey.Sharp</item>
         <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.Odyssey.Sharp</item>
         
-        <!-- Default Font (Inter/sans-serif) -->
-        <item name="android:fontFamily">sans-serif</item>
+        <!-- Default Font (Geist for Nothing OS 5.0 Lucent Design Theme) -->
+        <item name="android:fontFamily">@font/font_geist</item>
+        <item name="fontFamily">@font/font_geist</item>
         
         <item name="materialSwitchStyle">@style/Widget.Odyssey.MaterialSwitch</item>
     </style>
