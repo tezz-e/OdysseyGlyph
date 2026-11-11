@@ -32,21 +32,14 @@
 
                 <TextView
                     android:id="@+id/tvHeaderTitle"
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:text="GLYPH ODYSSEY"
                     android:fontFamily="@font/ndot57"
                     app:fontFamily="@font/ndot57"
                     android:textSize="22sp"
                     android:textColor="#FFFFFF"
                     android:letterSpacing="0.08" />
-
-                <!-- Front Camera Dynamic Pod Indicator -->
-                <com.example.odysseyglyph.GlyphDynamicPodView
-                    android:id="@+id/dynamicPod"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
             </LinearLayout>
 
             <TextView
@@ -165,7 +158,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="44dp"
                                 android:layout_marginTop="14dp"
-                                android:text="OPEN ENGINE"
+                                android:text="OPEN LIVE LYRICS"
                                 android:fontFamily="@font/ndot57"
                                 app:fontFamily="@font/ndot57"
                                 android:letterSpacing="0.06"
@@ -227,7 +220,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="Tactical 25×25 crop"
+                            android:text="Crop for 25×25 matrix"
                             android:textSize="11sp"
                             android:textColor="#888888" />
 
@@ -283,7 +276,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="Ndot57 ticker studio"
+                            android:text="Create lyric animations"
                             android:textSize="11sp"
                             android:textColor="#888888" />
 
@@ -326,22 +319,18 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="AUDIO VISUALIZER"
+                            android:text="MUSIC VISUALIZER"
                             android:fontFamily="@font/ndot57"
                             app:fontFamily="@font/ndot57"
                             android:textSize="10sp"
                             android:textColor="#888888"
                             android:letterSpacing="0.06" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="| | | | | | |"
-                            android:fontFamily="@font/ndot57"
-                            app:fontFamily="@font/ndot57"
-                            android:textSize="11sp"
-                            android:textColor="#EA3323"
-                            android:letterSpacing="0.15" />
+                        <!-- Real Live Animated Audio Spectrum Meter (Option B) -->
+                        <com.example.odysseyglyph.LiveAudioMeterView
+                            android:id="@+id/liveAudioMeter"
+                            android:layout_width="32dp"
+                            android:layout_height="18dp" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -355,7 +344,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="13-Band Frequency Scope"
+                            android:text="Live Matrix Spectrum"
                             android:textSize="16sp"
                             android:textStyle="bold"
                             android:textColor="#FFFFFF" />
@@ -365,7 +354,7 @@
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="wrap_content"
                             android:layout_height="44dp"
-                            android:text="LAUNCH"
+                            android:text="PATTERNS"
                             android:fontFamily="@font/ndot57"
                             app:fontFamily="@font/ndot57"
                             android:letterSpacing="0.06"
@@ -391,8 +380,9 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="HARDWARE &amp; SHORTCUTS"
-                        android:fontFamily="monospace"
+                        android:text="PHONE CONTROLS"
+                        android:fontFamily="@font/ndot57"
+                        app:fontFamily="@font/ndot57"
                         android:textSize="10sp"
                         android:textColor="#888888"
                         android:letterSpacing="0.06" />
@@ -697,8 +687,9 @@
                 android:layout_height="48dp"
                 android:layout_weight="1"
                 android:layout_marginEnd="4dp"
-                android:text="OPEN GALLERY"
-                android:fontFamily="monospace"
+                android:text="OPEN VAULT"
+                android:fontFamily="@font/ndot57"
+                app:fontFamily="@font/ndot57"
                 app:cornerRadius="4dp"
                 app:strokeColor="#444444"
                 android:textColor="#FFFFFF" />

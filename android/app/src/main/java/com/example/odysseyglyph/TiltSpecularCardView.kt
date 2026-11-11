@@ -30,6 +30,9 @@ class TiltSpecularCardView @JvmOverloads constructor(
 
     private val maxTiltDeg = 7.0f
     private var returnAnimator: ValueAnimator? = null
+    private var downX = 0f
+    private var downY = 0f
+    private val touchSlop = android.view.ViewConfiguration.get(context).scaledTouchSlop
 
     init {
         setWillNotDraw(false)
@@ -38,31 +41,60 @@ class TiltSpecularCardView @JvmOverloads constructor(
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
+            MotionEvent.ACTION_DOWN -> {
                 returnAnimator?.cancel()
                 isTouching = true
+                downX = event.x
+                downY = event.y
                 touchX = event.x
                 touchY = event.y
-
-                val centerX = width / 2f
-                val centerY = height / 2f
-                if (centerX > 0 && centerY > 0) {
-                    val normX = ((touchX - centerX) / centerX).coerceIn(-1f, 1f)
-                    val normY = ((touchY - centerY) / centerY).coerceIn(-1f, 1f)
-
-                    rotationY = normX * maxTiltDeg
-                    rotationX = -normY * maxTiltDeg
-                    invalidate()
-                }
+                updateTilt(event.x, event.y)
+                super.onTouchEvent(event)
                 return true
             }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+            MotionEvent.ACTION_MOVE -> {
+                touchX = event.x
+                touchY = event.y
+                updateTilt(event.x, event.y)
+                super.onTouchEvent(event)
+                return true
+            }
+            MotionEvent.ACTION_UP -> {
                 isTouching = false
                 animateBackToRest()
+                val deltaX = kotlin.math.abs(event.x - downX)
+                val deltaY = kotlin.math.abs(event.y - downY)
+                if (deltaX < touchSlop && deltaY < touchSlop) {
+                    performClick()
+                }
+                super.onTouchEvent(event)
+                return true
+            }
+            MotionEvent.ACTION_CANCEL -> {
+                isTouching = false
+                animateBackToRest()
+                super.onTouchEvent(event)
                 return true
             }
         }
         return super.onTouchEvent(event)
+    }
+
+    override fun performClick(): Boolean {
+        super.performClick()
+        return true
+    }
+
+    private fun updateTilt(x: Float, y: Float) {
+        val centerX = width / 2f
+        val centerY = height / 2f
+        if (centerX > 0 && centerY > 0) {
+            val normX = ((x - centerX) / centerX).coerceIn(-1f, 1f)
+            val normY = ((y - centerY) / centerY).coerceIn(-1f, 1f)
+            rotationY = normX * maxTiltDeg
+            rotationX = -normY * maxTiltDeg
+            invalidate()
+        }
     }
 
     private fun animateBackToRest() {
