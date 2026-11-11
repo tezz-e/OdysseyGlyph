@@ -373,6 +373,9 @@ class LyricStudioActivity : AppCompatActivity() {
         }
 
         heroTeleprompterCard.applyLiquidGlass(pressedScale = 0.98f)
+        cardSampleStarboy.applyLiquidGlass(pressedScale = 0.98f)
+        cardSampleQueen.applyLiquidGlass(pressedScale = 0.98f)
+        cardSampleRick.applyLiquidGlass(pressedScale = 0.98f)
         btnRender.applyLiquidGlass(pressedScale = 0.96f)
         btnAttachAudio.applyLiquidGlass(pressedScale = 0.96f)
         btnOpenManager.applyLiquidGlass(pressedScale = 0.96f)

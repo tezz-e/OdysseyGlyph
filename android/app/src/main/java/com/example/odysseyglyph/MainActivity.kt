@@ -164,6 +164,7 @@ class MainActivity : AppCompatActivity() {
         heroCard?.let {
             it.foreground = null
             it.applyLiquidGlass(pressedScale = 0.98f)
+            it.setOnClickListener { btnLaunchLiveLyrics.performClick() }
         }
 
         findViewById<View>(R.id.cardMediaPipeline)?.let { card ->

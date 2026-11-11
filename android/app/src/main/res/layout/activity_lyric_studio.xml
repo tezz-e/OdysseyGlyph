@@ -223,7 +223,7 @@
                 </LinearLayout>
 
                 <!-- Sample Card 1: Starboy -->
-                <com.example.odysseyglyph.TiltSpecularCardView
+                <FrameLayout
                     android:id="@+id/cardSampleStarboy"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -274,10 +274,10 @@
                             android:paddingVertical="6dp"
                             android:background="@drawable/bg_glass_pill" />
                     </LinearLayout>
-                </com.example.odysseyglyph.TiltSpecularCardView>
+                </FrameLayout>
 
                 <!-- Sample Card 2: Bohemian Rhapsody -->
-                <com.example.odysseyglyph.TiltSpecularCardView
+                <FrameLayout
                     android:id="@+id/cardSampleQueen"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -328,10 +328,10 @@
                             android:paddingVertical="6dp"
                             android:background="@drawable/bg_glass_pill" />
                     </LinearLayout>
-                </com.example.odysseyglyph.TiltSpecularCardView>
+                </FrameLayout>
 
                 <!-- Sample Card 3: Never Gonna Give You Up -->
-                <com.example.odysseyglyph.TiltSpecularCardView
+                <FrameLayout
                     android:id="@+id/cardSampleRick"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -382,7 +382,7 @@
                             android:paddingVertical="6dp"
                             android:background="@drawable/bg_glass_pill" />
                     </LinearLayout>
-                </com.example.odysseyglyph.TiltSpecularCardView>
+                </FrameLayout>
             </LinearLayout>
 
             <!-- Hidden legacy preview card kept for binding compatibility -->

@@ -249,8 +249,9 @@
                     android:layout_height="0dp"
                     android:visibility="gone" />
 
-                <!-- Animation & Timing Glass Card -->
+                <!-- Engine Configuration Instrument Rack -->
                 <LinearLayout
+                    android:id="@+id/cardEngineControls"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
@@ -258,6 +259,7 @@
                     android:padding="20dp"
                     android:layout_marginBottom="14dp">
 
+                    <!-- Section 1: Animation Style -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -276,6 +278,7 @@
                         android:layout_height="48dp"
                         android:layout_marginBottom="18dp" />
 
+                    <!-- Section 2: Sync Offset Timing -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -334,17 +337,15 @@
                         app:thumbColor="#EA3323"
                         app:trackColorActive="#EA3323"
                         app:trackColorInactive="#262626" />
-                </LinearLayout>
 
-                <!-- Typeface Glass Card -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:background="@drawable/bg_glass_card"
-                    android:padding="20dp"
-                    android:layout_marginBottom="14dp">
+                    <!-- Hairline Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#14FFFFFF"
+                        android:layout_marginVertical="16dp" />
 
+                    <!-- Section 3: Typeface -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -361,17 +362,15 @@
                         android:id="@+id/toggleTypography"
                         android:layout_width="match_parent"
                         android:layout_height="48dp" />
-                </LinearLayout>
 
-                <!-- Fallback Visualizer Card -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:background="@drawable/bg_glass_card"
-                    android:padding="20dp"
-                    android:layout_marginBottom="14dp">
+                    <!-- Hairline Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#14FFFFFF"
+                        android:layout_marginVertical="16dp" />
 
+                    <!-- Section 4: Fallback Visualizer -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
