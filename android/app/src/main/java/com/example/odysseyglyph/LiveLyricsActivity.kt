@@ -397,10 +397,10 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
     private fun updateUIState() {
         val isMasterOn = switchMaster.isChecked
         if (!isMasterOn) {
-            tvMasterState.text = "OFFLINE // STANDBY"
+            tvMasterState.text = "OFFLINE"
             tvMasterState.setTextColor(Color.parseColor("#888888"))
-            tvStatus.text = "ENGINE OFFLINE"
-            tvTrackInfo.text = "Turn on the master switch above to start streaming lyrics."
+            tvStatus.text = "Live Lyrics Off"
+            tvTrackInfo.text = "Turn on the switch above to start streaming lyrics."
             oscilloscopeView.updateWaveform(0f, 0f)
             ivAlbumArt.visibility = View.GONE
             return
@@ -409,22 +409,22 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         if (!isNotificationAccessGranted) {
             tvMasterState.text = "PERMISSION REQUIRED"
             tvMasterState.setTextColor(Color.parseColor("#EA3323"))
-            tvStatus.text = "NOTIFICATION ACCESS REQUIRED"
+            tvStatus.text = "Notification Access Required"
             tvTrackInfo.text = "Enable Notification Access below to read media playback."
             ivAlbumArt.visibility = View.GONE
             return
         }
         
         if (!MusicPlaybackState.hasActiveSession) {
-            tvMasterState.text = "STANDBY // READY"
+            tvMasterState.text = "READY"
             tvMasterState.setTextColor(Color.parseColor("#44BB44"))
-            tvStatus.text = "WAITING FOR MUSIC..."
+            tvStatus.text = "Waiting for music"
             tvTrackInfo.text = "Play a track to begin."
             ivAlbumArt.visibility = View.GONE
         } else {
             val title = MusicPlaybackState.trackTitle
             val artist = MusicPlaybackState.artist
-            tvMasterState.text = "ACTIVE // STREAMING"
+            tvMasterState.text = "STREAMING"
             tvMasterState.setTextColor(Color.parseColor("#44BB44"))
             
             if (MusicPlaybackState.albumArt != null) {
@@ -435,13 +435,13 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             }
             
             if (MusicPlaybackState.manualOverrideLyrics != null) {
-                tvStatus.text = "STREAMING TO REAR MATRIX"
+                tvStatus.text = "Streaming to rear matrix"
                 tvTrackInfo.text = "$title — $artist"
             } else if (title.isNotEmpty()) {
-                tvStatus.text = "STREAMING TO REAR MATRIX"
+                tvStatus.text = "Streaming to rear matrix"
                 tvTrackInfo.text = "$title — $artist\n(Searching for lyrics...)"
             } else {
-                tvStatus.text = "STREAMING TO REAR MATRIX"
+                tvStatus.text = "Streaming to rear matrix"
                 tvTrackInfo.text = "Active session connected."
             }
         }

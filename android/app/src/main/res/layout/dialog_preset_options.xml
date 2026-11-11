@@ -22,7 +22,7 @@
         android:id="@+id/tvOptionsBadge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="MEDIA PRESET // 25×25 LED MATRIX"
+        android:text="25×25 MATRIX PRESET"
         android:fontFamily="@font/font_geist"
         android:textStyle="bold"
         android:textSize="10sp"
