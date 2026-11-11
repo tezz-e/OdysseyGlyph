@@ -89,18 +89,18 @@ class TiltSpecularCardView @JvmOverloads constructor(
         val centerX = width / 2f
         val centerY = height / 2f
         if (centerX > 0 && centerY > 0) {
-            val normX = ((x - centerX) / centerX).coerceIn(-1.2f, 1.2f)
-            val normY = ((y - centerY) / centerY).coerceIn(-1.2f, 1.2f)
+            val normX = ((x - centerX) / centerX).coerceIn(-1.1f, 1.1f)
+            val normY = ((y - centerY) / centerY).coerceIn(-1.1f, 1.1f)
 
-            // Anchored base: pivot stays pinned on the opposite side of input
-            pivotX = centerX - (normX * centerX * 0.70f)
-            pivotY = centerY - (normY * centerY * 0.70f)
+            // Anchored base: pivot stays pinned on the opposite side of input within safe margin
+            pivotX = (centerX - (normX * centerX * 0.60f)).coerceIn(width * 0.10f, width * 0.90f)
+            pivotY = (centerY - (normY * centerY * 0.60f)).coerceIn(height * 0.10f, height * 0.90f)
 
-            // Pure rubber stretch: stretches toward finger, orthogonal axis thins slightly
-            val stretchX = Math.abs(normX) * 0.08f
-            val stretchY = Math.abs(normY) * 0.08f
-            scaleX = 0.95f * (1.0f + stretchX - stretchY * 0.30f)
-            scaleY = 0.95f * (1.0f + stretchY - stretchX * 0.30f)
+            // Pure rubber stretch: compresses under touch within 1.0f envelope to prevent screen clipping
+            val stretchX = Math.abs(normX) * 0.05f
+            val stretchY = Math.abs(normY) * 0.05f
+            scaleX = (0.95f * (1.0f + stretchX - stretchY * 0.25f)).coerceIn(0.92f, 1.00f)
+            scaleY = (0.95f * (1.0f + stretchY - stretchX * 0.25f)).coerceIn(0.92f, 1.00f)
 
             // Zero 3D tilt/rotation
             rotationY = 0f
@@ -114,8 +114,8 @@ class TiltSpecularCardView @JvmOverloads constructor(
         val startScaleY = scaleY
 
         returnAnimator = ValueAnimator.ofFloat(1f, 0f).apply {
-            duration = 280
-            interpolator = OvershootInterpolator(1.35f)
+            duration = 260
+            interpolator = OvershootInterpolator(1.20f)
             addUpdateListener { va ->
                 val frac = va.animatedValue as Float
                 rotationX = 0f
@@ -134,6 +134,23 @@ class TiltSpecularCardView @JvmOverloads constructor(
 
     override fun onDrawForeground(canvas: Canvas) {
         super.onDrawForeground(canvas)
-        // No competing specular glare
+        if (isTouching && touchX >= 0 && touchY >= 0 && width > 0 && height > 0) {
+            val density = resources.displayMetrics.density
+            val cornerRadius = kotlin.math.min(22f * density, kotlin.math.min(width, height) / 2f)
+            val path = android.graphics.Path()
+            path.addRoundRect(0f, 0f, width.toFloat(), height.toFloat(), cornerRadius, cornerRadius, android.graphics.Path.Direction.CW)
+            val save = canvas.save()
+            canvas.clipPath(path)
+
+            val radius = kotlin.math.hypot(width.toDouble(), height.toDouble()).toFloat() * 0.45f
+            specularPaint.shader = RadialGradient(
+                touchX, touchY, radius.coerceAtLeast(10f),
+                Color.argb(45, 255, 255, 255),
+                Color.argb(0, 255, 255, 255),
+                Shader.TileMode.CLAMP
+            )
+            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), specularPaint)
+            canvas.restoreToCount(save)
+        }
     }
 }

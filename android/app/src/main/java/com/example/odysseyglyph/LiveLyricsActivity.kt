@@ -178,6 +178,14 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         
         val tvSyncOffset: TextView = findViewById(R.id.tvSyncOffset)
         val sliderSync: com.google.android.material.slider.Slider = findViewById(R.id.sliderSync)
+        sliderSync.setLabelFormatter { value ->
+            val ms = value.toInt()
+            when {
+                ms > 0 -> "+${ms}ms"
+                ms < 0 -> "${ms}ms"
+                else -> "0ms"
+            }
+        }
         
         val savedSyncOffset = prefs.getInt("live_sync_offset", 0)
         sliderSync.value = savedSyncOffset.toFloat()
@@ -283,13 +291,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         }
         
         btnOpenManager.setOnClickListener {
-            try {
-                val intent = Intent()
-                intent.component = ComponentName("com.nothing.thirdparty", "com.nothing.thirdparty.matrix.toys.manager.ToysManagerActivity")
-                startActivity(intent)
-            } catch (e: Exception) {
-                Snackbar.make(findViewById(android.R.id.content), "Toys Manager not found.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
-            }
+            GlyphOSIntegration.openGlyphAppOrToys(this, findViewById(android.R.id.content))
         }
         
         btnAddTile.setOnClickListener {

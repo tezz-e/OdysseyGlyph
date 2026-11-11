@@ -463,13 +463,7 @@ class MainActivity : AppCompatActivity() {
 
 
         btnOpenManager.setOnClickListener {
-            try {
-                val intent = Intent()
-                intent.component = ComponentName("com.nothing.thirdparty", "com.nothing.thirdparty.matrix.toys.manager.ToysManagerActivity")
-                startActivity(intent)
-            } catch (e: Exception) {
-                Snackbar.make(findViewById(android.R.id.content), "Toys Manager not found on this device.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
-            }
+            GlyphOSIntegration.openGlyphAppOrToys(this, findViewById(android.R.id.content))
         }
 
         btnOpenGallerySuccess.setOnClickListener {

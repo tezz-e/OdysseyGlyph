@@ -336,7 +336,8 @@
                         android:value="0.0"
                         app:thumbColor="#EA3323"
                         app:trackColorActive="#EA3323"
-                        app:trackColorInactive="#262626" />
+                        app:trackColorInactive="#262626"
+                        app:labelStyle="@style/Widget.Odyssey.SliderTooltip" />
 
                     <!-- Hairline Divider -->
                     <View
@@ -444,7 +445,7 @@
                         android:layout_height="48dp"
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
-                        android:text="TOYS MANAGER"
+                        android:text="GLYPH HUB"
                         android:fontFamily="@font/font_geist"
                         app:fontFamily="@font/font_geist"
                         android:textStyle="bold"

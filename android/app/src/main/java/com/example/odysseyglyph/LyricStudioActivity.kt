@@ -404,15 +404,9 @@ class LyricStudioActivity : AppCompatActivity() {
             startActivity(Intent(this, GalleryActivity::class.java))
         }
 
-        // Toys Manager
+        // Glyph App / Toys Manager
         btnOpenManager.setOnClickListener {
-            try {
-                val intent = Intent()
-                intent.component = ComponentName("com.nothing.thirdparty", "com.nothing.thirdparty.matrix.toys.manager.ToysManagerActivity")
-                startActivity(intent)
-            } catch (e: Exception) {
-                Snackbar.make(findViewById(android.R.id.content), "Nothing OS Toys Manager not found.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
-            }
+            GlyphOSIntegration.openGlyphAppOrToys(this, findViewById(android.R.id.content))
         }
         
         slotSpinner.setOnItemClickListener { _, _, position, _ ->

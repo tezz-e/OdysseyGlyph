@@ -3,6 +3,7 @@
     <style name="Theme.OdysseyGlyph" parent="Theme.Material3.Dark.NoActionBar">
         <!-- Core Colors -->
         <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorOnPrimary">@color/colorOnPrimary</item>
         <item name="colorSecondary">@color/colorSecondary</item>
         <item name="colorTertiary">@color/colorSurfaceVariant</item>
         <item name="colorSurface">@color/colorSurface</item>
@@ -11,10 +12,11 @@
         <item name="colorOnSurface">@color/colorOnSurface</item>
         <item name="colorOnSurfaceVariant">@color/colorOnSurfaceVariant</item>
         <item name="colorError">@color/colorError</item>
+        <item name="colorOnError">@color/colorOnError</item>
         
         <!-- M3 Container Colors (Overrides Default Purple) -->
         <item name="colorPrimaryContainer">@color/colorPrimary</item>
-        <item name="colorOnPrimaryContainer">@color/colorBackground</item>
+        <item name="colorOnPrimaryContainer">#FFFFFF</item>
         <item name="colorSecondaryContainer">@color/colorSurfaceVariant</item>
         <item name="colorOnSecondaryContainer">@color/colorOnSurface</item>
         <item name="colorTertiaryContainer">@color/colorSurfaceVariant</item>
@@ -38,6 +40,7 @@
 
         <item name="materialSwitchStyle">@style/Widget.Odyssey.MaterialSwitch</item>
         <item name="bottomSheetDialogTheme">@style/Theme.Odyssey.BottomSheetDialog</item>
+        <item name="sliderStyle">@style/Widget.Odyssey.Slider</item>
     </style>
 
     <style name="Theme.Odyssey.BottomSheetDialog" parent="Theme.Material3.Dark.BottomSheetDialog">
@@ -83,5 +86,27 @@
         <item name="fontFamily">@font/ndot57</item>
         <item name="android:textSize">36sp</item>
         <item name="android:letterSpacing">0.1</item>
+    </style>
+
+    <style name="Widget.Odyssey.Slider" parent="Widget.Material3.Slider">
+        <item name="thumbColor">#EA3323</item>
+        <item name="trackColorActive">#EA3323</item>
+        <item name="trackColorInactive">#262626</item>
+        <item name="haloColor">#33EA3323</item>
+        <item name="labelStyle">@style/Widget.Odyssey.SliderTooltip</item>
+    </style>
+
+    <style name="Widget.Odyssey.SliderTooltip" parent="Widget.Material3.Tooltip">
+        <item name="android:textAppearance">@style/TextAppearance.Odyssey.SliderTooltip</item>
+        <item name="backgroundTint">#EA3323</item>
+    </style>
+
+    <style name="TextAppearance.Odyssey.SliderTooltip" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:fontFamily">@font/font_geist</item>
+        <item name="fontFamily">@font/font_geist</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:letterSpacing">0.04</item>
     </style>
 </resources>

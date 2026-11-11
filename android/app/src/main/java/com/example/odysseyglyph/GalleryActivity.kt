@@ -125,6 +125,11 @@ class GalleryActivity : AppCompatActivity() {
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
         dialogView.findViewById<TextView>(R.id.tvOptionsTitle).text = preset.name
+        dialogView.findViewById<TextView>(R.id.tvOptionsBadge).text = if (preset.type == "LYRIC") {
+            "LYRIC STUDIO // SYNCED LRC"
+        } else {
+            "MEDIA PRESET // 25×25 LED MATRIX"
+        }
 
         val ivLargePreview = dialogView.findViewById<android.widget.ImageView>(R.id.ivLargePreview)
         var isPlaying = true
@@ -177,25 +182,37 @@ class GalleryActivity : AppCompatActivity() {
             isPlaying = false
         }
 
-        dialogView.findViewById<MaterialButton>(R.id.btnSlot1).setOnClickListener {
+        val btnSlot1 = dialogView.findViewById<MaterialButton>(R.id.btnSlot1)
+        val btnSlot2 = dialogView.findViewById<MaterialButton>(R.id.btnSlot2)
+        val btnSlot3 = dialogView.findViewById<MaterialButton>(R.id.btnSlot3)
+        val btnShare = dialogView.findViewById<MaterialButton>(R.id.btnShare)
+        val btnDelete = dialogView.findViewById<MaterialButton>(R.id.btnDelete)
+
+        btnSlot1.applyLiquidGlass(pressedScale = 0.96f)
+        btnSlot2.applyLiquidGlass(pressedScale = 0.96f)
+        btnSlot3.applyLiquidGlass(pressedScale = 0.96f)
+        btnShare.applyLiquidGlass(pressedScale = 0.96f)
+        btnDelete.applyLiquidGlass(pressedScale = 0.96f)
+
+        btnSlot1.setOnClickListener {
             assignToSlot(preset, 1)
             dialog.dismiss()
         }
-        dialogView.findViewById<MaterialButton>(R.id.btnSlot2).setOnClickListener {
+        btnSlot2.setOnClickListener {
             assignToSlot(preset, 2)
             dialog.dismiss()
         }
-        dialogView.findViewById<MaterialButton>(R.id.btnSlot3).setOnClickListener {
+        btnSlot3.setOnClickListener {
             assignToSlot(preset, 3)
             dialog.dismiss()
         }
 
-        dialogView.findViewById<MaterialButton>(R.id.btnShare).setOnClickListener {
+        btnShare.setOnClickListener {
             sharePreset(preset)
             dialog.dismiss()
         }
 
-        dialogView.findViewById<MaterialButton>(R.id.btnDelete).setOnClickListener {
+        btnDelete.setOnClickListener {
             showDeleteConfirmationDialog(preset) {
                 PresetManager.deletePreset(this, preset.id)
                 loadPresets()
