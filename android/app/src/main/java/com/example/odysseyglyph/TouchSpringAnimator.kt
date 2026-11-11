@@ -32,17 +32,18 @@ object TouchSpringAnimator {
         val springY: SpringAnimation,
         var pressedScale: Float,
         var restingScale: Float,
-        var glowDrawable: LiquidGlassGlowDrawable? = null
+        var glossDrawable: LiquidGlassGlossDrawable? = null
     )
 
     private val springRegistry = WeakHashMap<View, SpringHolder>()
 
     /**
-     * Apple-style Liquid Glass touch luminescence drawable.
-     * Renders an interactive radial glow and refractive rim sheen under the touch contact point.
+     * Apple-style Liquid Glass subtle specular gloss drawable.
+     * Renders a refined top-bezel specular crescent gloss and squircle continuous-curvature rim highlight.
+     * Subtle, tactile, and optical — strictly no flashlight or pointer discs.
      */
-    class LiquidGlassGlowDrawable(private val targetView: View) : android.graphics.drawable.Drawable() {
-        private val glowPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+    class LiquidGlassGlossDrawable(private val targetView: View) : android.graphics.drawable.Drawable() {
+        private val glossPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
         private val rimPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
             style = android.graphics.Paint.Style.STROKE
             strokeWidth = targetView.resources.displayMetrics.density * 1.0f
@@ -50,20 +51,20 @@ object TouchSpringAnimator {
         private val clipPath = android.graphics.Path()
         private val rectF = android.graphics.RectF()
 
-        private var touchX = -1f
-        private var touchY = -1f
-        private var alphaFraction = 0f
+        // 0.35f ambient gloss at rest, smoothly glints to 1.0f on interaction
+        private var glossIntensity = 0.35f
+        private var touchXNorm = 0.5f
         private var fadeAnimator: android.animation.ValueAnimator? = null
 
         fun onTouchDown(x: Float, y: Float) {
             fadeAnimator?.cancel()
-            touchX = x
-            touchY = y
-            fadeAnimator = android.animation.ValueAnimator.ofFloat(alphaFraction, 1.0f).apply {
-                duration = 120
+            val w = targetView.width.toFloat()
+            if (w > 0) touchXNorm = (x / w).coerceIn(0.15f, 0.85f)
+            fadeAnimator = android.animation.ValueAnimator.ofFloat(glossIntensity, 1.0f).apply {
+                duration = 140
                 interpolator = android.view.animation.DecelerateInterpolator()
                 addUpdateListener { va ->
-                    alphaFraction = va.animatedValue as Float
+                    glossIntensity = va.animatedValue as Float
                     targetView.invalidate()
                     invalidateSelf()
                 }
@@ -72,10 +73,10 @@ object TouchSpringAnimator {
         }
 
         fun onTouchMove(x: Float, y: Float) {
-            touchX = x
-            touchY = y
-            if (alphaFraction < 0.95f) {
-                alphaFraction = 1.0f
+            val w = targetView.width.toFloat()
+            if (w > 0) touchXNorm = (x / w).coerceIn(0.15f, 0.85f)
+            if (glossIntensity < 0.95f) {
+                glossIntensity = 1.0f
             }
             targetView.invalidate()
             invalidateSelf()
@@ -83,11 +84,11 @@ object TouchSpringAnimator {
 
         fun onTouchUp() {
             fadeAnimator?.cancel()
-            fadeAnimator = android.animation.ValueAnimator.ofFloat(alphaFraction, 0f).apply {
-                duration = 260
-                interpolator = android.view.animation.AccelerateInterpolator()
+            fadeAnimator = android.animation.ValueAnimator.ofFloat(glossIntensity, 0.35f).apply {
+                duration = 280
+                interpolator = android.view.animation.AccelerateDecelerateInterpolator()
                 addUpdateListener { va ->
-                    alphaFraction = va.animatedValue as Float
+                    glossIntensity = va.animatedValue as Float
                     targetView.invalidate()
                     invalidateSelf()
                 }
@@ -96,8 +97,6 @@ object TouchSpringAnimator {
         }
 
         override fun draw(canvas: android.graphics.Canvas) {
-            if (alphaFraction <= 0.005f || touchX < 0 || touchY < 0) return
-
             val w = targetView.width.toFloat()
             val h = targetView.height.toFloat()
             if (w <= 0 || h <= 0) return
@@ -112,20 +111,25 @@ object TouchSpringAnimator {
             val saveCount = canvas.save()
             canvas.clipPath(clipPath)
 
-            // Apple-style Liquid Glass Radial Touch Luminescence
-            val radius = kotlin.math.hypot(w.toDouble(), h.toDouble()).toFloat() * 0.45f
-            val centerAlpha = (45 * alphaFraction).toInt().coerceIn(0, 255)
-            glowPaint.shader = android.graphics.RadialGradient(
-                touchX, touchY,
-                radius.coerceAtLeast(10f),
-                android.graphics.Color.argb(centerAlpha, 255, 255, 255),
-                android.graphics.Color.argb(0, 255, 255, 255),
+            // 1. Apple-style Liquid Glass Top Bezel Specular Crescent (subtle gloss, NOT a pointer spotlight)
+            val glossHeight = (h * 0.40f).coerceAtLeast(16f * density)
+            val topAlpha = (26 * glossIntensity).toInt().coerceIn(0, 255)
+            val midAlpha = (10 * glossIntensity).toInt().coerceIn(0, 255)
+            glossPaint.shader = android.graphics.LinearGradient(
+                w * touchXNorm, 0f,
+                w * touchXNorm, glossHeight,
+                intArrayOf(
+                    android.graphics.Color.argb(topAlpha, 255, 255, 255),
+                    android.graphics.Color.argb(midAlpha, 255, 255, 255),
+                    android.graphics.Color.argb(0, 255, 255, 255)
+                ),
+                floatArrayOf(0.0f, 0.45f, 1.0f),
                 android.graphics.Shader.TileMode.CLAMP
             )
-            canvas.drawRect(rectF, glowPaint)
+            canvas.drawRect(0f, 0f, w, glossHeight, glossPaint)
 
-            // Refractive Specular Edge Rim
-            val rimAlpha = (30 * alphaFraction).toInt().coerceIn(0, 255)
+            // 2. Refractive Specular Rim (Apple continuous curvature highlight)
+            val rimAlpha = (22 * glossIntensity).toInt().coerceIn(0, 255)
             rimPaint.color = android.graphics.Color.argb(rimAlpha, 255, 255, 255)
             canvas.drawRoundRect(rectF, cornerRadius, cornerRadius, rimPaint)
 
@@ -139,11 +143,11 @@ object TouchSpringAnimator {
     }
 
     /**
-     * Attaches Apple-style anchored rubber stretch physics and liquid glass touch luminescence.
+     * Attaches Apple-style anchored gooey rubber stretch physics and subtle liquid glass gloss.
      * The card remains firmly anchored to its surface position (strictly zero translation).
      * Strictly no 3D tilt/rotation to prevent competing visual effects.
-     * Detects screen bounds and guarantees the shape compresses within its envelope without clipping.
-     * On release, it snaps back with rubbery harmonic oscillation and haptic detents.
+     * Dynamic screen bounds detection allows generous gooey deformation without screen clipping.
+     * On release, it snaps back with playful rubbery harmonic oscillation and haptic detents.
      */
     @SuppressLint("ClickableViewAccessibility")
     fun attachLiquidGlass(
@@ -154,7 +158,7 @@ object TouchSpringAnimator {
     ) {
         val density = view.resources.displayMetrics.density
 
-        // Unclip ancestors up to 3 levels to prevent clipping on oscillation
+        // Unclip ancestors up to 3 levels to ensure harmonic bounce is never clipped
         var p = view.parent
         var depth = 0
         while (p is android.view.ViewGroup && depth < 3) {
@@ -164,10 +168,10 @@ object TouchSpringAnimator {
             depth++
         }
 
-        // Rubbery harmonic spring: fast mechanical snapback with zero clipping overshoot
+        // Gooey rubber harmonic spring: pliable, organic response with playful harmonic wobble on release
         val scaleForce = SpringForce().apply {
-            stiffness = 380f
-            dampingRatio = 0.70f // Controlled harmonic oscillation without screen clipping
+            stiffness = 240f        // Gooey rubber elasticity (pliable elastomer)
+            dampingRatio = 0.52f    // Playful underdamped harmonic bounce
             finalPosition = DEFAULT_RESTING_SCALE
         }
 
@@ -189,15 +193,15 @@ object TouchSpringAnimator {
         view.rotationX = 0f
         view.rotationY = 0f
 
-        val glowDrawable = LiquidGlassGlowDrawable(view)
-        view.overlay.add(glowDrawable)
+        val glossDrawable = LiquidGlassGlossDrawable(view)
+        view.overlay.add(glossDrawable)
 
         val holder = SpringHolder(
             springX = springX,
             springY = springY,
             pressedScale = pressedScale,
             restingScale = DEFAULT_RESTING_SCALE,
-            glowDrawable = glowDrawable
+            glossDrawable = glossDrawable
         )
         springRegistry[view] = holder
 
@@ -219,50 +223,84 @@ object TouchSpringAnimator {
                 MotionEvent.ACTION_DOWN -> {
                     downRawX = event.rawX
                     downRawY = event.rawY
-                    glowDrawable.onTouchDown(event.x, event.y)
+                    glossDrawable.onTouchDown(event.x, event.y)
 
                     val nx = if (cx > 0) ((event.x - cx) / cx).coerceIn(-1f, 1f) else 0f
                     val ny = if (cy > 0) ((event.y - cy) / cy).coerceIn(-1f, 1f) else 0f
 
-                    // Anchored base: pivot stays pinned on the opposite side of input within safe margin
-                    val targetPivotX = (cx - (nx * cx * 0.55f)).coerceIn(w * 0.10f, w * 0.90f)
-                    val targetPivotY = (cy - (ny * cy * 0.55f)).coerceIn(h * 0.10f, h * 0.90f)
+                    // Anchored base: pivot stays pinned on the opposite side of input
+                    val targetPivotX = (cx - (nx * cx * 0.70f)).coerceIn(w * 0.08f, w * 0.92f)
+                    val targetPivotY = (cy - (ny * cy * 0.70f)).coerceIn(h * 0.08f, h * 0.92f)
                     v.pivotX = targetPivotX
                     v.pivotY = targetPivotY
 
-                    // Indentation within 1.0f envelope: compressed at contact point, strictly bounded <= 1.0f
-                    val targetScaleX = (holder.pressedScale * (1.0f + Math.abs(nx) * 0.04f)).coerceIn(0.92f, 1.00f)
-                    val targetScaleY = (holder.pressedScale * (1.0f + Math.abs(ny) * 0.04f)).coerceIn(0.92f, 1.00f)
+                    // Screen bounds detection: calculate maximum safe stretch without clipping screen borders
+                    val loc = IntArray(2)
+                    v.getLocationOnScreen(loc)
+                    val screenW = v.resources.displayMetrics.widthPixels
+                    val screenH = v.resources.displayMetrics.heightPixels
+                    val distLeft = loc[0].coerceAtLeast(0)
+                    val distRight = (screenW - (loc[0] + v.width)).coerceAtLeast(0)
+                    val distTop = loc[1].coerceAtLeast(0)
+                    val distBottom = (screenH - (loc[1] + v.height)).coerceAtLeast(0)
+
+                    val maxStretchX = if (w - targetPivotX > 1f) (distRight * 0.70f) / (w - targetPivotX) else 0.08f
+                    val maxSafeScaleX = 1.0f + minOf(maxStretchX, if (targetPivotX > 1f) (distLeft * 0.70f) / targetPivotX else 0.08f).coerceIn(0.0f, 0.08f)
+
+                    val maxStretchY = if (h - targetPivotY > 1f) (distBottom * 0.70f) / (h - targetPivotY) else 0.08f
+                    val maxSafeScaleY = 1.0f + minOf(maxStretchY, if (targetPivotY > 1f) (distTop * 0.70f) / targetPivotY else 0.08f).coerceIn(0.0f, 0.08f)
+
+                    // Gooey rubber indentation: pressed point depresses, lateral axes stretch with Poisson volume conservation
+                    val stretchX = Math.abs(nx) * 0.08f
+                    val stretchY = Math.abs(ny) * 0.08f
+                    val targetScaleX = (holder.pressedScale * (1.0f + stretchX - stretchY * 0.45f)).coerceIn(0.86f, maxSafeScaleX)
+                    val targetScaleY = (holder.pressedScale * (1.0f + stretchY - stretchX * 0.45f)).coerceIn(0.86f, maxSafeScaleY)
 
                     holder.springX.animateToFinalPosition(targetScaleX)
                     holder.springY.animateToFinalPosition(targetScaleY)
                     v.vibrateTick()
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    glowDrawable.onTouchMove(event.x, event.y)
+                    glossDrawable.onTouchMove(event.x, event.y)
                     if (cx > 0 && cy > 0) {
-                        val nx = ((event.x - cx) / cx).coerceIn(-1.1f, 1.1f)
-                        val ny = ((event.y - cy) / cy).coerceIn(-1.1f, 1.1f)
+                        val nx = ((event.x - cx) / cx).coerceIn(-1.25f, 1.25f)
+                        val ny = ((event.y - cy) / cy).coerceIn(-1.25f, 1.25f)
 
-                        // Base remains glued to surface at opposite side:
-                        val targetPivotX = (cx - (nx * cx * 0.60f)).coerceIn(w * 0.10f, w * 0.90f)
-                        val targetPivotY = (cy - (ny * cy * 0.60f)).coerceIn(h * 0.10f, h * 0.90f)
+                        // Dynamic gooey pivot: deeply anchors opposite to drag vector
+                        val targetPivotX = (cx - (nx * cx * 0.75f)).coerceIn(w * 0.08f, w * 0.92f)
+                        val targetPivotY = (cy - (ny * cy * 0.75f)).coerceIn(h * 0.08f, h * 0.92f)
                         v.pivotX = targetPivotX
                         v.pivotY = targetPivotY
 
-                        // Rubber stretch: stretches toward finger within the resting envelope, strictly clamped <= 1.0f
-                        val stretchX = Math.abs(nx) * 0.05f
-                        val stretchY = Math.abs(ny) * 0.05f
-                        val targetScaleX = (holder.pressedScale * (1.0f + stretchX - stretchY * 0.25f)).coerceIn(0.92f, 1.00f)
-                        val targetScaleY = (holder.pressedScale * (1.0f + stretchY - stretchX * 0.25f)).coerceIn(0.92f, 1.00f)
+                        val loc = IntArray(2)
+                        v.getLocationOnScreen(loc)
+                        val screenW = v.resources.displayMetrics.widthPixels
+                        val screenH = v.resources.displayMetrics.heightPixels
+                        val distLeft = loc[0].coerceAtLeast(0)
+                        val distRight = (screenW - (loc[0] + v.width)).coerceAtLeast(0)
+                        val distTop = loc[1].coerceAtLeast(0)
+                        val distBottom = (screenH - (loc[1] + v.height)).coerceAtLeast(0)
+
+                        val maxStretchX = if (w - targetPivotX > 1f) (distRight * 0.70f) / (w - targetPivotX) else 0.08f
+                        val maxSafeScaleX = 1.0f + minOf(maxStretchX, if (targetPivotX > 1f) (distLeft * 0.70f) / targetPivotX else 0.08f).coerceIn(0.0f, 0.08f)
+
+                        val maxStretchY = if (h - targetPivotY > 1f) (distBottom * 0.70f) / (h - targetPivotY) else 0.08f
+                        val maxSafeScaleY = 1.0f + minOf(maxStretchY, if (targetPivotY > 1f) (distTop * 0.70f) / targetPivotY else 0.08f).coerceIn(0.0f, 0.08f)
+
+                        // Asymmetric Poisson rubber stretch (real gooey liquid elasticity):
+                        // Pulling along one axis thins the orthogonal axis!
+                        val stretchX = Math.abs(nx) * 0.13f
+                        val stretchY = Math.abs(ny) * 0.13f
+                        val targetScaleX = (holder.pressedScale * (1.0f + stretchX - stretchY * 0.50f)).coerceIn(0.86f, maxSafeScaleX)
+                        val targetScaleY = (holder.pressedScale * (1.0f + stretchY - stretchX * 0.50f)).coerceIn(0.86f, maxSafeScaleY)
 
                         holder.springX.animateToFinalPosition(targetScaleX)
                         holder.springY.animateToFinalPosition(targetScaleY)
                     }
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    glowDrawable.onTouchUp()
-                    // Rubber spring snapback to resting scale with controlled elastic oscillation
+                    glossDrawable.onTouchUp()
+                    // Rubbery snapback with harmonic jiggle (underdamped spring settling)
                     holder.springX.animateToFinalPosition(holder.restingScale)
                     holder.springY.animateToFinalPosition(holder.restingScale)
 
@@ -272,7 +310,7 @@ object TouchSpringAnimator {
                             v.pivotX = v.width / 2f
                             v.pivotY = v.height / 2f
                         }
-                    }, 240)
+                    }, 260)
 
                     if (event.actionMasked == MotionEvent.ACTION_UP) {
                         val dx = Math.abs(event.rawX - downRawX)
@@ -376,7 +414,7 @@ object TouchSpringAnimator {
      * Detaches spring animation from the view and removes touch listener.
      */
     fun detach(view: View) {
-        springRegistry[view]?.glowDrawable?.let { view.overlay.remove(it) }
+        springRegistry[view]?.glossDrawable?.let { view.overlay.remove(it) }
         cancel(view)
         springRegistry.remove(view)
         view.setOnTouchListener(null)
