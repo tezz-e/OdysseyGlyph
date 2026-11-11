@@ -229,26 +229,15 @@ class TiltSpecularCardView @JvmOverloads constructor(
         val save = canvas.save()
         canvas.clipPath(clipPath)
 
-        // 1. Dynamic optical touch glow centered directly at the touch location
-        val shortSide = kotlin.math.min(w, h)
-        val radius = (shortSide * 0.85f).coerceIn(48f * density, 180f * density)
+        // 1. Apple / Nothing OS Liquid Glass Ambient Luma Lift (iOS 26/27 ambientBaseLightDark)
+        // Even, optical illumination across the entire squircle shape — strictly NO circular spotlight discs or radial blobs
+        val fillAlpha = (18 * glossIntensity).toInt().coerceIn(0, 255)
+        specularPaint.shader = null
+        specularPaint.color = Color.argb(fillAlpha, 255, 255, 255)
+        canvas.drawRoundRect(rectF, cornerRadius, cornerRadius, specularPaint)
 
-        val centerAlpha = (45 * glossIntensity).toInt().coerceIn(0, 255)
-        val midAlpha = (16 * glossIntensity).toInt().coerceIn(0, 255)
-        specularPaint.shader = RadialGradient(
-            touchX, touchY, radius,
-            intArrayOf(
-                Color.argb(centerAlpha, 255, 255, 255),
-                Color.argb(midAlpha, 255, 255, 255),
-                Color.argb(0, 255, 255, 255)
-            ),
-            floatArrayOf(0.0f, 0.45f, 1.0f),
-            Shader.TileMode.CLAMP
-        )
-        canvas.drawCircle(touchX, touchY, radius, specularPaint)
-
-        // 2. Refractive continuous-curvature rim highlight while touched
-        val rimAlpha = (24 * glossIntensity).toInt().coerceIn(0, 255)
+        // 2. Refractive Specular Hairline Rim (iOS 27 rimLight hairline highlight)
+        val rimAlpha = (34 * glossIntensity).toInt().coerceIn(0, 255)
         rimPaint.color = Color.argb(rimAlpha, 255, 255, 255)
         canvas.drawRoundRect(rectF, cornerRadius, cornerRadius, rimPaint)
 
