@@ -115,12 +115,11 @@ class LyricStudioActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsUtil.setupEdgeToEdge(this)
         setContentView(R.layout.activity_lyric_studio)
         
         val scrollView = findViewById<ScrollView>(R.id.scrollView)
-        val innerLayout = scrollView.getChildAt(0)
-        // Static padding space is now handled in XML using <Space> to avoid CoordinatorLayout invalidation bugs
+        WindowInsetsUtil.applySystemBarsPadding(scrollView, applyBottom = true)
         
         prefs = getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE)
 

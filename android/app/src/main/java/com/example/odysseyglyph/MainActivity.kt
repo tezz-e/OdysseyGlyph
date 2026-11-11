@@ -68,7 +68,6 @@ class MainActivity : AppCompatActivity() {
     private var currentMediaType = 0 // 0=video, 1=gif, 2=static
     private var videoDurationMs: Long = 0
     private var isRendering = AtomicBoolean(false)
-    private var systemBarsBottom = 0
 
     // Advanced Settings state
     private var advFps = 12
@@ -108,7 +107,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsUtil.setupEdgeToEdge(this)
         setContentView(R.layout.activity_main)
         
         prefs = getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE)
@@ -119,19 +118,10 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.setDisplayShowTitleEnabled(false)
         
         val scrollView = findViewById<ScrollView>(R.id.scrollView)
-        ViewCompat.setOnApplyWindowInsetsListener(scrollView) { _, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            systemBarsBottom = systemBars.bottom
-            updateScrollViewPadding()
-            insets
-        }
-        
-        ViewCompat.setOnApplyWindowInsetsListener(bottomActionBar) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            val basePadding = resources.getDimensionPixelSize(R.dimen.spacing_medium)
-            v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, basePadding + systemBars.bottom)
-            insets
-        }
+        val appBar = findViewById<com.google.android.material.appbar.AppBarLayout>(R.id.appBarLayout)
+        WindowInsetsUtil.applySystemBarsPadding(appBar, applyTop = true, applyBottom = false)
+        WindowInsetsUtil.applySystemBarsPadding(scrollView, applyBottom = true, overlayView = bottomActionBar)
+        WindowInsetsUtil.applySystemBarsPadding(bottomActionBar, applyBottom = true)
         
         bottomActionBar.addOnLayoutChangeListener { _, _, top, _, bottom, _, oldTop, _, oldBottom ->
             if ((bottom - top) != (oldBottom - oldTop)) {
@@ -140,17 +130,43 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupListeners()
+        setupBentoConsole()
         syncSlotState()
+    }
+
+    private fun setupBentoConsole() {
+        val heroCard = findViewById<FrameLayout>(R.id.heroLyricsCard)
+        heroCard?.let {
+            val beam = BorderBeamDrawable()
+            it.foreground = beam
+            beam.start()
+            TouchSpringAnimator.attach(it)
+        }
+
+        findViewById<View>(R.id.cardMediaPipeline)?.let { card ->
+            TouchSpringAnimator.attach(card)
+            card.setOnClickListener { btnSelectVideo.performClick() }
+        }
+
+        findViewById<View>(R.id.cardLyricStudio)?.let { card ->
+            TouchSpringAnimator.attach(card)
+            card.setOnClickListener { btnLaunchLyricStudio.performClick() }
+        }
+
+        findViewById<View>(R.id.cardVisualizer)?.let { card ->
+            TouchSpringAnimator.attach(card)
+            card.setOnClickListener { btnLaunchVisualizer.performClick() }
+        }
+
+        TouchSpringAnimator.attach(btnSelectVideo)
+        TouchSpringAnimator.attach(btnLaunchLyricStudio)
+        TouchSpringAnimator.attach(btnLaunchVisualizer)
+        TouchSpringAnimator.attach(btnLaunchLiveLyrics)
     }
 
     private fun updateScrollViewPadding() {
         val scrollView = findViewById<ScrollView>(R.id.scrollView)
-        val paddingBottom = if (bottomActionBar.visibility == View.VISIBLE && bottomActionBar.height > 0) {
-            bottomActionBar.height
-        } else {
-            systemBarsBottom
-        }
-        scrollView.setPadding(scrollView.paddingLeft, scrollView.paddingTop, scrollView.paddingRight, paddingBottom)
+        scrollView.requestApplyInsets()
     }
 
     override fun onResume() {
@@ -385,21 +401,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnLaunchLiveLyrics.setOnClickListener {
-            val isGranted = androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
-            if (!isGranted) {
-                val dialogView = layoutInflater.inflate(R.layout.dialog_nothing_onboarding, null)
-                val dialog = androidx.appcompat.app.AlertDialog.Builder(this).setView(dialogView).create()
-                dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-                dialogView.findViewById<android.widget.TextView>(R.id.tvDialogTitle).text = "PERMISSION REQUIRED"
-                dialogView.findViewById<android.widget.TextView>(R.id.tvDialogMessage).text = "Live Lyrics needs permission to detect what music is playing so it can sync lyrics to your glyphs.\n\nPlease enable Odyssey Glyph in the next screen."
-                dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogAction).apply {
-                    text = "GRANT PERMISSION"
-                    setOnClickListener {
-                        dialog.dismiss()
-                        startActivity(android.content.Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
-                    }
-                }
-                dialog.show()
+            if (ProminentDisclosureDialog.showIfRequired(this, onAccepted = {
+                startActivity(Intent(this, LiveLyricsActivity::class.java))
+            })) {
                 return@setOnClickListener
             }
             startActivity(Intent(this, LiveLyricsActivity::class.java))

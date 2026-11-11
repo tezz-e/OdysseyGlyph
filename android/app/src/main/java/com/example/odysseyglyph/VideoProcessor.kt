@@ -280,6 +280,7 @@ object VideoProcessor {
                         }
                     }
                     finalFrames.add(processedFrame)
+                    GlyphFrameBus.postFrame(processedFrame)
                     
                     val prog = 50 + (index.toFloat() / rawFrames.size * 40).toInt()
                     mainHandler.post { onProgress(prog) }

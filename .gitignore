@@ -12,3 +12,12 @@ build/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Scratch artifacts
+HEAD_*.kt
+classes*.jar
+/com/
+modify_*.py
+runs.json
+android/app/libs/sdk_extracted/
+

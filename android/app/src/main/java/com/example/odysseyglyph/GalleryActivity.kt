@@ -32,12 +32,14 @@ class GalleryActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowInsetsUtil.setupEdgeToEdge(this)
         setContentView(R.layout.activity_gallery)
 
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
         toolbar.setNavigationOnClickListener { finish() }
 
         rvPresets = findViewById(R.id.rvPresets)
+        WindowInsetsUtil.applySystemBarsPadding(rvPresets, applyBottom = true)
         tvEmpty = findViewById(R.id.tvEmpty)
 
         rvPresets.layoutManager = LinearLayoutManager(this)

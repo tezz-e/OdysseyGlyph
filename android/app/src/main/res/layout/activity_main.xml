@@ -2,34 +2,71 @@
 <androidx.coordinatorlayout.widget.CoordinatorLayout 
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rootCoordinator"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:attr/colorBackground"
-    android:fitsSystemWindows="true">
+    android:background="#000000"
+    android:fitsSystemWindows="false">
 
+    <!-- Top App Bar with Monospace Title & Dynamic Pod -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
-        android:layout_height="110dp"
-        android:background="?android:attr/colorBackground"
-        android:fitsSystemWindows="true">
+        android:layout_height="wrap_content"
+        android:background="#000000"
+        app:elevation="0dp">
 
-        <com.google.android.material.appbar.CollapsingToolbarLayout
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:layout_scrollFlags="scroll|exitUntilCollapsed"
-            app:collapsedTitleTextAppearance="@style/TextAppearance.Odyssey.CollapsedTitle"
-            app:expandedTitleTextAppearance="@style/TextAppearance.Odyssey.ExpandedTitle"
-            app:collapsedTitleTextColor="?attr/colorOnSurface"
-            app:expandedTitleTextColor="?attr/colorOnSurface"
-            app:title="ODYSSEY GLYPH">
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="6dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tvHeaderTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="GLYPH ODYSSEY"
+                    android:fontFamily="monospace"
+                    android:textStyle="bold"
+                    android:textSize="20sp"
+                    android:textColor="#FFFFFF"
+                    android:letterSpacing="0.08" />
+
+                <!-- Front Camera Dynamic Pod Indicator -->
+                <com.example.odysseyglyph.GlyphDynamicPodView
+                    android:id="@+id/dynamicPod"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="[NOTHING PHONE (3) // 25×25 HARDWARE CONSOLE]"
+                android:fontFamily="monospace"
+                android:textSize="10sp"
+                android:textColor="#888888"
+                android:letterSpacing="0.06" />
 
             <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                app:layout_collapseMode="pin" />
-        </com.google.android.material.appbar.CollapsingToolbarLayout>
+                app:navigationIcon="@drawable/ic_arrow_back"
+                app:navigationIconTint="#FFFFFF"
+                android:visibility="gone" />
+        </LinearLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
     <ScrollView
@@ -37,154 +74,377 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        android:fillViewport="true">
+        android:fillViewport="true"
+        android:clipToPadding="false">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="@dimen/spacing_medium">
+            android:paddingHorizontal="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="24dp">
 
-            <!-- Launcher Group -->
+            <!-- ======================================================== -->
+            <!-- 1. LAUNCHER GROUP: HARDWARE BENTO CONSOLE RACK            -->
+            <!-- ======================================================== -->
             <LinearLayout
                 android:id="@+id/launcherGroup"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- App Description -->
-                <TextView
+                <!-- BENTO ROW 1: HERO CARD (Live Lyrics + 25x25 LED Mirror) -->
+                <FrameLayout
+                    android:id="@+id/heroLyricsCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Project real-time synced lyrics or map custom media directly to your Glyph Matrix."
-                    android:fontFamily="@font/jetbrains_mono"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:layout_marginBottom="@dimen/spacing_large" />
+                    android:background="@drawable/bg_pixel_card"
+                    android:padding="16dp"
+                    android:layout_marginBottom="12dp">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSelectVideo"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="CHOOSE MEDIA"
-                    android:fontFamily="@font/jetbrains_mono"
-                    app:cornerRadius="0dp"
-                    android:paddingVertical="12dp"
-                    app:icon="@drawable/ic_folder"
-                    android:layout_marginBottom="@dimen/spacing_medium" />
-                    
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnLaunchLyricStudio"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="OPEN LYRIC STUDIO"
-                    android:fontFamily="@font/jetbrains_mono"
-                    app:cornerRadius="0dp"
-                    android:paddingVertical="12dp"
-                    app:icon="@drawable/ic_lyrics"
-                    android:layout_marginBottom="@dimen/spacing_medium" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnLaunchVisualizer"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                        <!-- Left: Status & Metadata -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingEnd="12dp">
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical">
+
+                                <View
+                                    android:layout_width="7dp"
+                                    android:layout_height="7dp"
+                                    android:background="#EA3323" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="6dp"
+                                    android:text="LIVE LYRICS ENGINE"
+                                    android:fontFamily="monospace"
+                                    android:textSize="11sp"
+                                    android:textStyle="bold"
+                                    android:textColor="#EA3323"
+                                    android:letterSpacing="0.06" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/tvHeroTrackTitle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="Synchronized Matrix Lyrics"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="#FFFFFF" />
+
+                            <TextView
+                                android:id="@+id/tvHeroSubtitle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Stream real-time audio lyrics directly to rear 625 LEDs."
+                                android:textSize="12sp"
+                                android:textColor="#888888" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnLaunchLiveLyrics"
+                                android:layout_width="wrap_content"
+                                android:layout_height="48dp"
+                                android:layout_marginTop="14dp"
+                                android:text="OPEN LIVE LYRICS"
+                                android:fontFamily="monospace"
+                                android:textStyle="bold"
+                                android:textSize="11sp"
+                                app:cornerRadius="4dp"
+                                app:backgroundTint="#FFFFFF"
+                                android:textColor="#000000"
+                                app:icon="@drawable/ic_audio"
+                                app:iconTint="#000000" />
+                        </LinearLayout>
+
+                        <!-- Right: Real-time 25x25 LED Circular Mirror -->
+                        <com.example.odysseyglyph.GlyphMatrixMirrorView
+                            android:id="@+id/glyphMatrixMirror"
+                            android:layout_width="110dp"
+                            android:layout_height="110dp"
+                            android:layout_gravity="center" />
+                    </LinearLayout>
+                </FrameLayout>
+
+                <!-- BENTO ROW 2: SPLIT TILES (Media Pipeline & Lyric Studio) -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="STANDALONE VISUALIZER"
-                    android:fontFamily="@font/jetbrains_mono"
-                    app:cornerRadius="0dp"
-                    android:paddingVertical="12dp"
-                    app:icon="@drawable/ic_audio"
-                    android:layout_marginBottom="@dimen/spacing_medium" />
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="12dp">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnLaunchLiveLyrics"
+                    <!-- Left: Media Ingest / Video Crop -->
+                    <LinearLayout
+                        android:id="@+id/cardMediaPipeline"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:background="@drawable/bg_pixel_card"
+                        android:padding="14dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="[01 // INGEST]"
+                            android:fontFamily="monospace"
+                            android:textSize="10sp"
+                            android:textColor="#888888" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:text="Video / GIF"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Tactical 25×25 crop"
+                            android:textSize="11sp"
+                            android:textColor="#666666" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSelectVideo"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:layout_marginTop="12dp"
+                            android:text="CHOOSE MEDIA"
+                            android:fontFamily="monospace"
+                            android:textSize="11sp"
+                            app:cornerRadius="4dp"
+                            app:strokeColor="#333333"
+                            android:textColor="#FFFFFF"
+                            app:icon="@drawable/ic_folder"
+                            app:iconTint="#FFFFFF" />
+                    </LinearLayout>
+
+                    <!-- Right: Lyric Studio -->
+                    <LinearLayout
+                        android:id="@+id/cardLyricStudio"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/bg_pixel_card"
+                        android:padding="14dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="[02 // STUDIO]"
+                            android:fontFamily="monospace"
+                            android:textSize="10sp"
+                            android:textColor="#888888" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:text="Lyric Studio"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Ndot57 ticker preview"
+                            android:textSize="11sp"
+                            android:textColor="#666666" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnLaunchLyricStudio"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:layout_marginTop="12dp"
+                            android:text="LYRIC STUDIO"
+                            android:fontFamily="monospace"
+                            android:textSize="11sp"
+                            app:cornerRadius="4dp"
+                            app:strokeColor="#333333"
+                            android:textColor="#FFFFFF"
+                            app:icon="@drawable/ic_lyrics"
+                            app:iconTint="#FFFFFF" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- BENTO ROW 3: STANDALONE VISUALIZER & MINI EQ -->
+                <LinearLayout
+                    android:id="@+id/cardVisualizer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="LIVE LYRICS"
-                    android:fontFamily="@font/ndot57"
-                    app:cornerRadius="0dp"
-                    android:paddingVertical="12dp"
-                    app:icon="@drawable/ic_audio"
-                    app:iconTint="#FFFFFF"
-                    app:backgroundTint="#FF0000"
-                    android:textColor="#FFFFFF"
-                    android:layout_marginBottom="@dimen/spacing_medium" />
+                    android:background="@drawable/bg_pixel_card"
+                    android:padding="16dp"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="12dp">
 
-                <!-- Quick Access Section (hides once tile is added) -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="[03 // AUDIO VISUALIZER]"
+                            android:fontFamily="monospace"
+                            android:textSize="10sp"
+                            android:textColor="#888888" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="ı ı ı ı ı ı ı ı"
+                            android:fontFamily="monospace"
+                            android:textSize="12sp"
+                            android:textColor="#EA3323"
+                            android:letterSpacing="0.2" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="8dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="13-Band Microphone EQ"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="#FFFFFF" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnLaunchVisualizer"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:text="LAUNCH"
+                            android:fontFamily="monospace"
+                            android:textSize="11sp"
+                            app:cornerRadius="4dp"
+                            app:strokeColor="#444444"
+                            android:textColor="#FFFFFF"
+                            app:icon="@drawable/ic_audio"
+                            app:iconTint="#FFFFFF" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- BENTO ROW 4: QUICK ACCESS & HARDWARE TOYS DECK -->
                 <LinearLayout
                     android:id="@+id/quickAccessSection"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:background="@drawable/bg_pixel_card"
+                    android:padding="14dp"
                     android:orientation="vertical"
-                    android:layout_marginBottom="@dimen/spacing_small">
-                    
+                    android:layout_marginBottom="16dp">
+
                     <TextView
-                        android:layout_width="match_parent"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="QUICK ACCESS — OPTIONAL"
-                        android:fontFamily="@font/jetbrains_mono"
-                        android:textAppearance="?attr/textAppearanceLabelSmall"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        android:layout_marginBottom="8dp" />
-                        
+                        android:text="[04 // HARDWARE TOYS &amp; SHORTCUTS]"
+                        android:fontFamily="monospace"
+                        android:textSize="10sp"
+                        android:textColor="#888888" />
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-                        
+                        android:orientation="horizontal"
+                        android:layout_marginTop="10dp">
+
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnAddTileMain"
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            android:layout_height="48dp"
                             android:layout_weight="1"
                             android:layout_marginEnd="4dp"
                             android:text="QS TILE"
-                            android:fontFamily="@font/jetbrains_mono"
-                            app:cornerRadius="0dp"
-                            android:paddingVertical="8dp"
-                            app:icon="@drawable/ic_settings" />
-                            
+                            android:fontFamily="monospace"
+                            android:textSize="11sp"
+                            app:cornerRadius="4dp"
+                            app:strokeColor="#333333"
+                            android:textColor="#FFFFFF"
+                            app:icon="@drawable/ic_settings"
+                            app:iconTint="#FFFFFF" />
+
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnAddWidgetMain"
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            android:layout_height="48dp"
                             android:layout_weight="1"
                             android:layout_marginStart="4dp"
                             android:text="WIDGET"
-                            android:fontFamily="@font/jetbrains_mono"
-                            app:cornerRadius="0dp"
-                            android:paddingVertical="8dp"
-                            app:icon="@drawable/ic_folder" />
+                            android:fontFamily="monospace"
+                            android:textSize="11sp"
+                            app:cornerRadius="4dp"
+                            app:strokeColor="#333333"
+                            android:textColor="#FFFFFF"
+                            app:icon="@drawable/ic_folder"
+                            app:iconTint="#FFFFFF" />
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Settings Panel -->
+            <!-- ======================================================== -->
+            <!-- 2. SETTINGS / VIDEO EDITOR PANEL (100% Intact Types)     -->
+            <!-- ======================================================== -->
             <LinearLayout
                 android:id="@+id/settingsPanel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:visibility="gone"
-                android:layout_marginTop="@dimen/spacing_large">
+                android:visibility="gone">
 
                 <!-- Video Preview Bezel -->
                 <FrameLayout
                     android:id="@+id/videoCard"
                     android:layout_width="match_parent"
                     android:layout_height="@dimen/video_card_height"
-                    android:background="@drawable/bg_preview_bezel"
-                    android:layout_marginBottom="@dimen/spacing_small">
+                    android:background="@drawable/bg_pixel_card"
+                    android:padding="2dp"
+                    android:layout_marginBottom="12dp">
 
                     <FrameLayout
                         android:id="@+id/videoContainer"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:layout_margin="1dp"
                         android:background="#000000">
 
                         <com.example.odysseyglyph.CenteredVideoView
@@ -198,23 +458,28 @@
                             android:layout_height="match_parent"
                             android:visibility="gone" />
 
-                        <!-- Main Screen Crop Overlay with live 25x25 preview -->
+                        <com.otaliastudios.zoom.ZoomLayout
+                            android:id="@+id/zoomLayout"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            app:hasClickableChildren="false"
+                            app:overScrollHorizontal="false"
+                            app:overScrollVertical="false"
+                            app:overPinchable="false">
+
+                            <com.example.odysseyglyph.CenteredVideoView
+                                android:id="@+id/zoomVideoView"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent" />
+                        </com.otaliastudios.zoom.ZoomLayout>
+
+                        <!-- Circular Crop Overlay with touch-activated grid & bezel -->
                         <com.example.odysseyglyph.CropOverlayView
                             android:id="@+id/cropOverlay"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent" />
                     </FrameLayout>
                 </FrameLayout>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="PINCH TO ZOOM. DRAG TO PAN."
-                    android:gravity="center"
-                    android:fontFamily="@font/jetbrains_mono"
-                    android:textAppearance="?attr/textAppearanceBodySmall"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:layout_marginBottom="@dimen/spacing_large" />
 
                 <!-- Trimmer UI -->
                 <LinearLayout
@@ -230,8 +495,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="TRIM: 0.0s - 0.0s"
-                        android:fontFamily="@font/jetbrains_mono"
-                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:fontFamily="monospace"
+                        android:textSize="12sp"
+                        android:textColor="#FFFFFF"
                         android:layout_marginBottom="@dimen/spacing_small" />
 
                     <com.google.android.material.slider.RangeSlider
@@ -243,7 +509,7 @@
 
                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#33FFFFFF" android:layout_marginBottom="@dimen/spacing_medium"/>
 
-                <!-- Basic Settings (Dropdowns) -->
+                <!-- Dropdowns -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -256,7 +522,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="none"
-                        android:fontFamily="@font/jetbrains_mono"
+                        android:fontFamily="monospace"
                         app:simpleItems="@array/playback_modes" />
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -272,7 +538,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="none"
-                        android:fontFamily="@font/jetbrains_mono"
+                        android:fontFamily="monospace"
                         app:simpleItems="@array/save_slots" />
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -292,8 +558,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="INCLUDE VIDEO AUDIO"
-                        android:fontFamily="@font/jetbrains_mono"
-                        android:textAppearance="?attr/textAppearanceTitleMedium" />
+                        android:fontFamily="monospace"
+                        android:textSize="14sp" />
                 </LinearLayout>
 
                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#33FFFFFF" android:layout_marginBottom="@dimen/spacing_medium"/>
@@ -316,70 +582,63 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:text="ADVANCED SETTINGS"
-                        android:fontFamily="@font/jetbrains_mono"
-                        android:textAppearance="?attr/textAppearanceTitleMedium" />
+                        android:fontFamily="monospace"
+                        android:textSize="14sp"
+                        android:textColor="#FFFFFF" />
                         
                     <ImageView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:src="@drawable/ic_settings"
-                        app:tint="?attr/colorOnSurfaceVariant" />
+                        app:tint="#888888" />
                 </LinearLayout>
 
-
-
-                <!-- Static padding so the export/import buttons aren't hidden behind the sticky bottomActionBar -->
-                <Space
-                    android:layout_width="match_parent"
-                    android:layout_height="140dp" />
             </LinearLayout>
 
         </LinearLayout>
     </ScrollView>
 
+    <!-- 3. BOTTOM ACTION BAR (Sticky Thumb Zone) -->
     <LinearLayout
         android:id="@+id/bottomActionBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="@dimen/spacing_medium"
-        android:background="?attr/colorSurface"
+        android:padding="16dp"
+        android:background="#141414"
         android:layout_gravity="bottom"
-        app:layout_insetEdge="bottom"
         android:visibility="gone"
         android:elevation="8dp">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnProcess"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:text="RENDER TO GLYPH"
-            android:fontFamily="@font/jetbrains_mono"
+            android:fontFamily="monospace"
             android:letterSpacing="0.1"
-            app:cornerRadius="0dp"
-            app:backgroundTint="?attr/colorPrimary"
-            android:textColor="#FFFFFF"
-            android:paddingVertical="16dp" />
+            app:cornerRadius="4dp"
+            app:backgroundTint="#FFFFFF"
+            android:textColor="#000000" />
             
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancel"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:text="CANCEL"
-            android:fontFamily="@font/jetbrains_mono"
-            app:cornerRadius="0dp"
-            android:textColor="?attr/colorError"
-            app:strokeColor="?attr/colorError"
+            android:fontFamily="monospace"
+            app:cornerRadius="4dp"
+            android:textColor="#FF4444"
+            app:strokeColor="#FF4444"
             android:visibility="gone"
-            android:layout_marginTop="@dimen/spacing_small"
-            android:paddingVertical="16dp" />
+            android:layout_marginTop="8dp" />
 
         <com.example.odysseyglyph.GlyphProgressView
             android:id="@+id/progressBar"
             android:layout_width="match_parent"
             android:layout_height="24dp"
-            android:layout_marginVertical="@dimen/spacing_medium"
+            android:layout_marginVertical="12dp"
             android:visibility="gone" />
             
         <LinearLayout
@@ -388,32 +647,35 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:visibility="gone"
-            android:layout_marginTop="@dimen/spacing_medium"
+            android:layout_marginTop="12dp"
             android:weightSum="2">
             
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnOpenGallerySuccess"
                 style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:layout_weight="1"
                 android:layout_marginEnd="4dp"
                 android:text="OPEN GALLERY"
-                android:fontFamily="@font/jetbrains_mono"
-                app:cornerRadius="0dp"
-                android:paddingVertical="12dp" />
+                android:fontFamily="monospace"
+                app:cornerRadius="4dp"
+                app:strokeColor="#444444"
+                android:textColor="#FFFFFF" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnOpenManager"
                 style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:layout_weight="1"
                 android:layout_marginStart="4dp"
                 android:text="TOYS MANAGER"
-                android:fontFamily="@font/jetbrains_mono"
-                app:cornerRadius="0dp"
-                android:paddingVertical="12dp" />
+                android:fontFamily="monospace"
+                app:cornerRadius="4dp"
+                app:strokeColor="#444444"
+                android:textColor="#FFFFFF" />
         </LinearLayout>
     </LinearLayout>
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

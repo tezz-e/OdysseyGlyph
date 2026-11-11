@@ -126,6 +126,7 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
                     val currentHash = frameBytes.contentHashCode()
                     if (currentHash != lastFrameHash) {
                         lastFrameHash = currentHash
+                        GlyphFrameBus.postFrame(frameBytes)
                         try { glyphManager?.setMatrixFrame(toIntArray(frameBytes)) } catch (e: Exception) {}
                     }
                     mainHandler.postDelayed(this, 16L)
@@ -134,6 +135,7 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
                         try { 
                             glyphManager?.turnOff() 
                             lastFrameHash = -1
+                            GlyphFrameBus.clear()
                         } catch (e: Exception) {
                             try { glyphManager?.setMatrixFrame(IntArray(33) { 0 }) } catch (e2: Exception) {}
                         }
@@ -167,6 +169,7 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
                     val currentHash = frameBytes.contentHashCode()
                     if (currentHash != lastFrameHash) {
                         lastFrameHash = currentHash
+                        GlyphFrameBus.postFrame(frameBytes)
                         try { glyphManager?.setMatrixFrame(toIntArray(frameBytes)) } catch (e: Exception) {}
                     }
                 } else {
@@ -174,6 +177,7 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
                         try { 
                             glyphManager?.turnOff() 
                             lastFrameHash = -1
+                            GlyphFrameBus.clear()
                         } catch (e: Exception) {
                             try { glyphManager?.setMatrixFrame(IntArray(33) { 0 }) } catch (e2: Exception) {}
                         }
@@ -189,6 +193,7 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
                 val currentHash = frameBytes.contentHashCode()
                 if (currentHash != lastFrameHash) {
                     lastFrameHash = currentHash
+                    GlyphFrameBus.postFrame(frameBytes)
                     try { glyphManager?.setMatrixFrame(toIntArray(frameBytes)) } catch (e: Exception) {}
                 }
             }

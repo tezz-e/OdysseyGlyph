@@ -36,6 +36,7 @@
         android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:clipToPadding="false"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
@@ -322,12 +323,6 @@
                     android:fontFamily="@font/jetbrains_mono"
                     android:text="ADD QUICK SETTINGS TILE" />
             </LinearLayout>
-                
-            <!-- Static padding for system navigation bar to prevent edge-to-edge clipping bugs -->
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="100dp" />
-            
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

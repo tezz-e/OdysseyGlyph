@@ -5,14 +5,18 @@ plugins {
 
 android {
     namespace 'com.example.odysseyglyph'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.rickastley.glyphodyssey"
         minSdk 33
-        targetSdk 34
+        targetSdk 35
         versionCode 3
         versionName "2.0.0"
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
     }
 
     signingConfigs {
@@ -52,4 +56,7 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'com.otaliastudios:zoomlayout:1.9.0'
+    implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0'
+
+    testImplementation 'junit:junit:4.13.2'
 }
