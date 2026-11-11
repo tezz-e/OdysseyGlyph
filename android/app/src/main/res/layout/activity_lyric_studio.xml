@@ -115,7 +115,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Lyrics will render live on the rear matrix."
-                            android:textColor="#8A8A93"
+                            android:textColor="#888888"
                             android:textSize="13sp"
                             android:layout_marginTop="4dp" />
                     </LinearLayout>
@@ -146,7 +146,7 @@
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:src="@drawable/ic_search"
-                        app:tint="#8A8A93" />
+                        app:tint="#888888" />
 
                     <EditText
                         android:id="@+id/etSearch"
@@ -223,7 +223,7 @@
                             android:layout_height="wrap_content"
                             android:text="0.0s – 20.0s"
                             android:fontFamily="@font/jetbrains_mono"
-                            android:textColor="#8A8A93"
+                            android:textColor="#888888"
                             android:textSize="12sp" />
                     </LinearLayout>
 
@@ -316,7 +316,7 @@
                             android:layout_weight="1"
                             android:layout_height="wrap_content"
                             android:text="Local audio file"
-                            android:textColor="#8A8A93"
+                            android:textColor="#888888"
                             android:textSize="13sp" />
 
                         <com.google.android.material.materialswitch.MaterialSwitch

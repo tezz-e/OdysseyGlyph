@@ -84,11 +84,8 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         liveMatrixMirror = findViewById(R.id.liveMatrixMirror)
         oscilloscopeView = findViewById(R.id.oscilloscopeView)
 
-        // Start laser border beam on hero telemetry deck
         heroTelemetryCard.let {
-            val beam = BorderBeamDrawable()
-            it.foreground = beam
-            beam.start()
+            it.foreground = null
         }
 
         // Frame bus subscription for live mirror

@@ -162,9 +162,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupBentoConsole() {
         val heroCard = findViewById<FrameLayout>(R.id.heroLyricsCard)
         heroCard?.let {
-            val beam = BorderBeamDrawable()
-            it.foreground = beam
-            beam.start()
+            it.foreground = null
             it.applyLiquidGlass(pressedScale = 0.98f)
         }
 

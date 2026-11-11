@@ -212,11 +212,8 @@ class LyricStudioActivity : AppCompatActivity() {
             }
         })
 
-        // Start glowing laser perimeter beam on hero teleprompter
         heroTeleprompterCard.let {
-            val beam = BorderBeamDrawable()
-            it.foreground = beam
-            beam.start()
+            it.foreground = null
         }
 
         // Attach touch spring physics

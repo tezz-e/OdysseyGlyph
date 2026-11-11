@@ -61,7 +61,7 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
 
     // Text paints
     private val unselectedTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#8A8A93")
+        color = Color.parseColor("#888888")
         textSize = 12f * resources.displayMetrics.scaledDensity
         typeface = Typeface.MONOSPACE
         textAlign = Paint.Align.CENTER
@@ -124,11 +124,11 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
         super.onSizeChanged(w, h, oldw, oldh)
         trackRect.set(0f, 0f, w.toFloat(), h.toFloat())
 
-        // Linear gradient for dark glass substrate
+        // Linear gradient for dark glass substrate (Pure Achromatic: R == G == B)
         trackPaint.shader = LinearGradient(
             0f, 0f, 0f, h.toFloat(),
-            Color.parseColor("#18181E"),
-            Color.parseColor("#0E0E12"),
+            Color.parseColor("#181818"),
+            Color.parseColor("#101010"),
             Shader.TileMode.CLAMP
         )
 

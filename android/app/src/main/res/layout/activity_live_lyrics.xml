@@ -110,7 +110,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Rear Matrix"
-                                android:textColor="#5A5A62"
+                                android:textColor="#888888"
                                 android:textSize="11sp"
                                 android:layout_marginTop="6dp" />
                         </LinearLayout>
@@ -118,7 +118,7 @@
                         <View
                             android:layout_width="1dp"
                             android:layout_height="90dp"
-                            android:background="#1E1E24"
+                            android:background="#222222"
                             android:layout_marginHorizontal="12dp" />
 
                         <LinearLayout
@@ -137,7 +137,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Audio Scope"
-                                android:textColor="#5A5A62"
+                                android:textColor="#888888"
                                 android:textSize="11sp"
                                 android:layout_marginTop="6dp" />
                         </LinearLayout>
@@ -159,7 +159,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Play any track in Spotify, YouTube Music, or your local player."
-                        android:textColor="#8A8A93"
+                        android:textColor="#888888"
                         android:textSize="12sp"
                         android:layout_marginTop="2dp" />
                 </LinearLayout>
@@ -195,7 +195,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Required to read track titles and playback timestamps locally. No data leaves your device."
-                        android:textColor="#8A8A93"
+                        android:textColor="#888888"
                         android:textSize="13sp"
                         android:layout_marginBottom="12dp" />
 
@@ -264,7 +264,7 @@
                             android:layout_height="wrap_content"
                             android:text="0ms"
                             android:fontFamily="@font/jetbrains_mono"
-                            android:textColor="#8A8A93"
+                            android:textColor="#888888"
                             android:textSize="12sp" />
                     </LinearLayout>
 
@@ -340,7 +340,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Animated pattern when lyrics are unavailable."
-                                android:textColor="#8A8A93"
+                                android:textColor="#888888"
                                 android:textSize="12sp"
                                 android:layout_marginTop="2dp" />
                         </LinearLayout>
