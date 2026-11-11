@@ -129,7 +129,13 @@ class LyricStudioActivity : AppCompatActivity() {
         val appBarLayout = findViewById<com.google.android.material.appbar.AppBarLayout>(R.id.appBarLayout)
         WindowInsetsUtil.applySystemBarsPadding(appBarLayout, applyTop = true)
         val scrollView = findViewById<ScrollView>(R.id.scrollView)
-        WindowInsetsUtil.applySystemBarsPadding(scrollView, applyBottom = true)
+        val navDockContainer = findViewById<View>(R.id.navDockContainer)
+        WindowInsetsUtil.applySystemBarsPadding(navDockContainer, applyBottom = true)
+        WindowInsetsUtil.applySystemBarsPadding(scrollView, applyBottom = true, overlayView = navDockContainer)
+
+        findViewById<LiquidGlassSegmentedBar>(R.id.globalNavDock)?.let { navBar ->
+            OdysseyNavDockHelper.attach(this, navBar, 2)
+        }
         
         prefs = getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE)
 
@@ -150,6 +156,11 @@ class LyricStudioActivity : AppCompatActivity() {
             }
             dialog.show()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        findViewById<LiquidGlassSegmentedBar>(R.id.globalNavDock)?.selectSegment(2, notify = false)
     }
 
     private fun bindViews() {
@@ -205,9 +216,7 @@ class LyricStudioActivity : AppCompatActivity() {
                         performSearch(currentQuery)
                     }
                 } else {
-                    isEnabled = false
-                    onBackPressedDispatcher.onBackPressed()
-                    isEnabled = true
+                    NavigationHelper.finishWithPop(this@LyricStudioActivity)
                 }
             }
         })

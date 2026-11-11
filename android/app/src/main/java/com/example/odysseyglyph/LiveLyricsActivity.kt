@@ -64,7 +64,13 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         val appBarLayout = findViewById<com.google.android.material.appbar.AppBarLayout>(R.id.appBarLayout)
         WindowInsetsUtil.applySystemBarsPadding(appBarLayout, applyTop = true)
         val scrollView = findViewById<ScrollView>(R.id.scrollView)
-        WindowInsetsUtil.applySystemBarsPadding(scrollView, applyBottom = true)
+        val navDockContainer = findViewById<View>(R.id.navDockContainer)
+        WindowInsetsUtil.applySystemBarsPadding(navDockContainer, applyBottom = true)
+        WindowInsetsUtil.applySystemBarsPadding(scrollView, applyBottom = true, overlayView = navDockContainer)
+
+        findViewById<LiquidGlassSegmentedBar>(R.id.globalNavDock)?.let { navBar ->
+            OdysseyNavDockHelper.attach(this, navBar, 1)
+        }
         
         prefs = getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE)
         
@@ -76,7 +82,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                finish()
+                NavigationHelper.finishWithPop(this@LiveLyricsActivity)
             }
         })
 
@@ -290,6 +296,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         checkNotificationPermission()
         MusicPlaybackState.addListener(this)
         updateUIState()
+        findViewById<LiquidGlassSegmentedBar>(R.id.globalNavDock)?.selectSegment(1, notify = false)
         
         val isTileAdded = getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE).getBoolean("tile_added", false)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {

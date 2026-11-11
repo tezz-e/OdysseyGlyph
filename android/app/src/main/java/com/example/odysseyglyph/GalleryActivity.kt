@@ -51,12 +51,18 @@ class GalleryActivity : AppCompatActivity() {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                finish()
+                NavigationHelper.finishWithPop(this@GalleryActivity)
             }
         })
 
+        val navDockContainer = findViewById<View>(R.id.navDockContainer)
+        WindowInsetsUtil.applySystemBarsPadding(navDockContainer, applyBottom = true)
         rvPresets = findViewById(R.id.rvPresets)
-        WindowInsetsUtil.applySystemBarsPadding(rvPresets, applyBottom = true)
+        WindowInsetsUtil.applySystemBarsPadding(rvPresets, applyBottom = true, overlayView = navDockContainer)
+
+        findViewById<LiquidGlassSegmentedBar>(R.id.globalNavDock)?.let { navBar ->
+            OdysseyNavDockHelper.attach(this, navBar, 3)
+        }
         tvEmpty = findViewById(R.id.tvEmpty)
         layoutEmptyState = findViewById(R.id.layoutEmptyState)
         tvVaultCount = findViewById(R.id.tvVaultCount)
@@ -64,6 +70,11 @@ class GalleryActivity : AppCompatActivity() {
         rvPresets.layoutManager = LinearLayoutManager(this)
         
         loadPresets()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        findViewById<LiquidGlassSegmentedBar>(R.id.globalNavDock)?.selectSegment(3, notify = false)
     }
 
     private fun loadPresets() {
