@@ -1,5 +1,6 @@
 package com.example.odysseyglyph
 
+import android.animation.ValueAnimator
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -11,6 +12,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.view.View
+import android.view.animation.LinearInterpolator
 import android.widget.*
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
@@ -34,6 +36,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
     private lateinit var oscilloscopeView: OscilloscopeReticleView
     
     private lateinit var switchMaster: MaterialSwitch
+    private lateinit var tvMasterState: TextView
     private lateinit var tvStatus: TextView
     private lateinit var tvTrackInfo: TextView
     private lateinit var ivAlbumArt: ImageView
@@ -43,6 +46,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
     
     private lateinit var toggleAnimation: LiquidGlassSegmentedBar
     private lateinit var toggleTypography: LiquidGlassSegmentedBar
+    private lateinit var btnResetSync: TextView
     private lateinit var switchFallback: MaterialSwitch
     private lateinit var tvFallbackDesc: TextView
     private lateinit var btnOpenManager: MaterialButton
@@ -107,6 +111,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         TouchSpringAnimator.attach(btnBack)
         
         switchMaster = findViewById(R.id.switchMaster)
+        tvMasterState = findViewById(R.id.tvMasterState)
         tvStatus = findViewById(R.id.tvStatus)
         tvTrackInfo = findViewById(R.id.tvTrackInfo)
         ivAlbumArt = findViewById(R.id.ivAlbumArt)
@@ -116,6 +121,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         
         toggleAnimation = findViewById(R.id.toggleAnimation)
         toggleTypography = findViewById(R.id.toggleTypography)
+        btnResetSync = findViewById(R.id.btnResetSync)
         switchFallback = findViewById(R.id.switchFallback)
         tvFallbackDesc = findViewById(R.id.tvFallbackDesc)
         btnOpenManager = findViewById(R.id.btnOpenManager)
@@ -135,6 +141,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         switchMaster.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean("live_lyrics_enabled", isChecked).apply()
             optionsContainer.visibility = if (isChecked) View.VISIBLE else View.GONE
+            updateUIState()
             if (isChecked) {
                 prefs.edit().putString("last_used_service", "live_lyrics").apply()
                 val stopVisualizer = Intent(this, VisualizerService::class.java).apply { action = "STOP_VISUALIZER" }
@@ -166,6 +173,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
                 else -> 0 // Flash
             }
             prefs.edit().putInt("live_anim_style", style).apply()
+            triggerMatrixStylePreview("STYLE", currentFontStyle, if (style == 0) 0 else 1)
         }
         
         val tvSyncOffset: TextView = findViewById(R.id.tvSyncOffset)
@@ -173,11 +181,26 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         
         val savedSyncOffset = prefs.getInt("live_sync_offset", 0)
         sliderSync.value = savedSyncOffset.toFloat()
-        tvSyncOffset.text = "${savedSyncOffset}ms"
+        tvSyncOffset.text = when {
+            savedSyncOffset > 0 -> "+${savedSyncOffset}ms (Delay)"
+            savedSyncOffset < 0 -> "${savedSyncOffset}ms (Early)"
+            else -> "0ms (Exact)"
+        }
+        
+        btnResetSync.setOnClickListener {
+            sliderSync.value = 0f
+            tvSyncOffset.text = "0ms (Exact)"
+            prefs.edit().putInt("live_sync_offset", 0).apply()
+            it.vibrateTick()
+        }
         
         sliderSync.addOnChangeListener { _, value, _ ->
             val offsetMs = value.toInt()
-            tvSyncOffset.text = "${offsetMs}ms"
+            tvSyncOffset.text = when {
+                offsetMs > 0 -> "+${offsetMs}ms (Delay)"
+                offsetMs < 0 -> "${offsetMs}ms (Early)"
+                else -> "0ms (Exact)"
+            }
             prefs.edit().putInt("live_sync_offset", offsetMs).apply()
         }
         
@@ -206,6 +229,13 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
                 else -> 0
             }
             prefs.edit().putInt("live_font_style", styleInt).apply()
+            val fontLabel = when (currentFontStyle) {
+                GlyphFontEngine.FontStyle.BLOCK_BOLD -> "BLOCK"
+                GlyphFontEngine.FontStyle.PIXEL_TINY -> "PIXEL"
+                else -> "SMOOTH"
+            }
+            val currentAnimPref = prefs.getInt("live_anim_style", 0)
+            triggerMatrixStylePreview(fontLabel, currentFontStyle, if (currentAnimPref == 0) 0 else 1)
         }
         
         switchFallback.isChecked = prefs.getBoolean("fallback_enabled", true)
@@ -316,9 +346,38 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         MusicPlaybackState.removeListener(this)
     }
 
+    private var previewAnimator: ValueAnimator? = null
+
     override fun onDestroy() {
         super.onDestroy()
+        previewAnimator?.cancel()
         frameBusSubscription?.let { GlyphFrameBus.unsubscribe(it) }
+    }
+
+    private fun triggerMatrixStylePreview(label: String, style: GlyphFontEngine.FontStyle, animMode: Int) {
+        if (MusicPlaybackState.hasActiveSession && switchMaster.isChecked) return
+        previewAnimator?.cancel()
+        val textWidth = GlyphFontEngine.measureTextWidth(label, style, autoScale = false)
+        if (animMode == 0) { // Flash
+            val centeredX = (25f - textWidth) / 2f
+            val frame = GlyphFontEngine.renderTextFrame(label, style, centeredX, autoScale = false)
+            liveMatrixMirror.updateFrame(frame)
+            oscilloscopeView.updateWaveform(0.5f, 1.2f)
+        } else { // Scroll / Hybrid
+            val startX = 25f
+            val endX = -textWidth
+            previewAnimator = ValueAnimator.ofFloat(startX, endX).apply {
+                duration = 1100L
+                interpolator = LinearInterpolator()
+                addUpdateListener { va ->
+                    val curX = va.animatedValue as Float
+                    val frame = GlyphFontEngine.renderTextFrame(label, style, curX, autoScale = false)
+                    liveMatrixMirror.updateFrame(frame)
+                    oscilloscopeView.updateWaveform(0.6f, 1.4f)
+                }
+                start()
+            }
+        }
     }
 
     private fun checkNotificationPermission() {
@@ -334,19 +393,37 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
     }
 
     private fun updateUIState() {
+        val isMasterOn = switchMaster.isChecked
+        if (!isMasterOn) {
+            tvMasterState.text = "OFFLINE // STANDBY"
+            tvMasterState.setTextColor(Color.parseColor("#888888"))
+            tvStatus.text = "ENGINE OFFLINE"
+            tvTrackInfo.text = "Turn on the master switch above to start streaming lyrics."
+            oscilloscopeView.updateWaveform(0f, 0f)
+            ivAlbumArt.visibility = View.GONE
+            return
+        }
+
         if (!isNotificationAccessGranted) {
-            tvStatus.text = "Missing Permission"
-            tvTrackInfo.text = "Enable Notification Access to read media playback."
+            tvMasterState.text = "PERMISSION REQUIRED"
+            tvMasterState.setTextColor(Color.parseColor("#EA3323"))
+            tvStatus.text = "NOTIFICATION ACCESS REQUIRED"
+            tvTrackInfo.text = "Enable Notification Access below to read media playback."
+            ivAlbumArt.visibility = View.GONE
             return
         }
         
         if (!MusicPlaybackState.hasActiveSession) {
-            tvStatus.text = "Waiting for Music..."
+            tvMasterState.text = "STANDBY // READY"
+            tvMasterState.setTextColor(Color.parseColor("#44BB44"))
+            tvStatus.text = "WAITING FOR MUSIC..."
             tvTrackInfo.text = "Play a track to begin."
             ivAlbumArt.visibility = View.GONE
         } else {
             val title = MusicPlaybackState.trackTitle
             val artist = MusicPlaybackState.artist
+            tvMasterState.text = "ACTIVE // STREAMING"
+            tvMasterState.setTextColor(Color.parseColor("#44BB44"))
             
             if (MusicPlaybackState.albumArt != null) {
                 ivAlbumArt.setImageBitmap(MusicPlaybackState.albumArt)
@@ -356,14 +433,14 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             }
             
             if (MusicPlaybackState.manualOverrideLyrics != null) {
-                tvStatus.text = "Live Syncing"
+                tvStatus.text = "STREAMING TO REAR MATRIX"
                 tvTrackInfo.text = "$title — $artist"
             } else if (title.isNotEmpty()) {
-                tvStatus.text = "Active Session"
+                tvStatus.text = "STREAMING TO REAR MATRIX"
                 tvTrackInfo.text = "$title — $artist\n(Searching for lyrics...)"
             } else {
-                tvStatus.text = "Active Session"
-                tvTrackInfo.text = "Unknown track."
+                tvStatus.text = "STREAMING TO REAR MATRIX"
+                tvTrackInfo.text = "Active session connected."
             }
         }
     }

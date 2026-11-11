@@ -175,6 +175,208 @@
                 android:orientation="vertical"
                 android:layout_marginBottom="14dp" />
 
+            <!-- Starting Deck / Sample Synced Tracks & Import (Visible when empty) -->
+            <LinearLayout
+                android:id="@+id/startingDeckContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="20dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="SUGGESTED TRACKS"
+                        android:fontFamily="@font/ndot57"
+                        app:fontFamily="@font/ndot57"
+                        android:textSize="12sp"
+                        android:textColor="#888888"
+                        android:letterSpacing="0.08" />
+
+                    <TextView
+                        android:id="@+id/btnImportLrc"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="+ IMPORT .LRC"
+                        android:fontFamily="@font/ndot57"
+                        app:fontFamily="@font/ndot57"
+                        android:textSize="11sp"
+                        android:textColor="#FFFFFF"
+                        android:letterSpacing="0.06"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="5dp"
+                        android:background="@drawable/bg_glass_pill" />
+                </LinearLayout>
+
+                <!-- Sample Card 1: Starboy -->
+                <com.example.odysseyglyph.TiltSpecularCardView
+                    android:id="@+id/cardSampleStarboy"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_glass_card"
+                    android:padding="16dp"
+                    android:layout_marginBottom="10dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Starboy"
+                                android:textColor="#FFFFFF"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="The Weeknd • Synced 3:50"
+                                android:textColor="#888888"
+                                android:textSize="12sp"
+                                android:layout_marginTop="2dp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="LOAD"
+                            android:fontFamily="@font/ndot57"
+                            app:fontFamily="@font/ndot57"
+                            android:textColor="#FFFFFF"
+                            android:textSize="11sp"
+                            android:letterSpacing="0.06"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="6dp"
+                            android:background="@drawable/bg_glass_pill" />
+                    </LinearLayout>
+                </com.example.odysseyglyph.TiltSpecularCardView>
+
+                <!-- Sample Card 2: Bohemian Rhapsody -->
+                <com.example.odysseyglyph.TiltSpecularCardView
+                    android:id="@+id/cardSampleQueen"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_glass_card"
+                    android:padding="16dp"
+                    android:layout_marginBottom="10dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Bohemian Rhapsody"
+                                android:textColor="#FFFFFF"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Queen • Synced 5:55"
+                                android:textColor="#888888"
+                                android:textSize="12sp"
+                                android:layout_marginTop="2dp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="LOAD"
+                            android:fontFamily="@font/ndot57"
+                            app:fontFamily="@font/ndot57"
+                            android:textColor="#FFFFFF"
+                            android:textSize="11sp"
+                            android:letterSpacing="0.06"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="6dp"
+                            android:background="@drawable/bg_glass_pill" />
+                    </LinearLayout>
+                </com.example.odysseyglyph.TiltSpecularCardView>
+
+                <!-- Sample Card 3: Never Gonna Give You Up -->
+                <com.example.odysseyglyph.TiltSpecularCardView
+                    android:id="@+id/cardSampleRick"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_glass_card"
+                    android:padding="16dp"
+                    android:layout_marginBottom="10dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Never Gonna Give You Up"
+                                android:textColor="#FFFFFF"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Rick Astley • Synced 3:33"
+                                android:textColor="#888888"
+                                android:textSize="12sp"
+                                android:layout_marginTop="2dp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="LOAD"
+                            android:fontFamily="@font/ndot57"
+                            app:fontFamily="@font/ndot57"
+                            android:textColor="#FFFFFF"
+                            android:textSize="11sp"
+                            android:letterSpacing="0.06"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="6dp"
+                            android:background="@drawable/bg_glass_pill" />
+                    </LinearLayout>
+                </com.example.odysseyglyph.TiltSpecularCardView>
+            </LinearLayout>
+
             <!-- Hidden legacy preview card kept for binding compatibility -->
             <FrameLayout
                 android:id="@+id/previewCard"

@@ -77,6 +77,13 @@ class LyricStudioActivity : AppCompatActivity() {
     private lateinit var btnOpenManager: MaterialButton
     private lateinit var btnOpenGallerySuccess: MaterialButton
 
+    // Starting Deck / Samples & Import
+    private lateinit var startingDeckContainer: View
+    private lateinit var btnImportLrc: TextView
+    private lateinit var cardSampleStarboy: View
+    private lateinit var cardSampleQueen: View
+    private lateinit var cardSampleRick: View
+
     // State
     private var selectedAudioUri: Uri? = null
     private var selectedTrack: LrcTrack? = null
@@ -87,6 +94,62 @@ class LyricStudioActivity : AppCompatActivity() {
     private val mainHandler = Handler(Looper.getMainLooper())
     private var isRendering = AtomicBoolean(false)
     private var parsedLyricsCache = mutableListOf<Pair<Long, String>>()
+
+    private val sampleTracks by lazy {
+        mapOf(
+            "starboy" to LrcTrack(
+                id = 101,
+                trackName = "Starboy",
+                artistName = "The Weeknd",
+                albumName = "Starboy",
+                syncedLyrics = "[00:00.00]I'm tryna put you in the worst mood, ah\n[00:03.20]P1 cleaner than your church shoes, ah\n[00:06.50]Milli point two just to hurt you, ah\n[00:09.80]All red Lamb' just to tease you, ah\n[00:13.10]None of these toys on lease too, ah\n[00:16.40]Made your whole year in a week too, yah\n[00:19.80]Main bitch out your league too, ah\n[00:23.00]Side bitch out of your league too, ah\n[00:26.50]Look what you've done\n[00:29.80]I'm a motherfuckin' starboy\n[00:33.20]Look what you've done\n[00:36.50]I'm a motherfuckin' starboy"
+            ),
+            "queen" to LrcTrack(
+                id = 102,
+                trackName = "Bohemian Rhapsody",
+                artistName = "Queen",
+                albumName = "A Night at the Opera",
+                syncedLyrics = "[00:00.00]Is this the real life?\n[00:03.50]Is this just fantasy?\n[00:07.80]Caught in a landslide\n[00:11.20]No escape from reality\n[00:16.00]Open your eyes\n[00:19.50]Look up to the skies and see\n[00:25.00]I'm just a poor boy, I need no sympathy\n[00:30.20]Because I'm easy come, easy go\n[00:34.00]Little high, little low\n[00:38.50]Any way the wind blows doesn't really matter to me"
+            ),
+            "rick" to LrcTrack(
+                id = 103,
+                trackName = "Never Gonna Give You Up",
+                artistName = "Rick Astley",
+                albumName = "Whenever You Need Somebody",
+                syncedLyrics = "[00:00.00]We're no strangers to love\n[00:04.20]You know the rules and so do I\n[00:08.50]A full commitment's what I'm thinking of\n[00:12.80]You wouldn't get this from any other guy\n[00:17.20]I just wanna tell you how I'm feeling\n[00:21.50]Gotta make you understand\n[00:25.00]Never gonna give you up\n[00:27.20]Never gonna let you down\n[00:29.50]Never gonna run around and desert you\n[00:33.80]Never gonna make you cry\n[00:36.00]Never gonna say goodbye\n[00:38.20]Never gonna tell a lie and hurt you"
+            )
+        )
+    }
+
+    private val selectLrcLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        if (uri != null) {
+            try {
+                contentResolver.openInputStream(uri)?.use { stream ->
+                    val text = stream.bufferedReader().use { it.readText() }
+                    var title = "Imported Track"
+                    contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            val nameIdx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                            if (nameIdx != -1) {
+                                title = cursor.getString(nameIdx).replace(Regex("\\.lrc$", RegexOption.IGNORE_CASE), "")
+                            }
+                        }
+                    }
+                    val importedTrack = LrcTrack(
+                        id = 999,
+                        trackName = title,
+                        artistName = "Local .LRC",
+                        albumName = "",
+                        syncedLyrics = text
+                    )
+                    selectTrack(importedTrack)
+                    Snackbar.make(findViewById(android.R.id.content), "Loaded: $title", Snackbar.LENGTH_SHORT).applyNothingStyle().show()
+                }
+            } catch (e: Exception) {
+                Snackbar.make(findViewById(android.R.id.content), "Failed to read .lrc file", Snackbar.LENGTH_SHORT).applyNothingStyle().show()
+            }
+        }
+    }
 
     private val selectAudioLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) {
@@ -142,6 +205,12 @@ class LyricStudioActivity : AppCompatActivity() {
         bindViews()
         setupListeners()
         syncSlotState()
+
+        val initText = "STUDIO"
+        val initWidth = GlyphFontEngine.measureTextWidth(initText, currentFontStyle, false)
+        val initOffset = (25f - initWidth) / 2f
+        val initFrame = GlyphFontEngine.renderTextFrame(initText, currentFontStyle, initOffset, false)
+        teleprompterMatrixMirror.updateFrame(initFrame)
         
         if (prefs.getBoolean("first_run_studio_v2", true)) {
             val dialogView = layoutInflater.inflate(R.layout.dialog_nothing_onboarding, null)
@@ -197,11 +266,31 @@ class LyricStudioActivity : AppCompatActivity() {
         successActionsContainer = findViewById(R.id.successActionsContainer)
         btnOpenManager = findViewById(R.id.btnOpenManager)
         btnOpenGallerySuccess = findViewById(R.id.btnOpenGallerySuccess)
+
+        startingDeckContainer = findViewById(R.id.startingDeckContainer)
+        btnImportLrc = findViewById(R.id.btnImportLrc)
+        cardSampleStarboy = findViewById(R.id.cardSampleStarboy)
+        cardSampleQueen = findViewById(R.id.cardSampleQueen)
+        cardSampleRick = findViewById(R.id.cardSampleRick)
     }
 
     private fun setupListeners() {
         btnBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
+
+        btnImportLrc.setOnClickListener {
+            selectLrcLauncher.launch(arrayOf("*/*"))
+        }
+
+        cardSampleStarboy.setOnClickListener {
+            sampleTracks["starboy"]?.let { selectTrack(it) }
+        }
+        cardSampleQueen.setOnClickListener {
+            sampleTracks["queen"]?.let { selectTrack(it) }
+        }
+        cardSampleRick.setOnClickListener {
+            sampleTracks["rick"]?.let { selectTrack(it) }
+        }
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -211,9 +300,13 @@ class LyricStudioActivity : AppCompatActivity() {
                     previewCard.visibility = View.GONE
                     successActionsContainer.visibility = View.GONE
                     selectedTrack = null
-                    val currentQuery = etSearch.text.toString()
+                    val currentQuery = etSearch.text.toString().trim()
                     if (currentQuery.length > 2) {
+                        startingDeckContainer.visibility = View.GONE
                         performSearch(currentQuery)
+                    } else {
+                        startingDeckContainer.visibility = View.VISIBLE
+                        resultsContainer.removeAllViews()
                     }
                 } else {
                     NavigationHelper.finishWithPop(this@LyricStudioActivity)
@@ -242,11 +335,15 @@ class LyricStudioActivity : AppCompatActivity() {
         // Search Debounce & Re-entrancy
         etSearch.addTextChangedListener(object : TextWatcher {
             private val searchRunnable = Runnable {
-                val query = etSearch.text.toString()
+                val query = etSearch.text.toString().trim()
                 if (query.length > 2) {
+                    startingDeckContainer.visibility = View.GONE
                     performSearch(query)
                 } else {
                     resultsContainer.removeAllViews()
+                    if (editorPanel.visibility != View.VISIBLE) {
+                        startingDeckContainer.visibility = View.VISIBLE
+                    }
                 }
             }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -423,6 +520,7 @@ class LyricStudioActivity : AppCompatActivity() {
         isProgrammaticTextChange = false
         
         resultsContainer.removeAllViews()
+        startingDeckContainer.visibility = View.GONE
         editorPanel.visibility = View.VISIBLE
         previewCard.visibility = View.VISIBLE
         successActionsContainer.visibility = View.GONE
