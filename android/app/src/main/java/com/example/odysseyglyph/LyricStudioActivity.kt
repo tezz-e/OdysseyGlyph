@@ -32,7 +32,7 @@ import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.slider.RangeSlider
 import com.google.android.material.snackbar.Snackbar
-import com.google.android.material.textfield.TextInputEditText
+import android.widget.EditText
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
@@ -42,14 +42,21 @@ class LyricStudioActivity : AppCompatActivity() {
     
     // UI Elements
     private lateinit var toolbar: MaterialToolbar
-    private lateinit var etSearch: TextInputEditText
+    private lateinit var btnBack: ImageView
+    private lateinit var etSearch: EditText
     private lateinit var resultsContainer: LinearLayout
     private lateinit var previewCard: FrameLayout
     private lateinit var previewImage: CenteredImageView
+
+    private lateinit var heroTeleprompterCard: FrameLayout
+    private lateinit var cipherTitle: CipherTextView
+    private lateinit var tvDecryptedSubtitle: TextView
+    private lateinit var teleprompterMatrixMirror: GlyphMatrixMirrorView
+    private lateinit var waveformScrubber: TactileWaveformScrubberView
     
     private lateinit var editorPanel: LinearLayout
-    private lateinit var toggleTypography: MaterialButtonToggleGroup
-    private lateinit var toggleAnimation: MaterialButtonToggleGroup
+    private lateinit var toggleTypography: LiquidGlassSegmentedBar
+    private lateinit var toggleAnimation: LiquidGlassSegmentedBar
     
     private lateinit var tvTrimTimes: TextView
     private lateinit var tvLyricPreview: TextView
@@ -118,6 +125,8 @@ class LyricStudioActivity : AppCompatActivity() {
         WindowInsetsUtil.setupEdgeToEdge(this)
         setContentView(R.layout.activity_lyric_studio)
         
+        val appBarLayout = findViewById<com.google.android.material.appbar.AppBarLayout>(R.id.appBarLayout)
+        WindowInsetsUtil.applySystemBarsPadding(appBarLayout, applyTop = true)
         val scrollView = findViewById<ScrollView>(R.id.scrollView)
         WindowInsetsUtil.applySystemBarsPadding(scrollView, applyBottom = true)
         
@@ -144,6 +153,13 @@ class LyricStudioActivity : AppCompatActivity() {
 
     private fun bindViews() {
         toolbar = findViewById(R.id.toolbar)
+        btnBack = findViewById(R.id.btnBack)
+        heroTeleprompterCard = findViewById(R.id.heroTeleprompterCard)
+        cipherTitle = findViewById(R.id.cipherTitle)
+        tvDecryptedSubtitle = findViewById(R.id.tvDecryptedSubtitle)
+        teleprompterMatrixMirror = findViewById(R.id.teleprompterMatrixMirror)
+        waveformScrubber = findViewById(R.id.waveformScrubber)
+
         etSearch = findViewById(R.id.etSearch)
         resultsContainer = findViewById(R.id.resultsContainer)
         previewCard = findViewById(R.id.previewCard)
@@ -172,7 +188,33 @@ class LyricStudioActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
+        btnBack.setOnClickListener { finish() }
         toolbar.setNavigationOnClickListener { finish() }
+
+        // Start glowing laser perimeter beam on hero teleprompter
+        heroTeleprompterCard.let {
+            val beam = BorderBeamDrawable()
+            it.foreground = beam
+            beam.start()
+        }
+
+        // Attach touch spring physics
+        TouchSpringAnimator.attach(btnBack)
+        TouchSpringAnimator.attach(btnAttachAudio)
+        TouchSpringAnimator.attach(btnRender)
+        TouchSpringAnimator.attach(btnOpenGallerySuccess)
+        TouchSpringAnimator.attach(btnOpenManager)
+
+        // Waveform Scrubber
+        waveformScrubber.setOnScrubListener { fraction ->
+            val range = rangeSlider.valueTo - rangeSlider.valueFrom
+            if (range > 0) {
+                val newStart = rangeSlider.valueFrom + (range * fraction)
+                val currentSpan = if (rangeSlider.values.size >= 2) (rangeSlider.values[1] - rangeSlider.values[0]) else 20f
+                val newEnd = (newStart + currentSpan).coerceAtMost(rangeSlider.valueTo)
+                rangeSlider.values = listOf(newStart, newEnd)
+            }
+        }
 
         // Search Debounce & Re-entrancy
         etSearch.addTextChangedListener(object : TextWatcher {
@@ -193,26 +235,28 @@ class LyricStudioActivity : AppCompatActivity() {
             }
         })
 
-        // Toggles
-        toggleTypography.check(R.id.btnTypePixel)
-        toggleTypography.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
-                currentFontStyle = when (checkedId) {
-                    R.id.btnTypePixel -> GlyphFontEngine.FontStyle.PIXEL_TINY
-                    R.id.btnTypeBold -> GlyphFontEngine.FontStyle.BLOCK_BOLD
-                    else -> GlyphFontEngine.FontStyle.SMOOTH
-                }
-                updateWysiwygPreview()
+        // Apple Liquid Glass Segmented Bars
+        toggleTypography.setSegments(listOf("Pixel", "Bold", "Smooth"), initialIndex = 0)
+        toggleTypography.onSegmentSelected = { index, _ ->
+            currentFontStyle = when (index) {
+                1 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
+                2 -> GlyphFontEngine.FontStyle.SMOOTH
+                else -> GlyphFontEngine.FontStyle.PIXEL_TINY
             }
+            updateWysiwygPreview()
         }
 
-        toggleAnimation.check(R.id.btnAnimFlash)
-        toggleAnimation.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
-                currentAnimStyle = if (checkedId == R.id.btnAnimScroll) 1 else 0
-                updateWysiwygPreview()
-            }
+        toggleAnimation.setSegments(listOf("Flash", "Scroll"), initialIndex = 0)
+        toggleAnimation.onSegmentSelected = { index, _ ->
+            currentAnimStyle = if (index == 1) 1 else 0
+            updateWysiwygPreview()
         }
+
+        heroTeleprompterCard.applyLiquidGlass(enableStretch = true)
+        btnRender.applyLiquidGlass(enableStretch = true)
+        btnAttachAudio.applyLiquidGlass(enableStretch = true)
+        btnOpenManager.applyLiquidGlass(enableStretch = true)
+        btnOpenGallerySuccess.applyLiquidGlass(enableStretch = true)
 
         // Sliders
         rangeSlider.addOnChangeListener { slider, _, _ ->
@@ -360,6 +404,15 @@ class LyricStudioActivity : AppCompatActivity() {
         previewCard.visibility = View.VISIBLE
         successActionsContainer.visibility = View.GONE
         
+        // Trigger cipher text scramble animation with clean artist - title
+        val displayTitle = if (track.artistName.isNotBlank() && !track.trackName.contains(track.artistName, ignoreCase = true)) {
+            "${track.artistName} — ${track.trackName}"
+        } else {
+            track.trackName
+        }
+        cipherTitle.animateDecryption(displayTitle)
+        tvDecryptedSubtitle.text = "Synced lyrics • Ready to render"
+        
         parseLyricsCache(track.syncedLyrics ?: "")
         updateWysiwygPreview()
         checkAndRequestAudioMatch(track)
@@ -421,6 +474,10 @@ class LyricStudioActivity : AppCompatActivity() {
         
         val rawBytes = GlyphFontEngine.renderTextFrame(displayText, currentFontStyle, offsetX, autoScale = false)
         
+        // Update teleprompter mirror and stream to hardware frame bus
+        teleprompterMatrixMirror.updateFrame(rawBytes)
+        GlyphFrameBus.postFrame(rawBytes)
+
         val bitmap = Bitmap.createBitmap(25, 25, Bitmap.Config.ARGB_8888)
         val pixels = IntArray(625)
         for (i in 0 until 625) {

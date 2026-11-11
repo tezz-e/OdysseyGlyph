@@ -53,11 +53,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="[NOTHING PHONE (3) // 25×25 HARDWARE CONSOLE]"
+                android:text="25×25 LED Matrix Console"
                 android:fontFamily="monospace"
-                android:textSize="10sp"
-                android:textColor="#888888"
-                android:letterSpacing="0.06" />
+                android:textSize="11sp"
+                android:textColor="#8A8A93"
+                android:letterSpacing="0.04" />
 
             <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
@@ -99,8 +99,8 @@
                     android:id="@+id/heroLyricsCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_pixel_card"
-                    android:padding="16dp"
+                    android:background="@drawable/bg_glass_card"
+                    android:padding="18dp"
                     android:layout_marginBottom="12dp">
 
                     <LinearLayout
@@ -126,18 +126,19 @@
                                 <View
                                     android:layout_width="7dp"
                                     android:layout_height="7dp"
-                                    android:background="#EA3323" />
+                                    android:background="@drawable/bg_glass_pill"
+                                    android:backgroundTint="#EA3323" />
 
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:layout_marginStart="6dp"
+                                    android:layout_marginStart="8dp"
                                     android:text="LIVE LYRICS ENGINE"
                                     android:fontFamily="monospace"
                                     android:textSize="11sp"
                                     android:textStyle="bold"
                                     android:textColor="#EA3323"
-                                    android:letterSpacing="0.06" />
+                                    android:letterSpacing="0.08" />
                             </LinearLayout>
 
                             <TextView
@@ -145,8 +146,8 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="8dp"
-                                android:text="Synchronized Matrix Lyrics"
-                                android:textSize="16sp"
+                                android:text="Real-Time Matrix Sync"
+                                android:textSize="17sp"
                                 android:textStyle="bold"
                                 android:textColor="#FFFFFF" />
 
@@ -155,20 +156,20 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
-                                android:text="Stream real-time audio lyrics directly to rear 625 LEDs."
+                                android:text="Stream synced lyrics directly to rear 625 LEDs."
                                 android:textSize="12sp"
-                                android:textColor="#888888" />
+                                android:textColor="#8A8A93" />
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnLaunchLiveLyrics"
                                 android:layout_width="wrap_content"
-                                android:layout_height="48dp"
+                                android:layout_height="44dp"
                                 android:layout_marginTop="14dp"
-                                android:text="OPEN LIVE LYRICS"
+                                android:text="OPEN ENGINE"
                                 android:fontFamily="monospace"
                                 android:textStyle="bold"
                                 android:textSize="11sp"
-                                app:cornerRadius="4dp"
+                                app:cornerRadius="22dp"
                                 app:backgroundTint="#FFFFFF"
                                 android:textColor="#000000"
                                 app:icon="@drawable/ic_audio"
@@ -178,8 +179,8 @@
                         <!-- Right: Real-time 25x25 LED Circular Mirror -->
                         <com.example.odysseyglyph.GlyphMatrixMirrorView
                             android:id="@+id/glyphMatrixMirror"
-                            android:layout_width="110dp"
-                            android:layout_height="110dp"
+                            android:layout_width="112dp"
+                            android:layout_height="112dp"
                             android:layout_gravity="center" />
                     </LinearLayout>
                 </FrameLayout>
@@ -198,24 +199,25 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginEnd="6dp"
-                        android:background="@drawable/bg_pixel_card"
-                        android:padding="14dp"
+                        android:background="@drawable/bg_glass_card"
+                        android:padding="16dp"
                         android:orientation="vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="[01 // INGEST]"
+                            android:text="MEDIA INGEST"
                             android:fontFamily="monospace"
                             android:textSize="10sp"
-                            android:textColor="#888888" />
+                            android:textColor="#8A8A93"
+                            android:letterSpacing="0.06" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="6dp"
-                            android:text="Video / GIF"
-                            android:textSize="15sp"
+                            android:text="Video &amp; GIF"
+                            android:textSize="16sp"
                             android:textStyle="bold"
                             android:textColor="#FFFFFF" />
 
@@ -225,19 +227,19 @@
                             android:layout_marginTop="4dp"
                             android:text="Tactical 25×25 crop"
                             android:textSize="11sp"
-                            android:textColor="#666666" />
+                            android:textColor="#8A8A93" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnSelectVideo"
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="match_parent"
-                            android:layout_height="48dp"
-                            android:layout_marginTop="12dp"
-                            android:text="CHOOSE MEDIA"
+                            android:layout_height="44dp"
+                            android:layout_marginTop="14dp"
+                            android:text="IMPORT"
                             android:fontFamily="monospace"
                             android:textSize="11sp"
-                            app:cornerRadius="4dp"
-                            app:strokeColor="#333333"
+                            app:cornerRadius="22dp"
+                            app:strokeColor="#2A2A33"
                             android:textColor="#FFFFFF"
                             app:icon="@drawable/ic_folder"
                             app:iconTint="#FFFFFF" />
@@ -250,24 +252,25 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="6dp"
-                        android:background="@drawable/bg_pixel_card"
-                        android:padding="14dp"
+                        android:background="@drawable/bg_glass_card"
+                        android:padding="16dp"
                         android:orientation="vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="[02 // STUDIO]"
+                            android:text="LYRIC STUDIO"
                             android:fontFamily="monospace"
                             android:textSize="10sp"
-                            android:textColor="#888888" />
+                            android:textColor="#8A8A93"
+                            android:letterSpacing="0.06" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="6dp"
                             android:text="Lyric Studio"
-                            android:textSize="15sp"
+                            android:textSize="16sp"
                             android:textStyle="bold"
                             android:textColor="#FFFFFF" />
 
@@ -275,21 +278,21 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="Ndot57 ticker preview"
+                            android:text="Ndot57 ticker studio"
                             android:textSize="11sp"
-                            android:textColor="#666666" />
+                            android:textColor="#8A8A93" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnLaunchLyricStudio"
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="match_parent"
-                            android:layout_height="48dp"
-                            android:layout_marginTop="12dp"
-                            android:text="LYRIC STUDIO"
+                            android:layout_height="44dp"
+                            android:layout_marginTop="14dp"
+                            android:text="STUDIO"
                             android:fontFamily="monospace"
                             android:textSize="11sp"
-                            app:cornerRadius="4dp"
-                            app:strokeColor="#333333"
+                            app:cornerRadius="22dp"
+                            app:strokeColor="#2A2A33"
                             android:textColor="#FFFFFF"
                             app:icon="@drawable/ic_lyrics"
                             app:iconTint="#FFFFFF" />
@@ -301,7 +304,7 @@
                     android:id="@+id/cardVisualizer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_pixel_card"
+                    android:background="@drawable/bg_glass_card"
                     android:padding="16dp"
                     android:orientation="vertical"
                     android:layout_marginBottom="12dp">
@@ -316,19 +319,20 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="[03 // AUDIO VISUALIZER]"
+                            android:text="AUDIO VISUALIZER"
                             android:fontFamily="monospace"
                             android:textSize="10sp"
-                            android:textColor="#888888" />
+                            android:textColor="#8A8A93"
+                            android:letterSpacing="0.06" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="ı ı ı ı ı ı ı ı"
+                            android:text="| | | | | | |"
                             android:fontFamily="monospace"
-                            android:textSize="12sp"
+                            android:textSize="11sp"
                             android:textColor="#EA3323"
-                            android:letterSpacing="0.2" />
+                            android:letterSpacing="0.15" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -342,7 +346,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="13-Band Microphone EQ"
+                            android:text="13-Band Frequency Scope"
                             android:textSize="16sp"
                             android:textStyle="bold"
                             android:textColor="#FFFFFF" />
@@ -351,12 +355,12 @@
                             android:id="@+id/btnLaunchVisualizer"
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="wrap_content"
-                            android:layout_height="48dp"
+                            android:layout_height="44dp"
                             android:text="LAUNCH"
                             android:fontFamily="monospace"
                             android:textSize="11sp"
-                            app:cornerRadius="4dp"
-                            app:strokeColor="#444444"
+                            app:cornerRadius="22dp"
+                            app:strokeColor="#2A2A33"
                             android:textColor="#FFFFFF"
                             app:icon="@drawable/ic_audio"
                             app:iconTint="#FFFFFF" />
@@ -368,37 +372,38 @@
                     android:id="@+id/quickAccessSection"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_pixel_card"
-                    android:padding="14dp"
+                    android:background="@drawable/bg_glass_card"
+                    android:padding="16dp"
                     android:orientation="vertical"
                     android:layout_marginBottom="16dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="[04 // HARDWARE TOYS &amp; SHORTCUTS]"
+                        android:text="HARDWARE &amp; SHORTCUTS"
                         android:fontFamily="monospace"
                         android:textSize="10sp"
-                        android:textColor="#888888" />
+                        android:textColor="#8A8A93"
+                        android:letterSpacing="0.06" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:layout_marginTop="10dp">
+                        android:layout_marginTop="12dp">
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnAddTileMain"
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="0dp"
-                            android:layout_height="48dp"
+                            android:layout_height="44dp"
                             android:layout_weight="1"
                             android:layout_marginEnd="4dp"
                             android:text="QS TILE"
                             android:fontFamily="monospace"
-                            android:textSize="11sp"
-                            app:cornerRadius="4dp"
-                            app:strokeColor="#333333"
+                            android:textSize="10sp"
+                            app:cornerRadius="16dp"
+                            app:strokeColor="#2A2A33"
                             android:textColor="#FFFFFF"
                             app:icon="@drawable/ic_settings"
                             app:iconTint="#FFFFFF" />
@@ -407,14 +412,30 @@
                             android:id="@+id/btnAddWidgetMain"
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="0dp"
-                            android:layout_height="48dp"
+                            android:layout_height="44dp"
                             android:layout_weight="1"
-                            android:layout_marginStart="4dp"
+                            android:layout_marginHorizontal="4dp"
                             android:text="WIDGET"
                             android:fontFamily="monospace"
-                            android:textSize="11sp"
-                            app:cornerRadius="4dp"
-                            app:strokeColor="#333333"
+                            android:textSize="10sp"
+                            app:cornerRadius="16dp"
+                            app:strokeColor="#2A2A33"
+                            android:textColor="#FFFFFF"
+                            app:icon="@drawable/ic_folder"
+                            app:iconTint="#FFFFFF" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnVaultMain"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="4dp"
+                            android:text="VAULT"
+                            android:fontFamily="monospace"
+                            android:textSize="10sp"
+                            app:cornerRadius="16dp"
+                            app:strokeColor="#2A2A33"
                             android:textColor="#FFFFFF"
                             app:icon="@drawable/ic_folder"
                             app:iconTint="#FFFFFF" />
@@ -437,8 +458,8 @@
                     android:id="@+id/videoCard"
                     android:layout_width="match_parent"
                     android:layout_height="@dimen/video_card_height"
-                    android:background="@drawable/bg_pixel_card"
-                    android:padding="2dp"
+                    android:background="@drawable/bg_glass_card"
+                    android:padding="6dp"
                     android:layout_marginBottom="12dp">
 
                     <FrameLayout

@@ -36,23 +36,34 @@ class GlyphMatrixMirrorView @JvmOverloads constructor(
 
     // Pre-allocated paints
     private val chassisPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = COLOR_CHASSIS
+        color = 0xFF08080B.toInt() // Deep smoked optical glass
         style = Paint.Style.FILL
     }
 
     private val bezelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = COLOR_BEZEL
+        color = 0xFF2A2A33.toInt()
         style = Paint.Style.STROKE
-        strokeWidth = 2f
+        strokeWidth = 2.5f
+    }
+
+    private val innerRingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFF141419.toInt()
+        style = Paint.Style.STROKE
+        strokeWidth = 1f
     }
 
     private val inactiveDiodePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = COLOR_INACTIVE_DIODE
+        color = 0xFF151518.toInt()
         style = Paint.Style.FILL
     }
 
     private val activeDiodePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = COLOR_ACTIVE_DIODE
+        style = Paint.Style.FILL
+    }
+
+    private val bloomPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFFFFFFFF.toInt()
         style = Paint.Style.FILL
     }
 
@@ -139,11 +150,12 @@ class GlyphMatrixMirrorView @JvmOverloads constructor(
         super.onDraw(canvas)
         if (matrixRadius <= 0f) return
 
-        // 1. Draw circular chassis background & bezel ring
+        // 1. Draw circular smoked glass chassis & machined bezel
         canvas.drawCircle(centerX, centerY, matrixRadius, chassisPaint)
         canvas.drawCircle(centerX, centerY, matrixRadius, bezelPaint)
+        canvas.drawCircle(centerX, centerY, matrixRadius - 3f, innerRingPaint)
 
-        // 2. Draw 625 diodes with zero object allocations
+        // 2. Draw 625 diodes with soft phosphor bloom and 0 allocations
         for (i in 0 until TOTAL_LEDS) {
             if (!isInsideAperture[i]) continue
 
@@ -152,12 +164,15 @@ class GlyphMatrixMirrorView @JvmOverloads constructor(
             val rawByte = currentFrame[i].toInt() and 0xFF
 
             if (rawByte > 10) {
-                // Diode is active: scale brightness
+                // Phosphor bloom pass
+                bloomPaint.alpha = (rawByte * 0.28f).toInt()
+                canvas.drawCircle(x, y, diodeRadius * 1.8f, bloomPaint)
+
+                // Crisp diode core
                 activeDiodePaint.alpha = rawByte
                 canvas.drawCircle(x, y, diodeRadius, activeDiodePaint)
             } else {
-                // Inactive diode dot
-                canvas.drawCircle(x, y, diodeRadius * 0.7f, inactiveDiodePaint)
+                canvas.drawCircle(x, y, diodeRadius * 0.65f, inactiveDiodePaint)
             }
         }
     }

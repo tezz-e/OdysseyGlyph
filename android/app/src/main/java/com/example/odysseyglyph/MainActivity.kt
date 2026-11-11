@@ -140,28 +140,35 @@ class MainActivity : AppCompatActivity() {
             val beam = BorderBeamDrawable()
             it.foreground = beam
             beam.start()
-            TouchSpringAnimator.attach(it)
+            it.applyLiquidGlass(enableStretch = true)
         }
 
         findViewById<View>(R.id.cardMediaPipeline)?.let { card ->
-            TouchSpringAnimator.attach(card)
+            card.applyLiquidGlass(enableStretch = true)
             card.setOnClickListener { btnSelectVideo.performClick() }
         }
 
         findViewById<View>(R.id.cardLyricStudio)?.let { card ->
-            TouchSpringAnimator.attach(card)
+            card.applyLiquidGlass(enableStretch = true)
             card.setOnClickListener { btnLaunchLyricStudio.performClick() }
         }
 
         findViewById<View>(R.id.cardVisualizer)?.let { card ->
-            TouchSpringAnimator.attach(card)
+            card.applyLiquidGlass(enableStretch = true)
             card.setOnClickListener { btnLaunchVisualizer.performClick() }
         }
 
-        TouchSpringAnimator.attach(btnSelectVideo)
-        TouchSpringAnimator.attach(btnLaunchLyricStudio)
-        TouchSpringAnimator.attach(btnLaunchVisualizer)
-        TouchSpringAnimator.attach(btnLaunchLiveLyrics)
+        findViewById<View>(R.id.quickAccessSection)?.applyLiquidGlass(enableStretch = true)
+
+        btnSelectVideo.applyLiquidGlass(enableStretch = true)
+        btnLaunchLyricStudio.applyLiquidGlass(enableStretch = true)
+        btnLaunchVisualizer.applyLiquidGlass(enableStretch = true)
+        btnLaunchLiveLyrics.applyLiquidGlass(enableStretch = true)
+        findViewById<View>(R.id.btnAddTileMain)?.applyLiquidGlass(enableStretch = true)
+        findViewById<View>(R.id.btnAddWidgetMain)?.applyLiquidGlass(enableStretch = true)
+        findViewById<View>(R.id.btnVaultMain)?.applyLiquidGlass(enableStretch = true)
+        btnProcess.applyLiquidGlass(enableStretch = true)
+        btnCancel.applyLiquidGlass(enableStretch = true)
     }
 
     private fun updateScrollViewPadding() {
@@ -329,6 +336,14 @@ class MainActivity : AppCompatActivity() {
                 }
             } else {
                 Snackbar.make(findViewById(android.R.id.content), "Automatic widget pinning requires Android 8.0+. Please add it manually from your launcher's widget menu.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
+            }
+        }
+
+        val btnVaultMain = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnVaultMain)
+        btnVaultMain?.let {
+            TouchSpringAnimator.attach(it)
+            it.setOnClickListener {
+                startActivity(Intent(this, GalleryActivity::class.java))
             }
         }
 

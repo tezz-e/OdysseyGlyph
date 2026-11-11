@@ -2,34 +2,59 @@
 <androidx.coordinatorlayout.widget.CoordinatorLayout 
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rootCoordinator"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:attr/colorBackground"
-    android:fitsSystemWindows="true">
+    android:background="#000000"
+    android:fitsSystemWindows="false">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
-        android:layout_height="140dp"
-        android:background="?android:attr/colorBackground"
-        android:fitsSystemWindows="true">
+        android:layout_height="wrap_content"
+        android:background="#000000"
+        app:elevation="0dp">
 
-        <com.google.android.material.appbar.CollapsingToolbarLayout
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:layout_scrollFlags="scroll|exitUntilCollapsed"
-            app:collapsedTitleTextAppearance="@style/TextAppearance.Odyssey.CollapsedTitle"
-            app:expandedTitleTextAppearance="@style/TextAppearance.Odyssey.ExpandedTitle"
-            app:collapsedTitleTextColor="?attr/colorOnSurface"
-            app:expandedTitleTextColor="?attr/colorOnSurface"
-            app:title="LIVE LYRICS">
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="12dp">
 
-            <com.google.android.material.appbar.MaterialToolbar
-                android:id="@+id/toolbar"
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                app:navigationIcon="?attr/homeAsUpIndicator"
-                app:layout_collapseMode="pin" />
-        </com.google.android.material.appbar.CollapsingToolbarLayout>
+            <ImageView
+                android:id="@+id/btnBack"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:padding="12dp"
+                android:src="@drawable/ic_arrow_back"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Back"
+                app:tint="#FFFFFF" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Live Lyrics"
+                android:fontFamily="@font/ndot57"
+                android:textColor="#FFFFFF"
+                android:textSize="22sp"
+                android:paddingStart="8dp" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switchMaster"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:visibility="gone" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <ScrollView
@@ -43,286 +68,340 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="@dimen/spacing_medium">
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="48dp">
 
-            <!-- Master Switch -->
-            <com.google.android.material.materialswitch.MaterialSwitch
-                android:id="@+id/switchMaster"
+            <!-- Hero Dual-Lens Card -->
+            <FrameLayout
+                android:id="@+id/heroTelemetryCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="ENABLE LIVE LYRICS"
-                android:fontFamily="@font/jetbrains_mono"
-                android:textAppearance="?attr/textAppearanceTitleMedium"
-                android:layout_marginBottom="@dimen/spacing_large" />
-                
+                android:background="@drawable/bg_glass_card"
+                android:padding="20dp"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="14dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- Dual Lenses: Left Matrix Mirror, Right Oscilloscope -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="16dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:gravity="center">
+
+                            <com.example.odysseyglyph.GlyphMatrixMirrorView
+                                android:id="@+id/liveMatrixMirror"
+                                android:layout_width="92dp"
+                                android:layout_height="92dp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Rear Matrix"
+                                android:textColor="#5A5A62"
+                                android:textSize="11sp"
+                                android:layout_marginTop="6dp" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="90dp"
+                            android:background="#1E1E24"
+                            android:layout_marginHorizontal="12dp" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:gravity="center">
+
+                            <com.example.odysseyglyph.OscilloscopeReticleView
+                                android:id="@+id/oscilloscopeView"
+                                android:layout_width="92dp"
+                                android:layout_height="92dp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Audio Scope"
+                                android:textColor="#5A5A62"
+                                android:textSize="11sp"
+                                android:layout_marginTop="6dp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Live Playback Status -->
+                    <TextView
+                        android:id="@+id/tvStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Waiting for music"
+                        android:fontFamily="@font/jetbrains_mono"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvTrackInfo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Play any track in Spotify, YouTube Music, or your local player."
+                        android:textColor="#8A8A93"
+                        android:textSize="12sp"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+            </FrameLayout>
+
             <LinearLayout
                 android:id="@+id/optionsContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-            <!-- Permission Card -->
-            <LinearLayout
-                android:id="@+id/permissionCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="?attr/colorSurfaceVariant"
-                android:padding="@dimen/spacing_medium"
-                android:layout_marginBottom="@dimen/spacing_large">
-                
-                <TextView
+                <!-- Permission Disclosure Card -->
+                <LinearLayout
+                    android:id="@+id/permissionCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Reads what's currently playing locally on your phone — nothing is uploaded."
-                    android:fontFamily="@font/jetbrains_mono"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:layout_marginBottom="@dimen/spacing_small" />
-                    
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnGrantPermission"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:cornerRadius="0dp"
-                    android:fontFamily="@font/jetbrains_mono"
-                    android:text="GRANT PERMISSION" />
-            </LinearLayout>
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_glass_card"
+                    android:padding="20dp"
+                    android:layout_marginBottom="14dp">
 
-            <!-- Status Card -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="@dimen/spacing_medium"
-                android:layout_marginBottom="@dimen/spacing_large">
-                
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Notification Access"
+                        android:textColor="#FFFFFF"
+                        android:fontFamily="@font/jetbrains_mono"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="6dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Required to read track titles and playback timestamps locally. No data leaves your device."
+                        android:textColor="#8A8A93"
+                        android:textSize="13sp"
+                        android:layout_marginBottom="12dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnGrantPermission"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        app:cornerRadius="12dp"
+                        android:backgroundTint="#EA3323"
+                        android:textColor="#FFFFFF"
+                        android:text="Enable Access" />
+                </LinearLayout>
+
+                <!-- Hidden legacy image view kept for binding -->
                 <ImageView
                     android:id="@+id/ivAlbumArt"
-                    android:layout_width="120dp"
-                    android:layout_height="120dp"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginBottom="@dimen/spacing_medium"
-                    android:scaleType="centerCrop"
-                    android:background="#333333"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
                     android:visibility="gone" />
 
-                <TextView
-                    android:id="@+id/tvStatus"
+                <!-- Animation & Timing Glass Card -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Waiting for media playback…"
-                    android:fontFamily="@font/jetbrains_mono"
-                    android:textAppearance="?attr/textAppearanceTitleMedium"
-                    android:textColor="?attr/colorPrimary" />
-                    
-                <TextView
-                    android:id="@+id/tvTrackInfo"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_glass_card"
+                    android:padding="20dp"
+                    android:layout_marginBottom="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Animation Style"
+                        android:textColor="#FFFFFF"
+                        android:fontFamily="@font/jetbrains_mono"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="10dp" />
+
+                    <com.example.odysseyglyph.LiquidGlassSegmentedBar
+                        android:id="@+id/toggleAnimation"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginBottom="18dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="4dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Sync Offset"
+                            android:textColor="#FFFFFF"
+                            android:fontFamily="@font/jetbrains_mono"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvSyncOffset"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0ms"
+                            android:fontFamily="@font/jetbrains_mono"
+                            android:textColor="#8A8A93"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/sliderSync"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:valueFrom="-1000.0"
+                        android:valueTo="1000.0"
+                        android:stepSize="50.0"
+                        android:value="0.0"
+                        app:thumbColor="#EA3323"
+                        app:trackColorActive="#EA3323"
+                        app:trackColorInactive="#262626" />
+                </LinearLayout>
+
+                <!-- Typeface Glass Card -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text=""
-                    android:fontFamily="@font/jetbrains_mono"
-                    android:textColor="?attr/colorOnSurfaceVariant" />
-            </LinearLayout>
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_glass_card"
+                    android:padding="20dp"
+                    android:layout_marginBottom="14dp">
 
-            <!-- Animation Toggle -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ANIMATION STYLE"
-                android:fontFamily="@font/jetbrains_mono"
-                android:textAppearance="?attr/textAppearanceLabelLarge"
-                android:layout_marginBottom="@dimen/spacing_small" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Typeface"
+                        android:textColor="#FFFFFF"
+                        android:fontFamily="@font/jetbrains_mono"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="10dp" />
 
-            <com.google.android.material.button.MaterialButtonToggleGroup
-                android:id="@+id/toggleAnimation"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:singleSelection="true"
-                app:selectionRequired="true"
-                android:layout_marginBottom="@dimen/spacing_large">
+                    <com.example.odysseyglyph.LiquidGlassSegmentedBar
+                        android:id="@+id/toggleTypography"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp" />
+                </LinearLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnAnimFlash"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="FLASH"
-                    android:fontFamily="@font/jetbrains_mono" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnAnimHybrid"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="HYBRID"
-                    android:fontFamily="@font/jetbrains_mono" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnAnimScroll"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="SCROLL"
-                    android:fontFamily="@font/jetbrains_mono" />
-            </com.google.android.material.button.MaterialButtonToggleGroup>
-
-            <!-- Sync Offset -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="AUDIO SYNC OFFSET (±1000ms)"
-                android:fontFamily="@font/jetbrains_mono"
-                android:textAppearance="?attr/textAppearanceLabelLarge"
-                android:layout_marginBottom="4dp" />
-                
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="@dimen/spacing_large">
-                
-                <TextView
-                    android:id="@+id/tvSyncOffset"
-                    android:layout_width="48dp"
-                    android:layout_height="wrap_content"
-                    android:text="0ms"
-                    android:fontFamily="@font/jetbrains_mono"
-                    android:textAlignment="center" />
-                    
-                <com.google.android.material.slider.Slider
-                    android:id="@+id/sliderSync"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:valueFrom="-1000.0"
-                    android:valueTo="1000.0"
-                    android:stepSize="50.0"
-                    android:value="0.0" />
-            </LinearLayout>
-
-            <!-- Typography Toggle -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="TYPOGRAPHY"
-                android:fontFamily="@font/jetbrains_mono"
-                android:textAppearance="?attr/textAppearanceLabelLarge"
-                android:layout_marginBottom="@dimen/spacing_small" />
-
-            <com.google.android.material.button.MaterialButtonToggleGroup
-                android:id="@+id/toggleTypography"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:singleSelection="true"
-                app:selectionRequired="true"
-                android:layout_marginBottom="@dimen/spacing_large">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSmooth"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="SMOOTH"
-                    android:fontFamily="@font/jetbrains_mono" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnBlocky"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="BLOCKY"
-                    android:fontFamily="@font/jetbrains_mono" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnPixel"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="PIXEL"
-                    android:fontFamily="@font/jetbrains_mono" />
-            </com.google.android.material.button.MaterialButtonToggleGroup>
-
-            <!-- Fallback Visualizer Toggle -->
-            <com.google.android.material.materialswitch.MaterialSwitch
-                android:id="@+id/switchFallback"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="FALLBACK VISUALIZER"
-                android:fontFamily="@font/jetbrains_mono"
-                android:textAppearance="?attr/textAppearanceLabelLarge"
-                android:layout_marginBottom="@dimen/spacing_small" />
-                
-            <TextView
-                android:id="@+id/tvFallbackDesc"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Keeps the matrix alive with a dynamic animation when a song is playing but no lyrics are available."
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:layout_marginBottom="@dimen/spacing_small" />
-                
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnCustomizeFallback"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="CUSTOMIZE FALLBACK VISUAL"
-                android:fontFamily="@font/jetbrains_mono"
-                android:layout_marginBottom="@dimen/spacing_large" />
-            
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnOpenManager"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="OPEN GLYPH TOYS MANAGER"
-                android:fontFamily="@font/jetbrains_mono"
-                app:cornerRadius="0dp"
-                android:paddingVertical="12dp"
-                android:layout_marginBottom="@dimen/spacing_large" />
-                
-            <!-- Always On QS Tile Card -->
-            <LinearLayout
-                android:id="@+id/layoutAlwaysOnMode"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="?attr/colorSurfaceVariant"
-                android:padding="@dimen/spacing_medium"
-                android:layout_marginBottom="@dimen/spacing_large">
-                
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="ALWAYS ON MODE (OPTIONAL)"
-                    android:fontFamily="@font/jetbrains_mono"
-                    android:textAppearance="?attr/textAppearanceLabelLarge"
-                    android:layout_marginBottom="@dimen/spacing_small"
-                    android:textColor="?attr/colorPrimary" />
-
-                <TextView
+                <!-- Fallback Visualizer Card -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Nothing OS enforces a 10-minute maximum timeout on all Glyph Toys. To bypass this and run Live Lyrics indefinitely, use the Quick Settings Tile from your notification dropdown."
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:layout_marginBottom="@dimen/spacing_medium" />
-                    
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnAddTile"
-                    style="?attr/materialButtonOutlinedStyle"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_glass_card"
+                    android:padding="20dp"
+                    android:layout_marginBottom="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Fallback Visualizer"
+                                android:textColor="#FFFFFF"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvFallbackDesc"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Animated pattern when lyrics are unavailable."
+                                android:textColor="#8A8A93"
+                                android:textSize="12sp"
+                                android:layout_marginTop="2dp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchFallback"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCustomizeFallback"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:text="Customize Pattern"
+                        android:textColor="#FFFFFF"
+                        app:strokeColor="#24FFFFFF"
+                        app:cornerRadius="12dp"
+                        android:layout_marginTop="12dp" />
+                </LinearLayout>
+
+                <!-- Shortcuts Row -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cornerRadius="0dp"
-                    android:fontFamily="@font/jetbrains_mono"
-                    android:text="ADD QUICK SETTINGS TILE" />
-            </LinearLayout>
+                    android:orientation="horizontal"
+                    android:weightSum="2"
+                    android:layout_marginBottom="14dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnOpenManager"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="4dp"
+                        android:text="Toys Manager"
+                        android:textColor="#FFFFFF"
+                        app:strokeColor="#24FFFFFF"
+                        app:cornerRadius="12dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAddTile"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="4dp"
+                        android:text="Quick Tile"
+                        android:textColor="#FFFFFF"
+                        app:strokeColor="#24FFFFFF"
+                        app:cornerRadius="12dp" />
+                </LinearLayout>
+
+                <!-- Hidden legacy container kept for binding -->
+                <LinearLayout
+                    android:id="@+id/layoutAlwaysOnMode"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

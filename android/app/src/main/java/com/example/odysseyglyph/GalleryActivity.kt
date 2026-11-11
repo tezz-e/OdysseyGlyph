@@ -28,6 +28,9 @@ class GalleryActivity : AppCompatActivity() {
 
     private lateinit var rvPresets: RecyclerView
     private lateinit var tvEmpty: TextView
+    private lateinit var layoutEmptyState: View
+    private lateinit var tvVaultCount: TextView
+    private lateinit var btnBack: android.widget.ImageView
     private lateinit var adapter: PresetAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,12 +38,21 @@ class GalleryActivity : AppCompatActivity() {
         WindowInsetsUtil.setupEdgeToEdge(this)
         setContentView(R.layout.activity_gallery)
 
+        val appBarLayout = findViewById<com.google.android.material.appbar.AppBarLayout>(R.id.appBarLayout)
+        WindowInsetsUtil.applySystemBarsPadding(appBarLayout, applyTop = true)
+
+        btnBack = findViewById(R.id.btnBack)
+        btnBack.setOnClickListener { finish() }
+        TouchSpringAnimator.attach(btnBack)
+
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
-        toolbar.setNavigationOnClickListener { finish() }
+        toolbar?.setNavigationOnClickListener { finish() }
 
         rvPresets = findViewById(R.id.rvPresets)
         WindowInsetsUtil.applySystemBarsPadding(rvPresets, applyBottom = true)
         tvEmpty = findViewById(R.id.tvEmpty)
+        layoutEmptyState = findViewById(R.id.layoutEmptyState)
+        tvVaultCount = findViewById(R.id.tvVaultCount)
 
         rvPresets.layoutManager = LinearLayoutManager(this)
         
@@ -49,12 +61,13 @@ class GalleryActivity : AppCompatActivity() {
 
     private fun loadPresets() {
         val presets = PresetManager.getPresets(this)
+        tvVaultCount.text = if (presets.isNotEmpty()) "${presets.size} presets" else ""
         if (presets.isEmpty()) {
             rvPresets.visibility = View.GONE
-            tvEmpty.visibility = View.VISIBLE
+            layoutEmptyState.visibility = View.VISIBLE
         } else {
             rvPresets.visibility = View.VISIBLE
-            tvEmpty.visibility = View.GONE
+            layoutEmptyState.visibility = View.GONE
             adapter = PresetAdapter(presets, this::onPresetClicked, this::onDeleteClicked)
             rvPresets.adapter = adapter
         }
@@ -262,6 +275,8 @@ class PresetAdapter(
         
         holder.itemView.setOnClickListener { onClick(p) }
         holder.btnQuickDelete.setOnClickListener { onDelete(p) }
+        holder.itemView.applyLiquidGlass(enableStretch = true)
+        holder.btnQuickDelete.applyLiquidGlass(enableStretch = true)
         
         // Load thumbnail from bin file
         val context = holder.itemView.context

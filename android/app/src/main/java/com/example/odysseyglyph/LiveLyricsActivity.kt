@@ -27,6 +27,11 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
 
     private lateinit var prefs: SharedPreferences
     
+    private lateinit var btnBack: ImageView
+    private lateinit var heroTelemetryCard: FrameLayout
+    private lateinit var liveMatrixMirror: GlyphMatrixMirrorView
+    private lateinit var oscilloscopeView: OscilloscopeReticleView
+    
     private lateinit var switchMaster: MaterialSwitch
     private lateinit var tvStatus: TextView
     private lateinit var tvTrackInfo: TextView
@@ -35,8 +40,8 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
     private lateinit var permissionCard: LinearLayout
     private lateinit var btnGrantPermission: MaterialButton
     
-    private lateinit var toggleAnimation: MaterialButtonToggleGroup
-    private lateinit var toggleTypography: MaterialButtonToggleGroup
+    private lateinit var toggleAnimation: LiquidGlassSegmentedBar
+    private lateinit var toggleTypography: LiquidGlassSegmentedBar
     private lateinit var switchFallback: MaterialSwitch
     private lateinit var tvFallbackDesc: TextView
     private lateinit var btnOpenManager: MaterialButton
@@ -48,29 +53,48 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
     private var isNotificationAccessGranted = false
     
     private val mainHandler = Handler(Looper.getMainLooper())
+    private var frameBusSubscription: ((ByteArray) -> Unit)? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowInsetsUtil.setupEdgeToEdge(this)
         setContentView(R.layout.activity_live_lyrics)
         
+        val appBarLayout = findViewById<com.google.android.material.appbar.AppBarLayout>(R.id.appBarLayout)
+        WindowInsetsUtil.applySystemBarsPadding(appBarLayout, applyTop = true)
         val scrollView = findViewById<ScrollView>(R.id.scrollView)
         WindowInsetsUtil.applySystemBarsPadding(scrollView, applyBottom = true)
         
         prefs = getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE)
         
-        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
-        toolbar.setNavigationOnClickListener { finish() }
+        btnBack = findViewById(R.id.btnBack)
+        btnBack.setOnClickListener { finish() }
         
-        toolbar.inflateMenu(R.menu.menu_info)
-        toolbar.setOnMenuItemClickListener { item ->
-            if (item.itemId == R.id.action_info) {
-                showOnboardingDialog()
-                true
-            } else {
-                false
+        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        toolbar?.setNavigationOnClickListener { finish() }
+
+        heroTelemetryCard = findViewById(R.id.heroTelemetryCard)
+        liveMatrixMirror = findViewById(R.id.liveMatrixMirror)
+        oscilloscopeView = findViewById(R.id.oscilloscopeView)
+
+        // Start laser border beam on hero telemetry deck
+        heroTelemetryCard.let {
+            val beam = BorderBeamDrawable()
+            it.foreground = beam
+            beam.start()
+        }
+
+        // Frame bus subscription for live mirror
+        frameBusSubscription = { frame ->
+            runOnUiThread {
+                liveMatrixMirror.updateFrame(frame)
+                oscilloscopeView.updateWaveform(0.7f, 1.4f)
             }
         }
+        frameBusSubscription?.let { GlyphFrameBus.subscribe(it) }
+
+        // Touch spring physics
+        TouchSpringAnimator.attach(btnBack)
         
         switchMaster = findViewById(R.id.switchMaster)
         tvStatus = findViewById(R.id.tvStatus)
@@ -86,6 +110,12 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         tvFallbackDesc = findViewById(R.id.tvFallbackDesc)
         btnOpenManager = findViewById(R.id.btnOpenManager)
         btnAddTile = findViewById(R.id.btnAddTile)
+        
+        btnGrantPermission.applyLiquidGlass(enableStretch = true)
+        btnOpenManager.applyLiquidGlass(enableStretch = true)
+        btnAddTile.applyLiquidGlass(enableStretch = true)
+        heroTelemetryCard.applyLiquidGlass(enableStretch = true)
+        findViewById<View>(R.id.btnCustomizeFallback).applyLiquidGlass(enableStretch = true)
         
         optionsContainer = findViewById(R.id.optionsContainer)
         
@@ -113,21 +143,19 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         }
         
         val savedAnimStyle = prefs.getInt("live_anim_style", 0)
-        when (savedAnimStyle) {
-            1 -> toggleAnimation.check(R.id.btnAnimScroll)
-            2 -> toggleAnimation.check(R.id.btnAnimHybrid)
-            else -> toggleAnimation.check(R.id.btnAnimFlash)
+        val initialAnimIndex = when (savedAnimStyle) {
+            1 -> 2 // Scroll
+            2 -> 1 // Hybrid
+            else -> 0 // Flash
         }
-        
-        toggleAnimation.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
-                val style = when (checkedId) {
-                    R.id.btnAnimScroll -> 1
-                    R.id.btnAnimHybrid -> 2
-                    else -> 0
-                }
-                prefs.edit().putInt("live_anim_style", style).apply()
+        toggleAnimation.setSegments(listOf("Flash", "Hybrid", "Scroll"), initialIndex = initialAnimIndex)
+        toggleAnimation.onSegmentSelected = { index, _ ->
+            val style = when (index) {
+                1 -> 2 // Hybrid
+                2 -> 1 // Scroll
+                else -> 0 // Flash
             }
+            prefs.edit().putInt("live_anim_style", style).apply()
         }
         
         val tvSyncOffset: TextView = findViewById(R.id.tvSyncOffset)
@@ -150,27 +178,24 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             else -> GlyphFontEngine.FontStyle.SMOOTH
         }
         
-        when (currentFontStyle) {
-            GlyphFontEngine.FontStyle.BLOCK_BOLD -> toggleTypography.check(R.id.btnBlocky)
-            GlyphFontEngine.FontStyle.PIXEL_TINY -> toggleTypography.check(R.id.btnPixel)
-            else -> toggleTypography.check(R.id.btnSmooth)
+        val initialFontIndex = when (currentFontStyle) {
+            GlyphFontEngine.FontStyle.BLOCK_BOLD -> 1
+            GlyphFontEngine.FontStyle.PIXEL_TINY -> 2
+            else -> 0
         }
-        
-        toggleTypography.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
-                currentFontStyle = when (checkedId) {
-                    R.id.btnBlocky -> GlyphFontEngine.FontStyle.BLOCK_BOLD
-                    R.id.btnPixel -> GlyphFontEngine.FontStyle.PIXEL_TINY
-                    else -> GlyphFontEngine.FontStyle.SMOOTH
-                }
-                
-                val styleInt = when (currentFontStyle) {
-                    GlyphFontEngine.FontStyle.BLOCK_BOLD -> 1
-                    GlyphFontEngine.FontStyle.PIXEL_TINY -> 2
-                    else -> 0
-                }
-                prefs.edit().putInt("live_font_style", styleInt).apply()
+        toggleTypography.setSegments(listOf("Smooth", "Blocky", "Pixel"), initialIndex = initialFontIndex)
+        toggleTypography.onSegmentSelected = { index, _ ->
+            currentFontStyle = when (index) {
+                1 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
+                2 -> GlyphFontEngine.FontStyle.PIXEL_TINY
+                else -> GlyphFontEngine.FontStyle.SMOOTH
             }
+            val styleInt = when (currentFontStyle) {
+                GlyphFontEngine.FontStyle.BLOCK_BOLD -> 1
+                GlyphFontEngine.FontStyle.PIXEL_TINY -> 2
+                else -> 0
+            }
+            prefs.edit().putInt("live_font_style", styleInt).apply()
         }
         
         switchFallback.isChecked = prefs.getBoolean("fallback_enabled", true)
@@ -278,7 +303,11 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
     override fun onPause() {
         super.onPause()
         MusicPlaybackState.removeListener(this)
+    }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        frameBusSubscription?.let { GlyphFrameBus.unsubscribe(it) }
     }
 
     private fun checkNotificationPermission() {
