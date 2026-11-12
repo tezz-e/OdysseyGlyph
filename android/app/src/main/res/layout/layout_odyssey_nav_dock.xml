@@ -7,10 +7,10 @@
     android:clipToPadding="false"
     android:paddingStart="16dp"
     android:paddingEnd="16dp"
-    android:paddingBottom="7dp">
+    android:paddingBottom="10dp">
 
     <com.example.odysseyglyph.LiquidGlassSegmentedBar
         android:id="@+id/globalNavDock"
         android:layout_width="match_parent"
-        android:layout_height="40dp" />
+        android:layout_height="44dp" />
 </FrameLayout>

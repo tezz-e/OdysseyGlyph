@@ -76,9 +76,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="14dp"
-            android:paddingTop="6dp"
-            android:paddingBottom="20dp">
+            android:paddingHorizontal="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="16dp">
 
             <!-- ======================================================== -->
             <!-- 1. LAUNCHER GROUP: HARDWARE BENTO CONSOLE RACK            -->
@@ -95,8 +95,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_glass_card"
-                    android:padding="15dp"
-                    android:layout_marginBottom="8dp">
+                    android:padding="16dp"
+                    android:layout_marginBottom="12dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -132,7 +132,7 @@
                                     android:fontFamily="@font/font_geist"
                                     app:fontFamily="@font/font_geist"
                                     android:textStyle="bold"
-                                    android:textSize="15.5sp"
+                                    android:textSize="16sp"
                                     android:textColor="#FFFFFF" />
                             </LinearLayout>
 
@@ -144,21 +144,21 @@
                                 android:text="Stream synced lyrics directly to the rear matrix."
                                 android:fontFamily="@font/font_geist"
                                 app:fontFamily="@font/font_geist"
-                                android:textSize="11.5sp"
+                                android:textSize="12.5sp"
                                 android:textColor="#888888" />
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnLaunchLiveLyrics"
                                 android:layout_width="wrap_content"
-                                android:layout_height="40dp"
+                                android:layout_height="44dp"
                                 android:layout_marginTop="10dp"
                                 android:text="OPEN LIVE LYRICS"
                                 android:fontFamily="@font/font_geist"
                                 app:fontFamily="@font/font_geist"
                                 android:textStyle="bold"
-                                android:letterSpacing="0.06"
-                                android:textSize="11.5sp"
-                                app:cornerRadius="20dp"
+                                android:letterSpacing="0.04"
+                                android:textSize="12sp"
+                                app:cornerRadius="22dp"
                                 app:backgroundTint="#FFFFFF"
                                 android:textColor="#000000"
                                 app:icon="@drawable/ic_audio"
@@ -180,7 +180,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginBottom="8dp">
+                    android:layout_marginBottom="12dp">
 
                     <!-- Left: Media Ingest / Video Crop -->
                     <LinearLayout
@@ -190,7 +190,7 @@
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
                         android:background="@drawable/bg_glass_card"
-                        android:padding="14dp"
+                        android:padding="16dp"
                         android:orientation="vertical">
 
                         <TextView
@@ -199,7 +199,7 @@
                             android:text="Media Import"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
-                            android:textSize="14.5sp"
+                            android:textSize="15.5sp"
                             android:textStyle="bold"
                             android:textColor="#FFFFFF" />
 
@@ -210,27 +210,27 @@
                             android:text="Crop video &amp; GIF for 25×25 matrix"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
-                            android:textSize="11sp"
+                            android:textSize="12sp"
                             android:textColor="#888888" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnSelectVideo"
                             android:layout_width="match_parent"
-                            android:layout_height="40dp"
+                            android:layout_height="44dp"
                             android:layout_marginTop="10dp"
                             android:text="IMPORT"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
                             android:letterSpacing="0.04"
-                            android:textSize="11.5sp"
-                            app:cornerRadius="20dp"
+                            android:textSize="12sp"
+                            app:cornerRadius="22dp"
                             app:backgroundTint="#14FFFFFF"
                             app:strokeColor="#24FFFFFF"
                             app:strokeWidth="1dp"
                             android:textColor="#FFFFFF"
                             app:icon="@drawable/ic_folder"
-                            app:iconSize="13dp"
+                            app:iconSize="14dp"
                             app:iconTint="#FFFFFF" />
                     </LinearLayout>
 
@@ -242,7 +242,7 @@
                         android:layout_weight="1"
                         android:layout_marginStart="4dp"
                         android:background="@drawable/bg_glass_card"
-                        android:padding="14dp"
+                        android:padding="16dp"
                         android:orientation="vertical">
 
                         <TextView
@@ -251,7 +251,7 @@
                             android:text="Lyric Studio"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
-                            android:textSize="14.5sp"
+                            android:textSize="15.5sp"
                             android:textStyle="bold"
                             android:textColor="#FFFFFF" />
 
@@ -262,27 +262,27 @@
                             android:text="Create lyric animations"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
-                            android:textSize="11sp"
+                            android:textSize="12sp"
                             android:textColor="#888888" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnLaunchLyricStudio"
                             android:layout_width="match_parent"
-                            android:layout_height="40dp"
+                            android:layout_height="44dp"
                             android:layout_marginTop="10dp"
                             android:text="STUDIO"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
                             android:letterSpacing="0.04"
-                            android:textSize="11.5sp"
-                            app:cornerRadius="20dp"
+                            android:textSize="12sp"
+                            app:cornerRadius="22dp"
                             app:backgroundTint="#14FFFFFF"
                             app:strokeColor="#24FFFFFF"
                             app:strokeWidth="1dp"
                             android:textColor="#FFFFFF"
                             app:icon="@drawable/ic_lyrics"
-                            app:iconSize="13dp"
+                            app:iconSize="14dp"
                             app:iconTint="#FFFFFF" />
                     </LinearLayout>
                 </LinearLayout>
@@ -293,10 +293,10 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_glass_card"
-                    android:padding="14dp"
+                    android:padding="16dp"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
+                    android:layout_marginBottom="12dp">
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -311,7 +311,7 @@
                             android:text="Music Visualizer"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
-                            android:textSize="14.5sp"
+                            android:textSize="15.5sp"
                             android:textStyle="bold"
                             android:textColor="#FFFFFF" />
 
@@ -322,27 +322,27 @@
                             android:text="Audio-reactive matrix patterns"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
-                            android:textSize="11sp"
+                            android:textSize="12sp"
                             android:textColor="#888888" />
                     </LinearLayout>
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnLaunchVisualizer"
                         android:layout_width="wrap_content"
-                        android:layout_height="40dp"
+                        android:layout_height="44dp"
                         android:text="PATTERNS"
                         android:fontFamily="@font/font_geist"
                         app:fontFamily="@font/font_geist"
                         android:textStyle="bold"
                         android:letterSpacing="0.04"
-                        android:textSize="11.5sp"
-                        app:cornerRadius="20dp"
+                        android:textSize="12sp"
+                        app:cornerRadius="22dp"
                         app:backgroundTint="#14FFFFFF"
                         app:strokeColor="#24FFFFFF"
                         app:strokeWidth="1dp"
                         android:textColor="#FFFFFF"
                         app:icon="@drawable/ic_audio"
-                        app:iconSize="13dp"
+                        app:iconSize="14dp"
                         app:iconTint="#FFFFFF" />
                 </LinearLayout>
 
@@ -352,7 +352,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_glass_card"
-                    android:padding="14dp"
+                    android:padding="16dp"
                     android:orientation="vertical"
                     android:layout_marginBottom="12dp">
 
@@ -363,7 +363,7 @@
                         android:fontFamily="@font/font_geist"
                         app:fontFamily="@font/font_geist"
                         android:textStyle="bold"
-                        android:textSize="13.5sp"
+                        android:textSize="14sp"
                         android:textColor="#FFFFFF" />
 
                     <LinearLayout
@@ -375,14 +375,14 @@
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnAddTileMain"
                             android:layout_width="0dp"
-                            android:layout_height="40dp"
+                            android:layout_height="44dp"
                             android:layout_weight="1"
-                            android:layout_marginEnd="3dp"
+                            android:layout_marginEnd="4dp"
                             android:text="QS TILE"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
-                            android:textSize="10.5sp"
+                            android:textSize="11sp"
                             android:letterSpacing="0.01"
                             android:maxLines="1"
                             android:singleLine="true"
@@ -390,13 +390,13 @@
                             android:paddingHorizontal="4dp"
                             android:insetTop="0dp"
                             android:insetBottom="0dp"
-                            app:cornerRadius="20dp"
+                            app:cornerRadius="22dp"
                             app:backgroundTint="#14FFFFFF"
                             app:strokeColor="#14FFFFFF"
                             app:strokeWidth="1dp"
                             android:textColor="#FFFFFF"
                             app:icon="@drawable/ic_settings"
-                            app:iconSize="13dp"
+                            app:iconSize="14dp"
                             app:iconPadding="3dp"
                             app:iconGravity="textStart"
                             app:iconTint="#FFFFFF" />
@@ -404,14 +404,14 @@
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnAddWidgetMain"
                             android:layout_width="0dp"
-                            android:layout_height="40dp"
+                            android:layout_height="44dp"
                             android:layout_weight="1"
-                            android:layout_marginHorizontal="3dp"
+                            android:layout_marginHorizontal="2dp"
                             android:text="WIDGET"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
-                            android:textSize="10.5sp"
+                            android:textSize="11sp"
                             android:letterSpacing="0.01"
                             android:maxLines="1"
                             android:singleLine="true"
@@ -419,13 +419,13 @@
                             android:paddingHorizontal="4dp"
                             android:insetTop="0dp"
                             android:insetBottom="0dp"
-                            app:cornerRadius="20dp"
+                            app:cornerRadius="22dp"
                             app:backgroundTint="#14FFFFFF"
                             app:strokeColor="#14FFFFFF"
                             app:strokeWidth="1dp"
                             android:textColor="#FFFFFF"
                             app:icon="@drawable/ic_folder"
-                            app:iconSize="13dp"
+                            app:iconSize="14dp"
                             app:iconPadding="3dp"
                             app:iconGravity="textStart"
                             app:iconTint="#FFFFFF" />
@@ -433,14 +433,14 @@
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnVaultMain"
                             android:layout_width="0dp"
-                            android:layout_height="40dp"
+                            android:layout_height="44dp"
                             android:layout_weight="1"
-                            android:layout_marginStart="3dp"
+                            android:layout_marginStart="4dp"
                             android:text="VAULT"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
-                            android:textSize="10.5sp"
+                            android:textSize="11sp"
                             android:letterSpacing="0.01"
                             android:maxLines="1"
                             android:singleLine="true"
@@ -448,13 +448,13 @@
                             android:paddingHorizontal="4dp"
                             android:insetTop="0dp"
                             android:insetBottom="0dp"
-                            app:cornerRadius="20dp"
+                            app:cornerRadius="22dp"
                             app:backgroundTint="#14FFFFFF"
                             app:strokeColor="#14FFFFFF"
                             app:strokeWidth="1dp"
                             android:textColor="#FFFFFF"
                             app:icon="@drawable/ic_folder"
-                            app:iconSize="13dp"
+                            app:iconSize="14dp"
                             app:iconPadding="3dp"
                             app:iconGravity="textStart"
                             app:iconTint="#FFFFFF" />
