@@ -70,9 +70,10 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         WindowInsetsUtil.applySystemBarsPadding(appBarLayout, applyTop = true)
         val scrollView = findViewById<androidx.core.widget.NestedScrollView>(R.id.scrollView)
         scrollView.isSmoothScrollingEnabled = true
+        scrollView.overScrollMode = View.OVER_SCROLL_NEVER
         val navDockContainer = findViewById<View>(R.id.navDockContainer)
         WindowInsetsUtil.applySystemBarsPadding(navDockContainer, applyBottom = true)
-        WindowInsetsUtil.applySystemBarsPadding(scrollView, applyBottom = true, overlayView = navDockContainer)
+        WindowInsetsUtil.applySystemBarsPadding(scrollView, applyBottom = false)
 
         findViewById<LiquidGlassSegmentedBar>(R.id.globalNavDock)?.let { navBar ->
             OdysseyNavDockHelper.attach(this, navBar, 0)

@@ -119,41 +119,28 @@
                                 android:gravity="center_vertical">
 
                                 <View
-                                    android:layout_width="6dp"
-                                    android:layout_height="6dp"
-                                    android:background="@drawable/bg_glass_pill"
-                                    android:backgroundTint="#EA3323" />
+                                    android:layout_width="7dp"
+                                    android:layout_height="7dp"
+                                    android:background="@drawable/bg_indicator_dot" />
 
                                 <TextView
+                                    android:id="@+id/tvHeroTrackTitle"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:layout_marginStart="6dp"
-                                    android:text="LIVE LYRICS"
+                                    android:layout_marginStart="7dp"
+                                    android:text="Live Lyrics"
                                     android:fontFamily="@font/font_geist"
                                     app:fontFamily="@font/font_geist"
                                     android:textStyle="bold"
-                                    android:textSize="10.5sp"
-                                    android:textColor="#EA3323"
-                                    android:letterSpacing="0.06" />
+                                    android:textSize="15.5sp"
+                                    android:textColor="#FFFFFF" />
                             </LinearLayout>
-
-                            <TextView
-                                android:id="@+id/tvHeroTrackTitle"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="5dp"
-                                android:text="Live Matrix Stream"
-                                android:fontFamily="@font/font_geist"
-                                app:fontFamily="@font/font_geist"
-                                android:textSize="15.5sp"
-                                android:textStyle="bold"
-                                android:textColor="#FFFFFF" />
 
                             <TextView
                                 android:id="@+id/tvHeroSubtitle"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
+                                android:layout_marginTop="3dp"
                                 android:text="Stream synced lyrics directly to the rear matrix."
                                 android:fontFamily="@font/font_geist"
                                 app:fontFamily="@font/font_geist"
@@ -209,19 +196,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="MEDIA IMPORT"
-                            android:fontFamily="@font/font_geist"
-                            app:fontFamily="@font/font_geist"
-                            android:textStyle="bold"
-                            android:textSize="10sp"
-                            android:textColor="#888888"
-                            android:letterSpacing="0.06" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Video &amp; GIF"
+                            android:text="Media Import"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textSize="14.5sp"
@@ -231,8 +206,8 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Crop for 25×25 matrix"
+                            android:layout_marginTop="3dp"
+                            android:text="Crop video &amp; GIF for 25×25 matrix"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textSize="11sp"
@@ -273,18 +248,6 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="LYRIC STUDIO"
-                            android:fontFamily="@font/font_geist"
-                            app:fontFamily="@font/font_geist"
-                            android:textStyle="bold"
-                            android:textSize="10sp"
-                            android:textColor="#888888"
-                            android:letterSpacing="0.06" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
                             android:text="Lyric Studio"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
@@ -295,7 +258,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
+                            android:layout_marginTop="3dp"
                             android:text="Create lyric animations"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
@@ -324,78 +287,63 @@
                     </LinearLayout>
                 </LinearLayout>
 
-                <!-- BENTO ROW 3: STANDALONE VISUALIZER & MINI EQ -->
+                <!-- BENTO ROW 3: STANDALONE VISUALIZER -->
                 <LinearLayout
                     android:id="@+id/cardVisualizer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_glass_card"
                     android:padding="14dp"
-                    android:orientation="vertical"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
                     android:layout_marginBottom="8dp">
 
                     <LinearLayout
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
+                        android:orientation="vertical"
+                        android:layout_marginEnd="12dp">
 
                         <TextView
-                            android:layout_width="0dp"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="MUSIC VISUALIZER"
-                            android:fontFamily="@font/font_geist"
-                            app:fontFamily="@font/font_geist"
-                            android:textStyle="bold"
-                            android:textSize="10sp"
-                            android:textColor="#888888"
-                            android:letterSpacing="0.06" />
-
-                        <!-- Real Live Animated Audio Spectrum Meter (Option B) -->
-                        <com.example.odysseyglyph.LiveAudioMeterView
-                            android:id="@+id/liveAudioMeter"
-                            android:layout_width="28dp"
-                            android:layout_height="16dp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginTop="6dp">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Live Audio Spectrum"
+                            android:text="Music Visualizer"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textSize="14.5sp"
                             android:textStyle="bold"
                             android:textColor="#FFFFFF" />
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnLaunchVisualizer"
+                        <TextView
                             android:layout_width="wrap_content"
-                            android:layout_height="40dp"
-                            android:text="PATTERNS"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Audio-reactive matrix patterns"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
-                            android:textStyle="bold"
-                            android:letterSpacing="0.04"
-                            android:textSize="11.5sp"
-                            app:cornerRadius="20dp"
-                            app:backgroundTint="#14FFFFFF"
-                            app:strokeColor="#24FFFFFF"
-                            app:strokeWidth="1dp"
-                            android:textColor="#FFFFFF"
-                            app:icon="@drawable/ic_audio"
-                            app:iconSize="13dp"
-                            app:iconTint="#FFFFFF" />
+                            android:textSize="11sp"
+                            android:textColor="#888888" />
                     </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLaunchVisualizer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:text="PATTERNS"
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.04"
+                        android:textSize="11.5sp"
+                        app:cornerRadius="20dp"
+                        app:backgroundTint="#14FFFFFF"
+                        app:strokeColor="#24FFFFFF"
+                        app:strokeWidth="1dp"
+                        android:textColor="#FFFFFF"
+                        app:icon="@drawable/ic_audio"
+                        app:iconSize="13dp"
+                        app:iconTint="#FFFFFF" />
                 </LinearLayout>
 
                 <!-- BENTO ROW 4: QUICK ACCESS & HARDWARE TOYS DECK -->
@@ -411,13 +359,12 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="PHONE CONTROLS"
+                        android:text="Phone Controls"
                         android:fontFamily="@font/font_geist"
                         app:fontFamily="@font/font_geist"
                         android:textStyle="bold"
-                        android:textSize="10sp"
-                        android:textColor="#888888"
-                        android:letterSpacing="0.06" />
+                        android:textSize="13.5sp"
+                        android:textColor="#FFFFFF" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
