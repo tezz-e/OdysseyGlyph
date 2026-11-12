@@ -38,7 +38,7 @@
                     android:text="GLYPH ODYSSEY"
                     android:fontFamily="@font/ndot57"
                     app:fontFamily="@font/ndot57"
-                    android:textSize="19sp"
+                    android:textSize="20sp"
                     android:textColor="#FFFFFF"
                     android:letterSpacing="0.08" />
             </LinearLayout>
@@ -49,7 +49,7 @@
                 android:layout_marginTop="1dp"
                 android:text="25×25 LED Matrix Console"
                 android:fontFamily="monospace"
-                android:textSize="10.5sp"
+                android:textSize="11sp"
                 android:textColor="#888888"
                 android:letterSpacing="0.04" />
 
@@ -94,7 +94,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_glass_card"
-                    android:padding="14dp"
+                    android:padding="15dp"
                     android:layout_marginBottom="8dp">
 
                     <LinearLayout
@@ -131,7 +131,7 @@
                                     android:fontFamily="@font/font_geist"
                                     app:fontFamily="@font/font_geist"
                                     android:textStyle="bold"
-                                    android:textSize="10sp"
+                                    android:textSize="10.5sp"
                                     android:textColor="#EA3323"
                                     android:letterSpacing="0.06" />
                             </LinearLayout>
@@ -144,7 +144,7 @@
                                 android:text="Live Matrix Stream"
                                 android:fontFamily="@font/font_geist"
                                 app:fontFamily="@font/font_geist"
-                                android:textSize="15sp"
+                                android:textSize="15.5sp"
                                 android:textStyle="bold"
                                 android:textColor="#FFFFFF" />
 
@@ -156,21 +156,21 @@
                                 android:text="Stream synced lyrics directly to the rear matrix."
                                 android:fontFamily="@font/font_geist"
                                 app:fontFamily="@font/font_geist"
-                                android:textSize="11sp"
+                                android:textSize="11.5sp"
                                 android:textColor="#888888" />
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnLaunchLiveLyrics"
                                 android:layout_width="wrap_content"
-                                android:layout_height="38dp"
+                                android:layout_height="40dp"
                                 android:layout_marginTop="10dp"
                                 android:text="OPEN LIVE LYRICS"
                                 android:fontFamily="@font/font_geist"
                                 app:fontFamily="@font/font_geist"
                                 android:textStyle="bold"
                                 android:letterSpacing="0.06"
-                                android:textSize="11sp"
-                                app:cornerRadius="19dp"
+                                android:textSize="11.5sp"
+                                app:cornerRadius="20dp"
                                 app:backgroundTint="#FFFFFF"
                                 android:textColor="#000000"
                                 app:icon="@drawable/ic_audio"
@@ -181,8 +181,8 @@
                         <!-- Right: Real-time 25x25 LED Circular Mirror -->
                         <com.example.odysseyglyph.GlyphMatrixMirrorView
                             android:id="@+id/glyphMatrixMirror"
-                            android:layout_width="84dp"
-                            android:layout_height="84dp"
+                            android:layout_width="88dp"
+                            android:layout_height="88dp"
                             android:layout_gravity="center" />
                     </LinearLayout>
                 </FrameLayout>
@@ -202,7 +202,7 @@
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
                         android:background="@drawable/bg_glass_card"
-                        android:padding="13dp"
+                        android:padding="14dp"
                         android:orientation="vertical">
 
                         <TextView
@@ -212,7 +212,7 @@
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
-                            android:textSize="9.5sp"
+                            android:textSize="10sp"
                             android:textColor="#888888"
                             android:letterSpacing="0.06" />
 
@@ -223,7 +223,7 @@
                             android:text="Video &amp; GIF"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
-                            android:textSize="14sp"
+                            android:textSize="14.5sp"
                             android:textStyle="bold"
                             android:textColor="#FFFFFF" />
 
@@ -234,21 +234,21 @@
                             android:text="Crop for 25×25 matrix"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
-                            android:textSize="10.5sp"
+                            android:textSize="11sp"
                             android:textColor="#888888" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnSelectVideo"
                             android:layout_width="match_parent"
-                            android:layout_height="38dp"
+                            android:layout_height="40dp"
                             android:layout_marginTop="10dp"
                             android:text="IMPORT"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
                             android:letterSpacing="0.04"
-                            android:textSize="11sp"
-                            app:cornerRadius="19dp"
+                            android:textSize="11.5sp"
+                            app:cornerRadius="20dp"
                             app:backgroundTint="#14FFFFFF"
                             app:strokeColor="#24FFFFFF"
                             app:strokeWidth="1dp"
@@ -266,7 +266,7 @@
                         android:layout_weight="1"
                         android:layout_marginStart="4dp"
                         android:background="@drawable/bg_glass_card"
-                        android:padding="13dp"
+                        android:padding="14dp"
                         android:orientation="vertical">
 
                         <TextView
@@ -276,7 +276,7 @@
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
-                            android:textSize="9.5sp"
+                            android:textSize="10sp"
                             android:textColor="#888888"
                             android:letterSpacing="0.06" />
 
@@ -287,7 +287,7 @@
                             android:text="Lyric Studio"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
-                            android:textSize="14sp"
+                            android:textSize="14.5sp"
                             android:textStyle="bold"
                             android:textColor="#FFFFFF" />
 
@@ -298,21 +298,21 @@
                             android:text="Create lyric animations"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
-                            android:textSize="10.5sp"
+                            android:textSize="11sp"
                             android:textColor="#888888" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnLaunchLyricStudio"
                             android:layout_width="match_parent"
-                            android:layout_height="38dp"
+                            android:layout_height="40dp"
                             android:layout_marginTop="10dp"
                             android:text="STUDIO"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
                             android:letterSpacing="0.04"
-                            android:textSize="11sp"
-                            app:cornerRadius="19dp"
+                            android:textSize="11.5sp"
+                            app:cornerRadius="20dp"
                             app:backgroundTint="#14FFFFFF"
                             app:strokeColor="#24FFFFFF"
                             app:strokeWidth="1dp"
@@ -329,7 +329,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_glass_card"
-                    android:padding="13dp"
+                    android:padding="14dp"
                     android:orientation="vertical"
                     android:layout_marginBottom="8dp">
 
@@ -347,7 +347,7 @@
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
-                            android:textSize="9.5sp"
+                            android:textSize="10sp"
                             android:textColor="#888888"
                             android:letterSpacing="0.06" />
 
@@ -372,21 +372,21 @@
                             android:text="Live Audio Spectrum"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
-                            android:textSize="14sp"
+                            android:textSize="14.5sp"
                             android:textStyle="bold"
                             android:textColor="#FFFFFF" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnLaunchVisualizer"
                             android:layout_width="wrap_content"
-                            android:layout_height="38dp"
+                            android:layout_height="40dp"
                             android:text="PATTERNS"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
                             android:letterSpacing="0.04"
-                            android:textSize="11sp"
-                            app:cornerRadius="19dp"
+                            android:textSize="11.5sp"
+                            app:cornerRadius="20dp"
                             app:backgroundTint="#14FFFFFF"
                             app:strokeColor="#24FFFFFF"
                             app:strokeWidth="1dp"
@@ -403,7 +403,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_glass_card"
-                    android:padding="13dp"
+                    android:padding="14dp"
                     android:orientation="vertical"
                     android:layout_marginBottom="12dp">
 
@@ -414,7 +414,7 @@
                         android:fontFamily="@font/font_geist"
                         app:fontFamily="@font/font_geist"
                         android:textStyle="bold"
-                        android:textSize="9.5sp"
+                        android:textSize="10sp"
                         android:textColor="#888888"
                         android:letterSpacing="0.06" />
 
@@ -427,14 +427,14 @@
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnAddTileMain"
                             android:layout_width="0dp"
-                            android:layout_height="38dp"
+                            android:layout_height="40dp"
                             android:layout_weight="1"
                             android:layout_marginEnd="3dp"
                             android:text="QS TILE"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
-                            android:textSize="10sp"
+                            android:textSize="10.5sp"
                             android:letterSpacing="0.01"
                             android:maxLines="1"
                             android:singleLine="true"
@@ -442,7 +442,7 @@
                             android:paddingHorizontal="4dp"
                             android:insetTop="0dp"
                             android:insetBottom="0dp"
-                            app:cornerRadius="19dp"
+                            app:cornerRadius="20dp"
                             app:backgroundTint="#14FFFFFF"
                             app:strokeColor="#14FFFFFF"
                             app:strokeWidth="1dp"
@@ -456,14 +456,14 @@
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnAddWidgetMain"
                             android:layout_width="0dp"
-                            android:layout_height="38dp"
+                            android:layout_height="40dp"
                             android:layout_weight="1"
                             android:layout_marginHorizontal="3dp"
                             android:text="WIDGET"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
-                            android:textSize="10sp"
+                            android:textSize="10.5sp"
                             android:letterSpacing="0.01"
                             android:maxLines="1"
                             android:singleLine="true"
@@ -471,7 +471,7 @@
                             android:paddingHorizontal="4dp"
                             android:insetTop="0dp"
                             android:insetBottom="0dp"
-                            app:cornerRadius="19dp"
+                            app:cornerRadius="20dp"
                             app:backgroundTint="#14FFFFFF"
                             app:strokeColor="#14FFFFFF"
                             app:strokeWidth="1dp"
@@ -485,14 +485,14 @@
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnVaultMain"
                             android:layout_width="0dp"
-                            android:layout_height="38dp"
+                            android:layout_height="40dp"
                             android:layout_weight="1"
                             android:layout_marginStart="3dp"
                             android:text="VAULT"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
-                            android:textSize="10sp"
+                            android:textSize="10.5sp"
                             android:letterSpacing="0.01"
                             android:maxLines="1"
                             android:singleLine="true"
@@ -500,7 +500,7 @@
                             android:paddingHorizontal="4dp"
                             android:insetTop="0dp"
                             android:insetBottom="0dp"
-                            app:cornerRadius="19dp"
+                            app:cornerRadius="20dp"
                             app:backgroundTint="#14FFFFFF"
                             app:strokeColor="#14FFFFFF"
                             app:strokeWidth="1dp"

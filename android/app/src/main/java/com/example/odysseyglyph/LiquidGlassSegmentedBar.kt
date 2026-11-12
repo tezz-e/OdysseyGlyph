@@ -82,7 +82,7 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
     }
 
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textSize = 10.5f * scaledDensity
+        textSize = 11f * scaledDensity
         textAlign = Paint.Align.CENTER
         letterSpacing = 0.05f
         isFakeBoldText = true

@@ -22,15 +22,15 @@
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingHorizontal="16dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="4dp"
+            android:paddingTop="9dp"
+            android:paddingBottom="5dp"
             app:layout_scrollFlags="scroll|enterAlways">
 
             <ImageView
                 android:id="@+id/btnBack"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:padding="6dp"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:padding="7dp"
                 android:src="@drawable/ic_arrow_back"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Back"
@@ -50,7 +50,7 @@
                     android:fontFamily="@font/ndot57"
                     app:fontFamily="@font/ndot57"
                     android:textColor="#FFFFFF"
-                    android:textSize="16sp"
+                    android:textSize="17sp"
                     android:letterSpacing="0.08" />
 
                 <TextView
@@ -62,7 +62,7 @@
                     app:fontFamily="@font/font_geist"
                     android:textStyle="bold"
                     android:textColor="#AAAAAA"
-                    android:textSize="9.5sp"
+                    android:textSize="10sp"
                     android:letterSpacing="0.06" />
             </LinearLayout>
 
@@ -93,8 +93,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="14dp"
-            android:paddingBottom="28dp">
+            android:paddingHorizontal="15dp"
+            android:paddingBottom="30dp">
 
             <!-- Hero Dual-Lens Card -->
             <FrameLayout
@@ -102,9 +102,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_glass_card"
-                android:padding="12dp"
-                android:layout_marginTop="2dp"
-                android:layout_marginBottom="6dp">
+                android:padding="13dp"
+                android:layout_marginTop="3dp"
+                android:layout_marginBottom="7dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -117,7 +117,7 @@
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
                         android:gravity="center_vertical"
-                        android:layout_marginBottom="8dp">
+                        android:layout_marginBottom="9dp">
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -128,8 +128,8 @@
 
                             <com.example.odysseyglyph.GlyphMatrixMirrorView
                                 android:id="@+id/liveMatrixMirror"
-                                android:layout_width="70dp"
-                                android:layout_height="70dp" />
+                                android:layout_width="74dp"
+                                android:layout_height="74dp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
@@ -139,16 +139,16 @@
                                 app:fontFamily="@font/font_geist"
                                 android:textStyle="bold"
                                 android:textColor="#B0B0B0"
-                                android:textSize="9.5sp"
+                                android:textSize="10sp"
                                 android:letterSpacing="0.04"
                                 android:layout_marginTop="3dp" />
                         </LinearLayout>
 
                         <View
                             android:layout_width="1dp"
-                            android:layout_height="64dp"
+                            android:layout_height="68dp"
                             android:background="#222222"
-                            android:layout_marginHorizontal="8dp" />
+                            android:layout_marginHorizontal="9dp" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -159,8 +159,8 @@
 
                             <com.example.odysseyglyph.OscilloscopeReticleView
                                 android:id="@+id/oscilloscopeView"
-                                android:layout_width="70dp"
-                                android:layout_height="70dp" />
+                                android:layout_width="74dp"
+                                android:layout_height="74dp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
@@ -170,7 +170,7 @@
                                 app:fontFamily="@font/font_geist"
                                 android:textStyle="bold"
                                 android:textColor="#B0B0B0"
-                                android:textSize="9.5sp"
+                                android:textSize="10sp"
                                 android:letterSpacing="0.04"
                                 android:layout_marginTop="3dp" />
                         </LinearLayout>
@@ -186,7 +186,7 @@
                         app:fontFamily="@font/font_geist"
                         android:textStyle="bold"
                         android:textColor="#FFFFFF"
-                        android:textSize="13sp"
+                        android:textSize="13.5sp"
                         android:letterSpacing="0.04" />
 
                     <TextView
@@ -197,7 +197,7 @@
                         android:fontFamily="@font/font_geist"
                         app:fontFamily="@font/font_geist"
                         android:textColor="#A0A0A0"
-                        android:textSize="11sp"
+                        android:textSize="11.5sp"
                         android:layout_marginTop="2dp" />
                 </LinearLayout>
             </FrameLayout>
@@ -215,8 +215,8 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:background="@drawable/bg_glass_card"
-                    android:padding="12dp"
-                    android:layout_marginBottom="6dp">
+                    android:padding="13dp"
+                    android:layout_marginBottom="7dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -225,7 +225,7 @@
                         android:textColor="#FFFFFF"
                         android:fontFamily="@font/font_geist"
                         app:fontFamily="@font/font_geist"
-                        android:textSize="12sp"
+                        android:textSize="12.5sp"
                         android:textStyle="bold"
                         android:letterSpacing="0.04"
                         android:layout_marginBottom="3dp" />
@@ -237,21 +237,21 @@
                         android:textColor="#A0A0A0"
                         android:fontFamily="@font/font_geist"
                         app:fontFamily="@font/font_geist"
-                        android:textSize="10.5sp"
+                        android:textSize="11sp"
                         android:lineSpacingExtra="1dp"
                         android:layout_marginBottom="8dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnGrantPermission"
                         android:layout_width="match_parent"
-                        android:layout_height="36dp"
-                        app:cornerRadius="18dp"
+                        android:layout_height="38dp"
+                        app:cornerRadius="19dp"
                         android:backgroundTint="#EA3323"
                         android:textColor="#FFFFFF"
                         android:fontFamily="@font/font_geist"
                         app:fontFamily="@font/font_geist"
                         android:textStyle="bold"
-                        android:textSize="10.5sp"
+                        android:textSize="11sp"
                         android:letterSpacing="0.04"
                         android:text="Enable Access" />
                 </LinearLayout>
@@ -270,8 +270,8 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:background="@drawable/bg_glass_card"
-                    android:padding="12dp"
-                    android:layout_marginBottom="6dp">
+                    android:padding="13dp"
+                    android:layout_marginBottom="7dp">
 
                     <!-- Section 1: Animation Style -->
                     <TextView
@@ -282,14 +282,14 @@
                         android:fontFamily="@font/font_geist"
                         app:fontFamily="@font/font_geist"
                         android:textStyle="bold"
-                        android:textSize="10.5sp"
+                        android:textSize="11sp"
                         android:letterSpacing="0.06"
                         android:layout_marginBottom="4dp" />
 
                     <com.example.odysseyglyph.LiquidGlassSegmentedBar
                         android:id="@+id/toggleAnimation"
                         android:layout_width="match_parent"
-                        android:layout_height="36dp"
+                        android:layout_height="38dp"
                         android:layout_marginBottom="8dp" />
 
                     <!-- Section 2: Sync Offset Timing -->
@@ -309,7 +309,7 @@
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
-                            android:textSize="10.5sp"
+                            android:textSize="11sp"
                             android:letterSpacing="0.06" />
 
                         <TextView
@@ -321,7 +321,7 @@
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
                             android:textColor="#FFFFFF"
-                            android:textSize="10.5sp"
+                            android:textSize="11sp"
                             android:layout_marginEnd="6dp" />
 
                         <TextView
@@ -333,10 +333,10 @@
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
                             android:textColor="#EA3323"
-                            android:textSize="9.5sp"
+                            android:textSize="10sp"
                             android:letterSpacing="0.06"
-                            android:paddingHorizontal="7dp"
-                            android:paddingVertical="2dp"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="3dp"
                             android:background="@drawable/bg_glass_pill" />
                     </LinearLayout>
 
@@ -351,8 +351,8 @@
                         app:thumbColor="#EA3323"
                         app:trackColorActive="#EA3323"
                         app:trackColorInactive="#202024"
-                        app:trackHeight="3.5dp"
-                        app:thumbRadius="8dp"
+                        app:trackHeight="4dp"
+                        app:thumbRadius="8.5dp"
                         app:thumbElevation="0dp"
                         app:haloRadius="0dp"
                         app:haloColor="@android:color/transparent"
@@ -364,7 +364,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
                         android:background="#14FFFFFF"
-                        android:layout_marginVertical="8dp" />
+                        android:layout_marginVertical="9dp" />
 
                     <!-- Section 3: Typeface -->
                     <TextView
@@ -375,21 +375,21 @@
                         android:fontFamily="@font/font_geist"
                         app:fontFamily="@font/font_geist"
                         android:textStyle="bold"
-                        android:textSize="10.5sp"
+                        android:textSize="11sp"
                         android:letterSpacing="0.06"
                         android:layout_marginBottom="4dp" />
 
                     <com.example.odysseyglyph.LiquidGlassSegmentedBar
                         android:id="@+id/toggleTypography"
                         android:layout_width="match_parent"
-                        android:layout_height="36dp" />
+                        android:layout_height="38dp" />
 
                     <!-- Hairline Divider -->
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
                         android:background="#14FFFFFF"
-                        android:layout_marginVertical="8dp" />
+                        android:layout_marginVertical="9dp" />
 
                     <!-- Section 4: Fallback Visualizer -->
                     <LinearLayout
@@ -412,7 +412,7 @@
                                 android:fontFamily="@font/font_geist"
                                 app:fontFamily="@font/font_geist"
                                 android:textStyle="bold"
-                                android:textSize="10.5sp"
+                                android:textSize="11sp"
                                 android:letterSpacing="0.06" />
 
                             <TextView
@@ -423,7 +423,7 @@
                                 android:fontFamily="@font/font_geist"
                                 app:fontFamily="@font/font_geist"
                                 android:textColor="#B0B0B0"
-                                android:textSize="10sp"
+                                android:textSize="10.5sp"
                                 android:layout_marginTop="2dp" />
                         </LinearLayout>
 
@@ -436,20 +436,20 @@
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCustomizeFallback"
                         android:layout_width="match_parent"
-                        android:layout_height="36dp"
+                        android:layout_height="38dp"
                         android:text="CUSTOMIZE PATTERN"
                         android:fontFamily="@font/font_geist"
                         app:fontFamily="@font/font_geist"
                         android:textStyle="bold"
-                        android:textSize="10.5sp"
+                        android:textSize="11sp"
                         android:letterSpacing="0.04"
                         android:textColor="#FFFFFF"
                         app:backgroundTint="#14FFFFFF"
                         app:strokeColor="#24FFFFFF"
                         app:strokeWidth="1dp"
-                        app:cornerRadius="18dp"
+                        app:cornerRadius="19dp"
                         app:rippleColor="#20FFFFFF"
-                        android:layout_marginTop="6dp" />
+                        android:layout_marginTop="7dp" />
                 </LinearLayout>
 
                 <!-- Shortcuts Row -->
@@ -458,44 +458,44 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:weightSum="2"
-                    android:layout_marginBottom="6dp">
+                    android:layout_marginBottom="7dp">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnOpenManager"
                         android:layout_width="0dp"
-                        android:layout_height="36dp"
+                        android:layout_height="38dp"
                         android:layout_weight="1"
                         android:layout_marginEnd="3dp"
                         android:text="GLYPH HUB"
                         android:fontFamily="@font/font_geist"
                         app:fontFamily="@font/font_geist"
                         android:textStyle="bold"
-                        android:textSize="10.5sp"
+                        android:textSize="11sp"
                         android:letterSpacing="0.04"
                         android:textColor="#FFFFFF"
                         app:backgroundTint="#14FFFFFF"
                         app:strokeColor="#24FFFFFF"
                         app:strokeWidth="1dp"
-                        app:cornerRadius="18dp"
+                        app:cornerRadius="19dp"
                         app:rippleColor="#20FFFFFF" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnAddTile"
                         android:layout_width="0dp"
-                        android:layout_height="36dp"
+                        android:layout_height="38dp"
                         android:layout_weight="1"
                         android:layout_marginStart="3dp"
                         android:text="QUICK TILE"
                         android:fontFamily="@font/font_geist"
                         app:fontFamily="@font/font_geist"
                         android:textStyle="bold"
-                        android:textSize="10.5sp"
+                        android:textSize="11sp"
                         android:letterSpacing="0.04"
                         android:textColor="#FFFFFF"
                         app:backgroundTint="#14FFFFFF"
                         app:strokeColor="#24FFFFFF"
                         app:strokeWidth="1dp"
-                        app:cornerRadius="18dp"
+                        app:cornerRadius="19dp"
                         app:rippleColor="#20FFFFFF" />
                 </LinearLayout>
 
