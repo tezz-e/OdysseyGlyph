@@ -91,8 +91,10 @@
     <style name="Widget.Odyssey.Slider" parent="Widget.Material3.Slider">
         <item name="thumbColor">#EA3323</item>
         <item name="trackColorActive">#EA3323</item>
-        <item name="trackColorInactive">#262626</item>
-        <item name="haloColor">#33EA3323</item>
+        <item name="trackColorInactive">#202024</item>
+        <item name="haloColor">@android:color/transparent</item>
+        <item name="thumbElevation">0dp</item>
+        <item name="tickVisible">false</item>
         <item name="labelStyle">@style/Widget.Odyssey.SliderTooltip</item>
     </style>
 

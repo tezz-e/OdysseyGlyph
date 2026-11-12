@@ -219,26 +219,35 @@
                         android:layout_height="wrap_content"
                         android:text="Notification Access"
                         android:textColor="#FFFFFF"
-                        android:fontFamily="@font/jetbrains_mono"
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
                         android:textSize="14sp"
                         android:textStyle="bold"
+                        android:letterSpacing="0.04"
                         android:layout_marginBottom="6dp" />
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Required to read track titles and playback timestamps locally. No data leaves your device."
-                        android:textColor="#888888"
-                        android:textSize="13sp"
-                        android:layout_marginBottom="12dp" />
+                        android:textColor="#A0A0A0"
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
+                        android:textSize="12.5sp"
+                        android:lineSpacingExtra="2dp"
+                        android:layout_marginBottom="14dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnGrantPermission"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
-                        app:cornerRadius="12dp"
+                        app:cornerRadius="24dp"
                         android:backgroundTint="#EA3323"
                         android:textColor="#FFFFFF"
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.04"
                         android:text="Enable Access" />
                 </LinearLayout>
 
@@ -336,11 +345,13 @@
                         android:value="0.0"
                         app:thumbColor="#EA3323"
                         app:trackColorActive="#EA3323"
-                        app:trackColorInactive="#262626"
+                        app:trackColorInactive="#202024"
                         app:trackHeight="4dp"
                         app:thumbRadius="10dp"
-                        app:thumbElevation="2dp"
+                        app:thumbElevation="0dp"
                         app:haloRadius="0dp"
+                        app:haloColor="@android:color/transparent"
+                        app:tickVisible="false"
                         app:labelBehavior="gone" />
 
                     <!-- Hairline Divider -->
