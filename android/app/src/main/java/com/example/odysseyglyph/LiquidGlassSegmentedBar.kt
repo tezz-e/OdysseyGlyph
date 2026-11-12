@@ -54,19 +54,19 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
         color = Color.parseColor("#18FFFFFF") // Uniform 1px laser-etched channel rim
     }
 
-    // Active Hardware Fader Plate paints (Smoked Polycarbonate Keycap)
+    // Active Nothing OS Stark White Fader Plate
     private val thumbShadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
-        color = Color.parseColor("#30000000") // Minimal mechanical flush shadow
+        color = Color.parseColor("#38000000") // Clean mechanical drop shadow
     }
     private val thumbPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
-        color = Color.parseColor("#26262B") // Matte dark graphite plate
+        color = Color.WHITE // Stark pure Nothing white #FFFFFF
     }
     private val thumbRimPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = 1f * density
-        color = Color.parseColor("#30FFFFFF") // Uniform laser-etched chamfer outline
+        color = Color.parseColor("#10000000") // Subtle precision edge
     }
 
     // Text paints
@@ -93,15 +93,17 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
         } catch (_: Exception) {}
     }
 
-    // Industrial palette: Muted technical silver vs High-contrast Nothing white
-    private val inactiveColorR = 110
-    private val inactiveColorG = 110
-    private val inactiveColorB = 118
-    private val inactiveColorA = 180
+    // Stark monochrome Nothing OS palette:
+    // Inactive: Muted technical silver #888890
+    // Active (inside white plate): Pure Pitch Black #000000
+    private val inactiveColorR = 136
+    private val inactiveColorG = 136
+    private val inactiveColorB = 144
+    private val inactiveColorA = 200
 
-    private val activeColorR = 255
-    private val activeColorG = 255
-    private val activeColorB = 255
+    private val activeColorR = 0
+    private val activeColorG = 0
+    private val activeColorB = 0
     private val activeColorA = 255
 
     // Geometry
