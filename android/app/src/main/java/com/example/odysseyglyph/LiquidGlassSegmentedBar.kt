@@ -13,6 +13,7 @@ import android.util.AttributeSet
 import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import android.view.animation.OvershootInterpolator
 import kotlin.math.abs
 import kotlin.math.max
@@ -124,10 +125,16 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
     private var targetRight: Float = 0f
     private var animator: ValueAnimator? = null
 
-    // Touch & Scrubbing state (expo-glass-tabs pattern)
+    // Touch & Scrubbing state (Apple UISegmentedControl & expo-glass-tabs parity)
+    private val touchSlop by lazy { ViewConfiguration.get(context).scaledTouchSlop }
     private var isDragging = false
+    private var isTouchActive = false
     private var touchDownX = 0f
+    private var touchDownY = 0f
+    private var dragCenterOffset = 0f
     private var lastHapticIndex = -1
+    private var lastMoveX = 0f
+    private var dynamicStretch = 1.0f
 
     init {
         isClickable = true
@@ -218,7 +225,7 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
     }
 
     /**
-     * Animate with Liquid Glass Spring (expo-glass-tabs SLIDE_SPRING parity):
+     * Animate with Liquid Glass Spring (Apple UISegmentedControl & expo-glass-tabs SLIDE_SPRING):
      * Leading edge shoots ahead (stretching the liquid pill), trailing edge snaps up with spring settle.
      */
     private fun animateThumbTo(targetIndex: Int) {
@@ -227,15 +234,18 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
 
         val startLeft = thumbLeft
         val startRight = thumbRight
-        val movingRight = targetRight > startRight
+        val movingRight = targetRight >= startRight
 
         animator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration = 340L
-            interpolator = OvershootInterpolator(1.2f)
+            duration = 320L
+            interpolator = OvershootInterpolator(1.25f)
             addUpdateListener { va ->
                 val fraction = va.animatedValue as Float
 
-                if (movingRight) {
+                if (abs(targetRight - startRight) < 2f && abs(targetLeft - startLeft) < 2f) {
+                    thumbLeft = targetLeft
+                    thumbRight = targetRight
+                } else if (movingRight) {
                     val rightFrac = min(1.0f, fraction * 1.25f)
                     val leftFrac = max(0.0f, (fraction - 0.15f) / 0.85f)
                     thumbRight = startRight + (targetRight - startRight) * rightFrac
@@ -260,17 +270,63 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
 
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                // Immediately request parent scroll containers not to intercept
+                parent?.requestDisallowInterceptTouchEvent(true)
                 animator?.cancel()
-                isDragging = true
                 touchDownX = event.x
+                touchDownY = event.y
+                lastMoveX = event.x
+                isDragging = false
+                isTouchActive = true
+
+                // Check if touch down landed on the active thumb for 1:1 grab
+                val isInsideThumb = event.x >= thumbLeft && event.x <= thumbRight
+                val currentThumbCenter = (thumbLeft + thumbRight) / 2f
+                dragCenterOffset = if (isInsideThumb) currentThumbCenter - event.x else 0f
+
                 vibrateTick()
+                invalidate()
                 return true
             }
+
             MotionEvent.ACTION_MOVE -> {
+                if (!isTouchActive) return true
+
+                val dx = event.x - touchDownX
+                val dy = event.y - touchDownY
+
+                if (!isDragging) {
+                    if (abs(dx) > touchSlop && abs(dx) > abs(dy)) {
+                        isDragging = true
+                        parent?.requestDisallowInterceptTouchEvent(true)
+                    } else if (abs(dy) > touchSlop && abs(dy) > abs(dx) && dragCenterOffset == 0f) {
+                        // User clearly intended vertical scrolling on empty track
+                        parent?.requestDisallowInterceptTouchEvent(false)
+                        isTouchActive = false
+                        return false
+                    }
+                }
+
                 if (isDragging) {
-                    // 1:1 finger scrubbing (expo-glass-tabs pattern)
-                    val touchX = event.x.coerceIn(thumbPadding, width.toFloat() - thumbPadding)
-                    val activeIndex = ((touchX - thumbPadding) / segmentWidth).toInt()
+                    parent?.requestDisallowInterceptTouchEvent(true)
+
+                    // Calculate instantaneous drag velocity for Apple-style dynamic stretch
+                    val moveDeltaX = event.x - lastMoveX
+                    lastMoveX = event.x
+                    val velocityStretch = (abs(moveDeltaX) / (8f * density)).coerceIn(0f, 0.25f)
+                    dynamicStretch = 1.08f + velocityStretch // Dynamic 8% to 33% elongation while dragging
+
+                    // Boundary rubber-band resistance
+                    val minCenter = thumbPadding + (segmentWidth / 2f)
+                    val maxCenter = width.toFloat() - thumbPadding - (segmentWidth / 2f)
+                    val rawCenter = event.x + dragCenterOffset
+                    val currentCenter = when {
+                        rawCenter < minCenter -> minCenter - (minCenter - rawCenter) * 0.2f
+                        rawCenter > maxCenter -> maxCenter + (rawCenter - maxCenter) * 0.2f
+                        else -> rawCenter
+                    }
+
+                    val activeIndex = ((currentCenter - thumbPadding) / segmentWidth).toInt()
                         .coerceIn(0, segments.size - 1)
 
                     if (activeIndex != lastHapticIndex) {
@@ -278,31 +334,44 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
                         vibrateDetent()
                     }
 
-                    // Jelly stretch tracking finger velocity
-                    val currentCenter = touchX
-                    val halfWidth = (segmentWidth / 2f) * 1.15f // 15% dynamic elastic elongation
-                    thumbLeft = (currentCenter - halfWidth).coerceAtLeast(thumbPadding)
-                    thumbRight = (currentCenter + halfWidth).coerceAtMost(width.toFloat() - thumbPadding)
+                    val halfWidth = (segmentWidth / 2f) * dynamicStretch
+                    thumbLeft = (currentCenter - halfWidth).coerceAtLeast(thumbPadding * 0.5f)
+                    thumbRight = (currentCenter + halfWidth).coerceAtMost(width.toFloat() - thumbPadding * 0.5f)
                     invalidate()
                 }
                 return true
             }
-            MotionEvent.ACTION_UP -> {
-                isDragging = false
-                val touchX = event.x.coerceIn(thumbPadding, width.toFloat() - thumbPadding)
-                val finalIndex = ((touchX - thumbPadding) / segmentWidth).toInt()
-                    .coerceIn(0, segments.size - 1)
 
+            MotionEvent.ACTION_UP -> {
+                parent?.requestDisallowInterceptTouchEvent(false)
+                isTouchActive = false
+
+                val finalIndex = if (isDragging) {
+                    // Released after drag: snap to segment closest to thumb center
+                    val currentCenter = (thumbLeft + thumbRight) / 2f
+                    ((currentCenter - thumbPadding) / segmentWidth).toInt().coerceIn(0, segments.size - 1)
+                } else {
+                    // Single tap / click: select segment where tap landed
+                    val touchX = event.x.coerceIn(thumbPadding, width.toFloat() - thumbPadding)
+                    ((touchX - thumbPadding) / segmentWidth).toInt().coerceIn(0, segments.size - 1)
+                }
+
+                isDragging = false
+                val changed = finalIndex != selectedIndex
                 selectedIndex = finalIndex
                 lastHapticIndex = finalIndex
                 vibrateDetent()
                 animateThumbTo(finalIndex)
-                // Navigation committed only on release (expo-glass-tabs invariant)
-                onSegmentSelected?.invoke(selectedIndex, segments[selectedIndex])
+                if (changed) {
+                    onSegmentSelected?.invoke(selectedIndex, segments[selectedIndex])
+                }
                 return true
             }
+
             MotionEvent.ACTION_CANCEL -> {
+                parent?.requestDisallowInterceptTouchEvent(false)
                 isDragging = false
+                isTouchActive = false
                 animateThumbTo(selectedIndex)
                 return true
             }
@@ -317,14 +386,19 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
         // 1. Draw Liquid Glass Track Trench (Full Stadium Capsule, Solid Obsidian with Zero Line Artifacts)
         canvas.drawRoundRect(trackRect, cornerRadius, cornerRadius, trackPaint)
 
-        // 2. Draw Active Liquid Capsule Lens
-        val shadowOffsetY = 1.8f * density
-        shadowRect.set(thumbLeft, thumbTop + shadowOffsetY, thumbRight, thumbBottom + shadowOffsetY)
-        canvas.drawRoundRect(shadowRect, thumbRadius, thumbRadius, thumbShadowPaint)
+        // 2. Draw Active Liquid Capsule Lens with Dynamic Lift when Pressed/Dragging
+        val isPressedOrDragging = isDragging || isTouchActive
+        val currentElevation = if (isPressedOrDragging) 2.4f * density else 1.8f * density
+        val currentTop = if (isPressedOrDragging) thumbTop - 0.6f * density else thumbTop
+        val currentBottom = if (isPressedOrDragging) thumbBottom + 0.6f * density else thumbBottom
+        val currentThumbRadius = (currentBottom - currentTop) / 2f
 
-        thumbRect.set(thumbLeft, thumbTop, thumbRight, thumbBottom)
-        canvas.drawRoundRect(thumbRect, thumbRadius, thumbRadius, thumbPaint)
-        canvas.drawRoundRect(thumbRect, thumbRadius, thumbRadius, thumbRimPaint)
+        shadowRect.set(thumbLeft, currentTop + currentElevation, thumbRight, currentBottom + currentElevation)
+        canvas.drawRoundRect(shadowRect, currentThumbRadius, currentThumbRadius, thumbShadowPaint)
+
+        thumbRect.set(thumbLeft, currentTop, thumbRight, currentBottom)
+        canvas.drawRoundRect(thumbRect, currentThumbRadius, currentThumbRadius, thumbPaint)
+        canvas.drawRoundRect(thumbRect, currentThumbRadius, currentThumbRadius, thumbRimPaint)
 
         // 3. Draw Segment Titles with Smoothstep Overlap Crossfade
         val usableWidth = width.toFloat() - (thumbPadding * 2)
