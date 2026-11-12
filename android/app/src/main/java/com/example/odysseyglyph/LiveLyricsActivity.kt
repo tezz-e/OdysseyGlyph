@@ -144,6 +144,11 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             optionsContainer.visibility = if (isChecked) View.VISIBLE else View.GONE
             updateUIState()
             if (isChecked) {
+                if (android.os.Build.VERSION.SDK_INT >= 33) {
+                    if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 102)
+                    }
+                }
                 prefs.edit().putString("last_used_service", "live_lyrics").apply()
                 val stopVisualizer = Intent(this, VisualizerService::class.java).apply { action = "STOP_VISUALIZER" }
                 startService(stopVisualizer)
