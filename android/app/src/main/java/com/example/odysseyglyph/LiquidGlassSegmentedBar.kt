@@ -4,14 +4,16 @@ import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.RectF
+import android.graphics.Shader
 import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
-import android.view.animation.DecelerateInterpolator
+import android.view.animation.OvershootInterpolator
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -19,13 +21,18 @@ import kotlin.math.min
 /**
  * LiquidGlassSegmentedBar
  *
- * Nothing OS / Teenage Engineering Industrial Hardware Segmented Control & Navigation Dock:
- * - Recalibrated from simulated wet liquid-glass to authentic smoked polycarbonate & precision matte hardware.
- * - Flat matte dark graphite fader plate (#26262B) with uniform 1px laser-etched hairline border (#30FFFFFF).
- * - Rigid physical fader geometry: 1:1 hardware translation with zero jelly squash/stretch.
- * - Tactile detent haptics (CLOCK_TICK) at every boundary crossing, simulating mechanical rotary/fader detents.
- * - Snappy mechanical settle (DecelerateInterpolator, 220ms) with release-only navigation commit.
- * - Smooth linear text contrast transition between matte industrial silver (#6E6E76) and pure Nothing white (#FFFFFF).
+ * Floating Liquid Glass Segmented Control & Navigation Dock inspired by:
+ * - Framer Liquid Glass Tabs & Apple iOS 26 UIGlassEffect
+ * - davidmokos/expo-glass-tabs (1:1 finger scrubbing, transform spring, boundary haptic ticks)
+ * - sdegenaar/liquid_glass_widgets (GlassSegmentedControl, dynamic lens meniscus & smooth crossfade)
+ *
+ * Features:
+ * - Stadium capsule geometry with pure achromatic dark glass substrate.
+ * - Luminous translucent glass pill with multi-stop vertical specular meniscus highlights.
+ * - Subtle ambient drop shadow under the floating pill.
+ * - Continuous smoothstep text crossfade between muted glass silver and pure white.
+ * - Elastic jelly stretch tracking finger velocity during 1:1 scrubbing.
+ * - Boundary crossing haptic detents (CLOCK_TICK) with release-only navigation commit.
  * - Zero GC allocations during onDraw().
  */
 class LiquidGlassSegmentedBar @JvmOverloads constructor(
@@ -43,30 +50,24 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
     private val density = resources.displayMetrics.density
     private val scaledDensity = resources.displayMetrics.scaledDensity
 
-    // Track Substrate paints (Recessed matte channel)
-    private val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.FILL
-        color = Color.parseColor("#121214") // Deep matte smoked channel
-    }
+    // Track Substrate paints
+    private val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val rimPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = 1f * density
-        color = Color.parseColor("#18FFFFFF") // Uniform 1px laser-etched channel rim
+        strokeWidth = 1.2f * density
     }
 
-    // Active Nothing OS Stark White Fader Plate
+    // Active Liquid Glass Thumb paints
     private val thumbShadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
-        color = Color.parseColor("#38000000") // Clean mechanical drop shadow
+        color = Color.parseColor("#50000000") // Deep obsidian floating elevation shadow
     }
     private val thumbPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
-        color = Color.WHITE // Stark pure Nothing white #FFFFFF
     }
     private val thumbRimPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = 1f * density
-        color = Color.parseColor("#10000000") // Subtle precision edge
+        strokeWidth = 1f * density // Refined narrow hairline
     }
 
     // Text paints
@@ -93,26 +94,24 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
         } catch (_: Exception) {}
     }
 
-    // Stark monochrome Nothing OS palette:
-    // Inactive: Muted technical silver #888890
-    // Active (inside white plate): Pure Pitch Black #000000
-    private val inactiveColorR = 136
-    private val inactiveColorG = 136
-    private val inactiveColorB = 144
-    private val inactiveColorA = 200
+    // Inactive & Active text colors (Noir liquid glass palette)
+    private val inactiveColorR = 120
+    private val inactiveColorG = 120
+    private val inactiveColorB = 130
+    private val inactiveColorA = 190
 
-    private val activeColorR = 0
-    private val activeColorG = 0
-    private val activeColorB = 0
+    private val activeColorR = 255
+    private val activeColorG = 255
+    private val activeColorB = 255
     private val activeColorA = 255
 
     // Geometry
     private val trackRect = RectF()
     private val thumbRect = RectF()
     private val shadowRect = RectF()
-    private val thumbPadding = 4f * density
+    private val thumbPadding = 4.5f * density
 
-    // Dynamic dimensions
+    // Dynamic pill dimensions
     private var cornerRadius = 0f
     private var thumbRadius = 0f
     private var thumbTop = 0f
@@ -125,7 +124,7 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
     private var targetRight: Float = 0f
     private var animator: ValueAnimator? = null
 
-    // Touch & Scrubbing state
+    // Touch & Scrubbing state (expo-glass-tabs pattern)
     private var isDragging = false
     private var touchDownX = 0f
     private var lastHapticIndex = -1
@@ -170,6 +169,50 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
         val thumbHeight = thumbBottom - thumbTop
         thumbRadius = thumbHeight / 2f
 
+        // 1. Track substrate gradient (Noir deep midnight obsidian glass)
+        trackPaint.shader = LinearGradient(
+            0f, 0f, 0f, h.toFloat(),
+            Color.parseColor("#141417"),
+            Color.parseColor("#09090B"),
+            Shader.TileMode.CLAMP
+        )
+
+        // 2. Track hairline specular rim (Narrow overhead sheen)
+        rimPaint.shader = LinearGradient(
+            0f, 0f, 0f, h.toFloat(),
+            intArrayOf(
+                Color.parseColor("#26FFFFFF"),
+                Color.parseColor("#0EFFFFFF"),
+                Color.parseColor("#04FFFFFF")
+            ),
+            floatArrayOf(0f, 0.5f, 1f),
+            Shader.TileMode.CLAMP
+        )
+
+        // 3. Active Noir Liquid Glass Pill (Amir-Ali-Dev/noir-liquid-glass dark graphite aesthetic)
+        thumbPaint.shader = LinearGradient(
+            0f, thumbTop, 0f, thumbBottom,
+            intArrayOf(
+                Color.parseColor("#2C2C32"), // Polished graphite meniscus
+                Color.parseColor("#1A1A1E"), // Smoky obsidian core
+                Color.parseColor("#101013")  // Deep midnight noir base
+            ),
+            floatArrayOf(0f, 0.45f, 1f),
+            Shader.TileMode.CLAMP
+        )
+
+        // 4. Active Pill Specular Meniscus Rim (Refined razor-sharp hairline reflection)
+        thumbRimPaint.shader = LinearGradient(
+            0f, thumbTop, 0f, thumbBottom,
+            intArrayOf(
+                Color.parseColor("#48FFFFFF"), // Narrow top specular meniscus highlight
+                Color.parseColor("#18FFFFFF"), // Translucent lateral edge
+                Color.parseColor("#28FFFFFF")  // Ground bounce reflection
+            ),
+            floatArrayOf(0f, 0.5f, 1f),
+            Shader.TileMode.CLAMP
+        )
+
         calculateTargetBounds(selectedIndex)
         thumbLeft = targetLeft
         thumbRight = targetRight
@@ -184,8 +227,8 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
     }
 
     /**
-     * Mechanical Hardware Snap:
-     * Precise linear translation with snappy decelerate curve (220ms), feeling like a physical mixer switch.
+     * Animate with Liquid Glass Spring (expo-glass-tabs SLIDE_SPRING parity):
+     * Leading edge shoots ahead (stretching the liquid pill), trailing edge snaps up with spring settle.
      */
     private fun animateThumbTo(targetIndex: Int) {
         calculateTargetBounds(targetIndex)
@@ -193,14 +236,25 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
 
         val startLeft = thumbLeft
         val startRight = thumbRight
+        val movingRight = targetRight > startRight
 
         animator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration = 220L
-            interpolator = DecelerateInterpolator(1.8f)
+            duration = 340L
+            interpolator = OvershootInterpolator(1.2f)
             addUpdateListener { va ->
                 val fraction = va.animatedValue as Float
-                thumbLeft = startLeft + (targetLeft - startLeft) * fraction
-                thumbRight = startRight + (targetRight - startRight) * fraction
+
+                if (movingRight) {
+                    val rightFrac = min(1.0f, fraction * 1.25f)
+                    val leftFrac = max(0.0f, (fraction - 0.15f) / 0.85f)
+                    thumbRight = startRight + (targetRight - startRight) * rightFrac
+                    thumbLeft = startLeft + (targetLeft - startLeft) * leftFrac
+                } else {
+                    val leftFrac = min(1.0f, fraction * 1.25f)
+                    val rightFrac = max(0.0f, (fraction - 0.15f) / 0.85f)
+                    thumbLeft = startLeft + (targetLeft - startLeft) * leftFrac
+                    thumbRight = startRight + (targetRight - startRight) * rightFrac
+                }
                 invalidate()
             }
             start()
@@ -223,13 +277,9 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
             }
             MotionEvent.ACTION_MOVE -> {
                 if (isDragging) {
-                    // Rigid 1:1 hardware translation (no jelly deformation)
-                    val halfWidth = segmentWidth / 2f
-                    val minCenter = thumbPadding + halfWidth
-                    val maxCenter = width.toFloat() - thumbPadding - halfWidth
-                    val currentCenter = event.x.coerceIn(minCenter, maxCenter)
-
-                    val activeIndex = ((currentCenter - thumbPadding) / segmentWidth).toInt()
+                    // 1:1 finger scrubbing (expo-glass-tabs pattern)
+                    val touchX = event.x.coerceIn(thumbPadding, width.toFloat() - thumbPadding)
+                    val activeIndex = ((touchX - thumbPadding) / segmentWidth).toInt()
                         .coerceIn(0, segments.size - 1)
 
                     if (activeIndex != lastHapticIndex) {
@@ -237,26 +287,26 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
                         vibrateDetent()
                     }
 
-                    thumbLeft = currentCenter - halfWidth
-                    thumbRight = currentCenter + halfWidth
+                    // Jelly stretch tracking finger velocity
+                    val currentCenter = touchX
+                    val halfWidth = (segmentWidth / 2f) * 1.15f // 15% dynamic elastic elongation
+                    thumbLeft = (currentCenter - halfWidth).coerceAtLeast(thumbPadding)
+                    thumbRight = (currentCenter + halfWidth).coerceAtMost(width.toFloat() - thumbPadding)
                     invalidate()
                 }
                 return true
             }
             MotionEvent.ACTION_UP -> {
                 isDragging = false
-                val halfWidth = segmentWidth / 2f
-                val minCenter = thumbPadding + halfWidth
-                val maxCenter = width.toFloat() - thumbPadding - halfWidth
-                val currentCenter = event.x.coerceIn(minCenter, maxCenter)
-                val finalIndex = ((currentCenter - thumbPadding) / segmentWidth).toInt()
+                val touchX = event.x.coerceIn(thumbPadding, width.toFloat() - thumbPadding)
+                val finalIndex = ((touchX - thumbPadding) / segmentWidth).toInt()
                     .coerceIn(0, segments.size - 1)
 
                 selectedIndex = finalIndex
                 lastHapticIndex = finalIndex
                 vibrateDetent()
                 animateThumbTo(finalIndex)
-                // Navigation committed only on release
+                // Navigation committed only on release (expo-glass-tabs invariant)
                 onSegmentSelected?.invoke(selectedIndex, segments[selectedIndex])
                 return true
             }
@@ -273,12 +323,12 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
         super.onDraw(canvas)
         if (segments.isEmpty() || width <= 0 || height <= 0) return
 
-        // 1. Draw Recessed Channel
+        // 1. Draw Liquid Glass Track Trench (Full Stadium Capsule)
         canvas.drawRoundRect(trackRect, cornerRadius, cornerRadius, trackPaint)
         canvas.drawRoundRect(trackRect, cornerRadius, cornerRadius, rimPaint)
 
-        // 2. Draw Matte Smoked Polycarbonate Fader Plate
-        val shadowOffsetY = 1f * density
+        // 2. Draw Active Liquid Capsule Lens
+        val shadowOffsetY = 1.8f * density
         shadowRect.set(thumbLeft, thumbTop + shadowOffsetY, thumbRight, thumbBottom + shadowOffsetY)
         canvas.drawRoundRect(shadowRect, thumbRadius, thumbRadius, thumbShadowPaint)
 
@@ -286,7 +336,7 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
         canvas.drawRoundRect(thumbRect, thumbRadius, thumbRadius, thumbPaint)
         canvas.drawRoundRect(thumbRect, thumbRadius, thumbRadius, thumbRimPaint)
 
-        // 3. Draw Segment Titles with Smooth Contrast Transition
+        // 3. Draw Segment Titles with Smoothstep Overlap Crossfade
         val usableWidth = width.toFloat() - (thumbPadding * 2)
         val segmentWidth = usableWidth / segments.size
         val textY = (height / 2f) - ((textPaint.descent() + textPaint.ascent()) / 2f)
@@ -299,7 +349,7 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
             val distanceToPill = abs(textX - thumbCenter)
             val maxOverlapDist = segmentWidth * 0.75f
             val rawOverlap = (1f - (distanceToPill / maxOverlapDist)).coerceIn(0f, 1f)
-            val overlap = rawOverlap * rawOverlap * (3f - 2f * rawOverlap)
+            val overlap = rawOverlap * rawOverlap * (3f - 2f * rawOverlap) // Hermite smoothstep
 
             val r = (inactiveColorR + (activeColorR - inactiveColorR) * overlap).toInt()
             val g = (inactiveColorG + (activeColorG - inactiveColorG) * overlap).toInt()

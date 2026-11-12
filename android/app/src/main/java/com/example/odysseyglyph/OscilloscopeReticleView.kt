@@ -33,27 +33,27 @@ class OscilloscopeReticleView @JvmOverloads constructor(
     }
 
     private val gridPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#15241C") // Deep phosphor grid
+        color = Color.parseColor("#261414") // Deep subtle Nothing Red reticle grid
         strokeWidth = 1f
         style = Paint.Style.STROKE
     }
 
     private val centerAxisPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#264232")
+        color = Color.parseColor("#3D1B1B") // Dashed dark red center axis
         strokeWidth = 1.5f
         style = Paint.Style.STROKE
         pathEffect = DashPathEffect(floatArrayOf(4f, 4f), 0f)
     }
 
     private val waveTracePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#00FF66") // Vector phosphor green / radar trace
+        color = Color.parseColor("#EA3323") // Signature Nothing Red vector trace
         strokeWidth = 2.5f
         style = Paint.Style.STROKE
         strokeCap = Paint.Cap.ROUND
     }
 
     private val waveGlowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#3300FF66")
+        color = Color.parseColor("#33EA3323") // Nothing Red vector glow
         strokeWidth = 8f
         style = Paint.Style.STROKE
         strokeCap = Paint.Cap.ROUND

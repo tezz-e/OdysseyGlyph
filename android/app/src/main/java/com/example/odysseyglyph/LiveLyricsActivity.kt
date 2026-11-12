@@ -130,6 +130,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         btnGrantPermission.applyLiquidGlass(pressedScale = 0.96f)
         btnOpenManager.applyLiquidGlass(pressedScale = 0.96f)
         btnAddTile.applyLiquidGlass(pressedScale = 0.96f)
+        btnResetSync.applyLiquidGlass(pressedScale = 0.94f)
         heroTelemetryCard.applyLiquidGlass(pressedScale = 0.98f)
         findViewById<View>(R.id.btnCustomizeFallback).applyLiquidGlass(pressedScale = 0.96f)
         
@@ -181,22 +182,23 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         sliderSync.labelBehavior = com.google.android.material.slider.LabelFormatter.LABEL_GONE
         
         val restRadius = (10f * resources.displayMetrics.density).toInt()
-        val liftedRadius = (15f * resources.displayMetrics.density).toInt() // 1.5x expansion (GlassSlider pattern)
+        val liftedRadius = (16f * resources.displayMetrics.density).toInt() // Dynamic expansion (GlassSlider pattern)
         sliderSync.addOnSliderTouchListener(object : com.google.android.material.slider.Slider.OnSliderTouchListener {
             override fun onStartTrackingTouch(slider: com.google.android.material.slider.Slider) {
                 slider.vibrateTick()
                 android.animation.ValueAnimator.ofInt(slider.thumbRadius, liftedRadius).apply {
-                    duration = 160L
-                    interpolator = android.view.animation.OvershootInterpolator(1.4f)
+                    duration = 180L
+                    interpolator = android.view.animation.OvershootInterpolator(2.2f)
                     addUpdateListener { slider.thumbRadius = it.animatedValue as Int }
                     start()
                 }
             }
 
             override fun onStopTrackingTouch(slider: com.google.android.material.slider.Slider) {
+                slider.vibrateTick()
                 android.animation.ValueAnimator.ofInt(slider.thumbRadius, restRadius).apply {
-                    duration = 200L
-                    interpolator = android.view.animation.DecelerateInterpolator()
+                    duration = 260L
+                    interpolator = android.view.animation.OvershootInterpolator(1.8f)
                     addUpdateListener { slider.thumbRadius = it.animatedValue as Int }
                     start()
                 }
@@ -433,7 +435,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         
         if (!MusicPlaybackState.hasActiveSession) {
             tvMasterState.text = "READY"
-            tvMasterState.setTextColor(Color.parseColor("#44BB44"))
+            tvMasterState.setTextColor(Color.parseColor("#EA3323"))
             tvStatus.text = "Waiting for music"
             tvTrackInfo.text = "Play a track to begin."
             ivAlbumArt.visibility = View.GONE
@@ -441,7 +443,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             val title = MusicPlaybackState.trackTitle
             val artist = MusicPlaybackState.artist
             tvMasterState.text = "STREAMING"
-            tvMasterState.setTextColor(Color.parseColor("#44BB44"))
+            tvMasterState.setTextColor(Color.parseColor("#EA3323"))
             
             if (MusicPlaybackState.albumArt != null) {
                 ivAlbumArt.setImageBitmap(MusicPlaybackState.albumArt)
