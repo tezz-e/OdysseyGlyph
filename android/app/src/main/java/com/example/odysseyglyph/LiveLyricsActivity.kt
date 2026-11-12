@@ -128,12 +128,11 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         btnOpenManager = findViewById(R.id.btnOpenManager)
         btnAddTile = findViewById(R.id.btnAddTile)
         
-        btnGrantPermission.applyLiquidGlass(pressedScale = 0.96f)
-        btnOpenManager.applyLiquidGlass(pressedScale = 0.96f)
-        btnAddTile.applyLiquidGlass(pressedScale = 0.96f)
-        btnResetSync.applyLiquidGlass(pressedScale = 0.94f)
-        heroTelemetryCard.applyLiquidGlass(pressedScale = 0.98f)
-        findViewById<View>(R.id.btnCustomizeFallback).applyLiquidGlass(pressedScale = 0.96f)
+        TouchSpringAnimator.attach(btnGrantPermission)
+        TouchSpringAnimator.attach(btnOpenManager)
+        TouchSpringAnimator.attach(btnAddTile)
+        TouchSpringAnimator.attach(btnResetSync)
+        findViewById<View>(R.id.btnCustomizeFallback)?.let { TouchSpringAnimator.attach(it) }
         
         optionsContainer = findViewById(R.id.optionsContainer)
         

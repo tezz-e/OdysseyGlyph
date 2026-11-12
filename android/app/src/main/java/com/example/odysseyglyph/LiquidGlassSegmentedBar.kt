@@ -82,9 +82,9 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
     }
 
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textSize = 12.5f * scaledDensity
+        textSize = 10.5f * scaledDensity
         textAlign = Paint.Align.CENTER
-        letterSpacing = 0.04f
+        letterSpacing = 0.05f
         isFakeBoldText = true
     }
 
@@ -314,9 +314,8 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
         super.onDraw(canvas)
         if (segments.isEmpty() || width <= 0 || height <= 0) return
 
-        // 1. Draw Liquid Glass Track Trench (Full Stadium Capsule)
+        // 1. Draw Liquid Glass Track Trench (Full Stadium Capsule, Solid Obsidian with Zero Line Artifacts)
         canvas.drawRoundRect(trackRect, cornerRadius, cornerRadius, trackPaint)
-        canvas.drawRoundRect(trackRect, cornerRadius, cornerRadius, rimPaint)
 
         // 2. Draw Active Liquid Capsule Lens
         val shadowOffsetY = 1.8f * density
