@@ -195,7 +195,7 @@ class VisualizerService : Service(), SharedPreferences.OnSharedPreferenceChangeL
         } catch (e: Exception) {}
         
         if (!LiveLyricsService.isRunning) {
-            glyphManager?.unInit()
+            try { glyphManager?.unInit() } catch (_: Exception) {}
         }
         glyphManager = null
         

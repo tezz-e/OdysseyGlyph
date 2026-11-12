@@ -169,27 +169,18 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
         val thumbHeight = thumbBottom - thumbTop
         thumbRadius = thumbHeight / 2f
 
-        // 1. Track substrate gradient (Noir deep midnight obsidian glass)
-        trackPaint.shader = LinearGradient(
-            0f, 0f, 0f, h.toFloat(),
-            Color.parseColor("#141417"),
-            Color.parseColor("#09090B"),
-            Shader.TileMode.CLAMP
-        )
+        // 1. Solid Pure Obsidian Trench (Zero gradient, flat solid pitch black)
+        trackPaint.shader = null
+        trackPaint.style = Paint.Style.FILL
+        trackPaint.color = Color.parseColor("#060608")
 
-        // 2. Track hairline specular rim (Narrow overhead sheen)
-        rimPaint.shader = LinearGradient(
-            0f, 0f, 0f, h.toFloat(),
-            intArrayOf(
-                Color.parseColor("#26FFFFFF"),
-                Color.parseColor("#0EFFFFFF"),
-                Color.parseColor("#04FFFFFF")
-            ),
-            floatArrayOf(0f, 0.5f, 1f),
-            Shader.TileMode.CLAMP
-        )
+        // 2. Uniform Subtle Laser-etched Outline (Zero gradient, clean 1px hairline)
+        rimPaint.shader = null
+        rimPaint.style = Paint.Style.STROKE
+        rimPaint.strokeWidth = 1f * density
+        rimPaint.color = Color.parseColor("#10FFFFFF")
 
-        // 3. Active Noir Liquid Glass Pill (Amir-Ali-Dev/noir-liquid-glass dark graphite aesthetic)
+        // 3. Active Selection Pill: Liquid Glass Specular Meniscus & Lens Refraction
         thumbPaint.shader = LinearGradient(
             0f, thumbTop, 0f, thumbBottom,
             intArrayOf(
@@ -201,7 +192,7 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
             Shader.TileMode.CLAMP
         )
 
-        // 4. Active Pill Specular Meniscus Rim (Refined razor-sharp hairline reflection)
+        // 4. Active Selection Pill: Specular Meniscus Rim (Refined razor-sharp hairline reflection)
         thumbRimPaint.shader = LinearGradient(
             0f, thumbTop, 0f, thumbBottom,
             intArrayOf(

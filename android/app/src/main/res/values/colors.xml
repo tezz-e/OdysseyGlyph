@@ -3,8 +3,8 @@
     <color name="colorPrimary">#EA3323</color> <!-- Nothing Red -->
     <color name="colorOnPrimary">#FFFFFF</color>
     <color name="colorSecondary">#FFFFFF</color>
-    <color name="colorSurface">#0A0A0A</color> <!-- Deep gray for surfaces -->
-    <color name="colorSurfaceVariant">#141414</color>
+    <color name="colorSurface">#060608</color> <!-- Ultra-deep obsidian surface -->
+    <color name="colorSurfaceVariant">#0A0A0C</color>
     <color name="colorBackground">#000000</color> <!-- True Black -->
     <color name="colorOnSurface">#FFFFFF</color>
     <color name="colorOnSurfaceVariant">#888888</color>

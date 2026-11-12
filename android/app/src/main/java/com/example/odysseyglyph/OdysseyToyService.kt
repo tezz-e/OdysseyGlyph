@@ -113,8 +113,8 @@ abstract class BaseToyService : Service() {
 
     override fun onUnbind(intent: Intent?): Boolean {
         mainHandler.removeCallbacks(playbackRunnable)
-        glyphManager?.turnOff()
-        glyphManager?.unInit()
+        try { glyphManager?.turnOff() } catch (_: Exception) {}
+        try { glyphManager?.unInit() } catch (_: Exception) {}
         glyphManager = null
         mediaPlayer?.release()
         mediaPlayer = null

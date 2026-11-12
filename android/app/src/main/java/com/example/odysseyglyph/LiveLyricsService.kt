@@ -36,7 +36,7 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
     private var pendingStopRunnable: Runnable? = null
     private var currentParsedLyrics: List<Pair<Long, String>> = emptyList()
     private var currentTrackId = ""
-    private var fontStyle = GlyphFontEngine.FontStyle.SMOOTH
+    private var fontStyle = GlyphFontEngine.FontStyle.PIXEL_TINY
     
     private lateinit var prefs: SharedPreferences
     private var fallbackEnabled = true
@@ -64,9 +64,10 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
             fallbackStyle = p.getInt("fallback_style", 1)
             val fontStyleInt = p.getInt("live_font_style", 0)
             fontStyle = when (fontStyleInt) {
-                1 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
-                2 -> GlyphFontEngine.FontStyle.PIXEL_TINY
-                else -> GlyphFontEngine.FontStyle.SMOOTH
+                0 -> GlyphFontEngine.FontStyle.PIXEL_TINY
+                1 -> GlyphFontEngine.FontStyle.SMOOTH
+                2 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
+                else -> GlyphFontEngine.FontStyle.PIXEL_TINY
             }
             
             if (MusicPlaybackState.hasActiveSession) {
@@ -229,6 +230,15 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         when (key) {
+            "live_font_style" -> {
+                val fontStyleInt = sharedPreferences?.getInt("live_font_style", 0) ?: 0
+                fontStyle = when (fontStyleInt) {
+                    0 -> GlyphFontEngine.FontStyle.PIXEL_TINY
+                    1 -> GlyphFontEngine.FontStyle.SMOOTH
+                    2 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
+                    else -> GlyphFontEngine.FontStyle.PIXEL_TINY
+                }
+            }
             "fallback_style" -> {
                 fallbackStyle = sharedPreferences?.getInt("fallback_style", 1) ?: 1
             }
@@ -308,6 +318,15 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
                     pendingStopRunnable = stopRunnable
                     mainHandler.postDelayed(stopRunnable, 600)
                 }
+                "UPDATE_STYLE" -> {
+                    val fontStyleInt = intent.getIntExtra("font_style", getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE).getInt("live_font_style", 0))
+                    fontStyle = when (fontStyleInt) {
+                        0 -> GlyphFontEngine.FontStyle.PIXEL_TINY
+                        1 -> GlyphFontEngine.FontStyle.SMOOTH
+                        2 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
+                        else -> GlyphFontEngine.FontStyle.PIXEL_TINY
+                    }
+                }
             }
         }
         return START_NOT_STICKY
@@ -331,7 +350,7 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
         } catch (e: Exception) {}
         
         if (!VisualizerService.isRunning) {
-            glyphManager?.unInit()
+            try { glyphManager?.unInit() } catch (_: Exception) {}
         }
         glyphManager = null
         super.onDestroy()

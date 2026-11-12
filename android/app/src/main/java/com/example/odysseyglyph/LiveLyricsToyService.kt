@@ -32,7 +32,7 @@ class LiveLyricsToyService : Service(), MusicPlaybackState.StateChangeListener, 
     private lateinit var visualizerHelper: AudioVisualizerHelper
     private var currentParsedLyrics: List<Pair<Long, String>> = emptyList()
     private var currentTrackId = ""
-    private var fontStyle = GlyphFontEngine.FontStyle.SMOOTH
+    private var fontStyle = GlyphFontEngine.FontStyle.PIXEL_TINY
     
     private lateinit var prefs: SharedPreferences
     private var fallbackEnabled = true
@@ -50,9 +50,10 @@ class LiveLyricsToyService : Service(), MusicPlaybackState.StateChangeListener, 
             
             val fontStyleInt = prefs.getInt("live_font_style", 0)
             fontStyle = when (fontStyleInt) {
-                1 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
-                2 -> GlyphFontEngine.FontStyle.PIXEL_TINY
-                else -> GlyphFontEngine.FontStyle.SMOOTH
+                0 -> GlyphFontEngine.FontStyle.PIXEL_TINY
+                1 -> GlyphFontEngine.FontStyle.SMOOTH
+                2 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
+                else -> GlyphFontEngine.FontStyle.PIXEL_TINY
             }
             
             // Initial fetch if active
@@ -189,8 +190,8 @@ class LiveLyricsToyService : Service(), MusicPlaybackState.StateChangeListener, 
         mainHandler.removeCallbacks(playbackRunnable)
         prefs.unregisterOnSharedPreferenceChangeListener(this)
         visualizerHelper.stop()
-        glyphManager?.turnOff()
-        glyphManager?.unInit()
+        try { glyphManager?.turnOff() } catch (_: Exception) {}
+        try { glyphManager?.unInit() } catch (_: Exception) {}
         glyphManager = null
         super.onDestroy()
     }

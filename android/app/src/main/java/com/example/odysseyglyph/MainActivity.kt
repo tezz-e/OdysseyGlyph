@@ -186,9 +186,9 @@ class MainActivity : AppCompatActivity() {
         btnLaunchLyricStudio.applyLiquidGlass(pressedScale = 0.96f)
         btnLaunchVisualizer.applyLiquidGlass(pressedScale = 0.96f)
         btnLaunchLiveLyrics.applyLiquidGlass(pressedScale = 0.96f)
-        findViewById<View>(R.id.btnAddTileMain)?.applyLiquidGlass(pressedScale = 0.96f)
-        findViewById<View>(R.id.btnAddWidgetMain)?.applyLiquidGlass(pressedScale = 0.96f)
-        findViewById<View>(R.id.btnVaultMain)?.applyLiquidGlass(pressedScale = 0.96f)
+        findViewById<View>(R.id.btnAddTileMain)?.let { TouchSpringAnimator.attach(it) }
+        findViewById<View>(R.id.btnAddWidgetMain)?.let { TouchSpringAnimator.attach(it) }
+        findViewById<View>(R.id.btnVaultMain)?.let { TouchSpringAnimator.attach(it) }
         btnProcess.applyLiquidGlass(pressedScale = 0.96f)
         btnCancel.applyLiquidGlass(pressedScale = 0.96f)
     }
@@ -200,17 +200,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        val isTileAdded = prefs.getBoolean("tile_added", false)
-        val appWidgetManager = android.appwidget.AppWidgetManager.getInstance(this)
-        val widgetProvider = android.content.ComponentName(this, OdysseyWidgetProvider::class.java)
-        val isWidgetAdded = appWidgetManager.getAppWidgetIds(widgetProvider).isNotEmpty()
-        
-        val quickAccessSection = findViewById<View>(R.id.quickAccessSection)
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            quickAccessSection.visibility = if (isTileAdded || isWidgetAdded) View.GONE else View.VISIBLE
-        } else {
-            quickAccessSection.visibility = if (isWidgetAdded) View.GONE else View.VISIBLE
-        }
+        // PHONE CONTROLS section stays permanently visible so users can add both QS Tile and Widget anytime
+        findViewById<View>(R.id.quickAccessSection).visibility = View.VISIBLE
         syncSlotState()
         checkToysManagerVisibility()
         if (currentMediaType == 0) {
@@ -330,7 +321,11 @@ class MainActivity : AppCompatActivity() {
                         if (result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED || 
                             result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED) {
                             prefs.edit().putBoolean("tile_added", true).apply()
-                            findViewById<View>(R.id.quickAccessSection).visibility = View.GONE
+                            val msg = if (result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED)
+                                "Tile added to notification shade."
+                            else
+                                "Tile is already in notification shade."
+                            Snackbar.make(findViewById(android.R.id.content), msg, Snackbar.LENGTH_SHORT).applyNothingStyle().show()
                         } else {
                             Snackbar.make(findViewById(android.R.id.content), "Failed to add tile.", Snackbar.LENGTH_SHORT).applyNothingStyle().show()
                         }

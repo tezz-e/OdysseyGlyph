@@ -54,7 +54,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
     
     private lateinit var optionsContainer: LinearLayout
     
-    private var currentFontStyle = GlyphFontEngine.FontStyle.SMOOTH
+    private var currentFontStyle = GlyphFontEngine.FontStyle.PIXEL_TINY
     private var isNotificationAccessGranted = false
     
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -67,7 +67,8 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         
         val appBarLayout = findViewById<com.google.android.material.appbar.AppBarLayout>(R.id.appBarLayout)
         WindowInsetsUtil.applySystemBarsPadding(appBarLayout, applyTop = true)
-        val scrollView = findViewById<ScrollView>(R.id.scrollView)
+        val scrollView = findViewById<androidx.core.widget.NestedScrollView>(R.id.scrollView)
+        scrollView.isSmoothScrollingEnabled = true
         val navDockContainer = findViewById<View>(R.id.navDockContainer)
         WindowInsetsUtil.applySystemBarsPadding(navDockContainer, applyBottom = true)
         WindowInsetsUtil.applySystemBarsPadding(scrollView, applyBottom = true, overlayView = navDockContainer)
@@ -232,33 +233,45 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         
         val savedFontStyle = prefs.getInt("live_font_style", 0)
         currentFontStyle = when (savedFontStyle) {
-            1 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
-            2 -> GlyphFontEngine.FontStyle.PIXEL_TINY
-            else -> GlyphFontEngine.FontStyle.SMOOTH
+            0 -> GlyphFontEngine.FontStyle.PIXEL_TINY
+            1 -> GlyphFontEngine.FontStyle.SMOOTH
+            2 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
+            else -> GlyphFontEngine.FontStyle.PIXEL_TINY
         }
         
         val initialFontIndex = when (currentFontStyle) {
-            GlyphFontEngine.FontStyle.BLOCK_BOLD -> 1
-            GlyphFontEngine.FontStyle.PIXEL_TINY -> 2
-            else -> 0
+            GlyphFontEngine.FontStyle.PIXEL_TINY -> 0
+            GlyphFontEngine.FontStyle.SMOOTH -> 1
+            GlyphFontEngine.FontStyle.BLOCK_BOLD -> 2
         }
-        toggleTypography.setSegments(listOf("Smooth", "Blocky", "Pixel"), initialIndex = initialFontIndex)
+        toggleTypography.setSegments(listOf("Pixel", "Smooth", "Blocky"), initialIndex = initialFontIndex)
         toggleTypography.onSegmentSelected = { index, _ ->
             currentFontStyle = when (index) {
-                1 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
-                2 -> GlyphFontEngine.FontStyle.PIXEL_TINY
-                else -> GlyphFontEngine.FontStyle.SMOOTH
+                0 -> GlyphFontEngine.FontStyle.PIXEL_TINY
+                1 -> GlyphFontEngine.FontStyle.SMOOTH
+                2 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
+                else -> GlyphFontEngine.FontStyle.PIXEL_TINY
             }
             val styleInt = when (currentFontStyle) {
-                GlyphFontEngine.FontStyle.BLOCK_BOLD -> 1
-                GlyphFontEngine.FontStyle.PIXEL_TINY -> 2
-                else -> 0
+                GlyphFontEngine.FontStyle.PIXEL_TINY -> 0
+                GlyphFontEngine.FontStyle.SMOOTH -> 1
+                GlyphFontEngine.FontStyle.BLOCK_BOLD -> 2
             }
             prefs.edit().putInt("live_font_style", styleInt).apply()
+
+            // Transmit immediate style change to running LiveLyricsService (no restart needed)
+            val updateIntent = Intent(this, LiveLyricsService::class.java).apply {
+                action = "UPDATE_STYLE"
+                putExtra("font_style", styleInt)
+            }
+            try {
+                startService(updateIntent)
+            } catch (_: Exception) {}
+
             val fontLabel = when (currentFontStyle) {
-                GlyphFontEngine.FontStyle.BLOCK_BOLD -> "BLOCK"
                 GlyphFontEngine.FontStyle.PIXEL_TINY -> "PIXEL"
-                else -> "SMOOTH"
+                GlyphFontEngine.FontStyle.SMOOTH -> "SMOOTH"
+                GlyphFontEngine.FontStyle.BLOCK_BOLD -> "BLOCK"
             }
             val currentAnimPref = prefs.getInt("live_anim_style", 0)
             triggerMatrixStylePreview(fontLabel, currentFontStyle, if (currentAnimPref == 0) 0 else 1)
