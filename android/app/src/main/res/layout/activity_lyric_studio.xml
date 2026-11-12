@@ -548,13 +548,15 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnAttachAudio"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
                         android:text="Choose audio (.mp3, .flac)"
                         android:textColor="#FFFFFF"
-                        app:cornerRadius="12dp"
+                        app:backgroundTint="#14FFFFFF"
                         app:strokeColor="#24FFFFFF"
+                        app:strokeWidth="1dp"
+                        app:cornerRadius="24dp"
+                        app:rippleColor="#20FFFFFF"
                         android:layout_marginTop="8dp" />
                 </LinearLayout>
 
@@ -587,7 +589,7 @@
                     android:layout_height="56dp"
                     android:text="Render to Glyph"
                     android:fontFamily="@font/jetbrains_mono"
-                    app:cornerRadius="16dp"
+                    app:cornerRadius="28dp"
                     android:backgroundTint="#EA3323"
                     android:textColor="#FFFFFF"
                     android:textSize="14sp"
@@ -599,7 +601,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
                     android:text="Cancel"
-                    app:cornerRadius="12dp"
+                    app:cornerRadius="24dp"
                     android:textColor="#EA3323"
                     app:strokeColor="#EA3323"
                     android:visibility="gone"
@@ -624,19 +626,19 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnOpenGallerySuccess"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
                         android:layout_height="48dp"
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
                         android:text="Vault"
                         android:textColor="#FFFFFF"
+                        app:backgroundTint="#14FFFFFF"
                         app:strokeColor="#24FFFFFF"
-                        app:cornerRadius="12dp" />
+                        app:strokeWidth="1dp"
+                        app:cornerRadius="24dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnOpenManager"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
                         android:layout_height="48dp"
                         android:layout_weight="1"
@@ -647,7 +649,10 @@
                         android:textStyle="bold"
                         android:textSize="12sp"
                         android:textColor="#FFFFFF"
+                        app:backgroundTint="#14FFFFFF"
                         app:strokeColor="#24FFFFFF"
+                        app:strokeWidth="1dp"
+                        app:cornerRadius="24dp" />
                         app:cornerRadius="12dp" />
                 </LinearLayout>
             </LinearLayout>

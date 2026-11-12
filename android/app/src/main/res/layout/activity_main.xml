@@ -237,7 +237,6 @@
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnSelectVideo"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="match_parent"
                             android:layout_height="44dp"
                             android:layout_marginTop="14dp"
@@ -245,10 +244,12 @@
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
-                            android:letterSpacing="0.06"
+                            android:letterSpacing="0.04"
                             android:textSize="12sp"
                             app:cornerRadius="22dp"
-                            app:strokeColor="#222222"
+                            app:backgroundTint="#14FFFFFF"
+                            app:strokeColor="#24FFFFFF"
+                            app:strokeWidth="1dp"
                             android:textColor="#FFFFFF"
                             app:icon="@drawable/ic_folder"
                             app:iconTint="#FFFFFF" />
@@ -299,7 +300,6 @@
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnLaunchLyricStudio"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="match_parent"
                             android:layout_height="44dp"
                             android:layout_marginTop="14dp"
@@ -307,10 +307,12 @@
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
-                            android:letterSpacing="0.06"
+                            android:letterSpacing="0.04"
                             android:textSize="12sp"
                             app:cornerRadius="22dp"
-                            app:strokeColor="#222222"
+                            app:backgroundTint="#14FFFFFF"
+                            app:strokeColor="#24FFFFFF"
+                            app:strokeWidth="1dp"
                             android:textColor="#FFFFFF"
                             app:icon="@drawable/ic_lyrics"
                             app:iconTint="#FFFFFF" />
@@ -372,17 +374,18 @@
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnLaunchVisualizer"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="wrap_content"
                             android:layout_height="44dp"
                             android:text="PATTERNS"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
-                            android:letterSpacing="0.06"
+                            android:letterSpacing="0.04"
                             android:textSize="12sp"
                             app:cornerRadius="22dp"
-                            app:strokeColor="#222222"
+                            app:backgroundTint="#14FFFFFF"
+                            app:strokeColor="#24FFFFFF"
+                            app:strokeWidth="1dp"
                             android:textColor="#FFFFFF"
                             app:icon="@drawable/ic_audio"
                             app:iconTint="#FFFFFF" />
@@ -418,7 +421,6 @@
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnAddTileMain"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="0dp"
                             android:layout_height="44dp"
                             android:layout_weight="1"
@@ -428,16 +430,17 @@
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
                             android:textSize="11sp"
-                            android:letterSpacing="0.06"
-                            app:cornerRadius="16dp"
-                            app:strokeColor="#222222"
+                            android:letterSpacing="0.04"
+                            app:cornerRadius="22dp"
+                            app:backgroundTint="#14FFFFFF"
+                            app:strokeColor="#24FFFFFF"
+                            app:strokeWidth="1dp"
                             android:textColor="#FFFFFF"
                             app:icon="@drawable/ic_settings"
                             app:iconTint="#FFFFFF" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnAddWidgetMain"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="0dp"
                             android:layout_height="44dp"
                             android:layout_weight="1"
@@ -447,16 +450,17 @@
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
                             android:textSize="11sp"
-                            android:letterSpacing="0.06"
-                            app:cornerRadius="16dp"
-                            app:strokeColor="#222222"
+                            android:letterSpacing="0.04"
+                            app:cornerRadius="22dp"
+                            app:backgroundTint="#14FFFFFF"
+                            app:strokeColor="#24FFFFFF"
+                            app:strokeWidth="1dp"
                             android:textColor="#FFFFFF"
                             app:icon="@drawable/ic_folder"
                             app:iconTint="#FFFFFF" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnVaultMain"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="0dp"
                             android:layout_height="44dp"
                             android:layout_weight="1"
@@ -466,9 +470,11 @@
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
                             android:textSize="11sp"
-                            android:letterSpacing="0.06"
-                            app:cornerRadius="16dp"
-                            app:strokeColor="#222222"
+                            android:letterSpacing="0.04"
+                            app:cornerRadius="22dp"
+                            app:backgroundTint="#14FFFFFF"
+                            app:strokeColor="#24FFFFFF"
+                            app:strokeWidth="1dp"
                             android:textColor="#FFFFFF"
                             app:icon="@drawable/ic_folder"
                             app:iconTint="#FFFFFF" />

@@ -60,14 +60,14 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
     // Active Liquid Glass Thumb paints
     private val thumbShadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
-        color = Color.parseColor("#38000000") // Soft under-pill elevation shadow
+        color = Color.parseColor("#50000000") // Deep obsidian floating elevation shadow
     }
     private val thumbPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
     }
     private val thumbRimPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = 1.25f * density
+        strokeWidth = 1f * density // Refined narrow hairline
     }
 
     // Text paints
@@ -94,11 +94,11 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
         } catch (_: Exception) {}
     }
 
-    // Inactive & Active text colors (Achromatic liquid glass palette)
-    private val inactiveColorR = 158
-    private val inactiveColorG = 158
-    private val inactiveColorB = 166
-    private val inactiveColorA = 180
+    // Inactive & Active text colors (Noir liquid glass palette)
+    private val inactiveColorR = 120
+    private val inactiveColorG = 120
+    private val inactiveColorB = 130
+    private val inactiveColorA = 190
 
     private val activeColorR = 255
     private val activeColorG = 255
@@ -169,45 +169,45 @@ class LiquidGlassSegmentedBar @JvmOverloads constructor(
         val thumbHeight = thumbBottom - thumbTop
         thumbRadius = thumbHeight / 2f
 
-        // 1. Track substrate gradient (Pure Achromatic deep dark glass)
+        // 1. Track substrate gradient (Noir deep midnight obsidian glass)
         trackPaint.shader = LinearGradient(
             0f, 0f, 0f, h.toFloat(),
-            Color.parseColor("#1B1B1E"),
-            Color.parseColor("#101012"),
+            Color.parseColor("#141417"),
+            Color.parseColor("#09090B"),
             Shader.TileMode.CLAMP
         )
 
-        // 2. Track hairline specular rim (Overhead light sheen)
+        // 2. Track hairline specular rim (Narrow overhead sheen)
         rimPaint.shader = LinearGradient(
             0f, 0f, 0f, h.toFloat(),
             intArrayOf(
-                Color.parseColor("#38FFFFFF"),
-                Color.parseColor("#14FFFFFF"),
-                Color.parseColor("#08FFFFFF")
+                Color.parseColor("#26FFFFFF"),
+                Color.parseColor("#0EFFFFFF"),
+                Color.parseColor("#04FFFFFF")
             ),
             floatArrayOf(0f, 0.5f, 1f),
             Shader.TileMode.CLAMP
         )
 
-        // 3. Active Liquid Glass Pill Fill (Frosted Luminous Meniscus - Framer / Expo parity)
+        // 3. Active Noir Liquid Glass Pill (Amir-Ali-Dev/noir-liquid-glass dark graphite aesthetic)
         thumbPaint.shader = LinearGradient(
             0f, thumbTop, 0f, thumbBottom,
             intArrayOf(
-                Color.parseColor("#44FFFFFF"), // Luminous top sheen
-                Color.parseColor("#24FFFFFF"), // Translucent refraction core
-                Color.parseColor("#18FFFFFF")  // Deep glass base
+                Color.parseColor("#2C2C32"), // Polished graphite meniscus
+                Color.parseColor("#1A1A1E"), // Smoky obsidian core
+                Color.parseColor("#101013")  // Deep midnight noir base
             ),
             floatArrayOf(0f, 0.45f, 1f),
             Shader.TileMode.CLAMP
         )
 
-        // 4. Active Pill Specular Meniscus Rim (Crisp double edge highlight from Framer)
+        // 4. Active Pill Specular Meniscus Rim (Refined razor-sharp hairline reflection)
         thumbRimPaint.shader = LinearGradient(
             0f, thumbTop, 0f, thumbBottom,
             intArrayOf(
-                Color.parseColor("#9EFFFFFF"), // Bright top specular meniscus reflection
-                Color.parseColor("#28FFFFFF"), // Translucent lateral edge
-                Color.parseColor("#60FFFFFF")  // Ground bounce specular reflection
+                Color.parseColor("#48FFFFFF"), // Narrow top specular meniscus highlight
+                Color.parseColor("#18FFFFFF"), // Translucent lateral edge
+                Color.parseColor("#28FFFFFF")  // Ground bounce reflection
             ),
             floatArrayOf(0f, 0.5f, 1f),
             Shader.TileMode.CLAMP

@@ -419,18 +419,20 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCustomizeFallback"
-                        style="?attr/materialButtonOutlinedStyle"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
                         android:text="CUSTOMIZE PATTERN"
                         android:fontFamily="@font/font_geist"
                         app:fontFamily="@font/font_geist"
                         android:textStyle="bold"
-                        android:textSize="13sp"
-                        android:letterSpacing="0.06"
+                        android:textSize="12sp"
+                        android:letterSpacing="0.04"
                         android:textColor="#FFFFFF"
-                        app:strokeColor="#33FFFFFF"
-                        app:cornerRadius="12dp"
+                        app:backgroundTint="#14FFFFFF"
+                        app:strokeColor="#24FFFFFF"
+                        app:strokeWidth="1dp"
+                        app:cornerRadius="24dp"
+                        app:rippleColor="#20FFFFFF"
                         android:layout_marginTop="12dp" />
                 </LinearLayout>
 
@@ -444,7 +446,6 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnOpenManager"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
                         android:layout_height="48dp"
                         android:layout_weight="1"
@@ -453,15 +454,17 @@
                         android:fontFamily="@font/font_geist"
                         app:fontFamily="@font/font_geist"
                         android:textStyle="bold"
-                        android:textSize="13sp"
-                        android:letterSpacing="0.06"
+                        android:textSize="12sp"
+                        android:letterSpacing="0.04"
                         android:textColor="#FFFFFF"
-                        app:strokeColor="#33FFFFFF"
-                        app:cornerRadius="12dp" />
+                        app:backgroundTint="#14FFFFFF"
+                        app:strokeColor="#24FFFFFF"
+                        app:strokeWidth="1dp"
+                        app:cornerRadius="24dp"
+                        app:rippleColor="#20FFFFFF" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnAddTile"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
                         android:layout_height="48dp"
                         android:layout_weight="1"
@@ -470,11 +473,14 @@
                         android:fontFamily="@font/font_geist"
                         app:fontFamily="@font/font_geist"
                         android:textStyle="bold"
-                        android:textSize="13sp"
-                        android:letterSpacing="0.06"
+                        android:textSize="12sp"
+                        android:letterSpacing="0.04"
                         android:textColor="#FFFFFF"
-                        app:strokeColor="#33FFFFFF"
-                        app:cornerRadius="12dp" />
+                        app:backgroundTint="#14FFFFFF"
+                        app:strokeColor="#24FFFFFF"
+                        app:strokeWidth="1dp"
+                        app:cornerRadius="24dp"
+                        app:rippleColor="#20FFFFFF" />
                 </LinearLayout>
 
                 <!-- Hidden legacy container kept for binding -->
