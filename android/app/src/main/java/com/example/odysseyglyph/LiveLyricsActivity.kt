@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.os.Bundle
@@ -33,7 +34,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
     private lateinit var btnBack: ImageView
     private lateinit var heroTelemetryCard: FrameLayout
     private lateinit var liveMatrixMirror: GlyphMatrixMirrorView
-    private lateinit var oscilloscopeView: OscilloscopeReticleView
+    private lateinit var liveStatusDot: View
     
     private lateinit var switchMaster: MaterialSwitch
     private lateinit var tvMasterState: TextView
@@ -93,7 +94,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
 
         heroTelemetryCard = findViewById(R.id.heroTelemetryCard)
         liveMatrixMirror = findViewById(R.id.liveMatrixMirror)
-        oscilloscopeView = findViewById(R.id.oscilloscopeView)
+        liveStatusDot = findViewById(R.id.liveStatusDot)
 
         heroTelemetryCard.let {
             it.foreground = null
@@ -103,7 +104,6 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         frameBusSubscription = { frame ->
             runOnUiThread {
                 liveMatrixMirror.updateFrame(frame)
-                oscilloscopeView.updateWaveform(0.7f, 1.4f)
             }
         }
         frameBusSubscription?.let { GlyphFrameBus.subscribe(it) }
@@ -399,7 +399,6 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             val centeredX = (25f - textWidth) / 2f
             val frame = GlyphFontEngine.renderTextFrame(label, style, centeredX, autoScale = false)
             liveMatrixMirror.updateFrame(frame)
-            oscilloscopeView.updateWaveform(0.5f, 1.2f)
         } else { // Scroll / Hybrid
             val startX = 25f
             val endX = -textWidth
@@ -410,7 +409,6 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
                     val curX = va.animatedValue as Float
                     val frame = GlyphFontEngine.renderTextFrame(label, style, curX, autoScale = false)
                     liveMatrixMirror.updateFrame(frame)
-                    oscilloscopeView.updateWaveform(0.6f, 1.4f)
                 }
                 start()
             }
@@ -436,7 +434,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             tvMasterState.setTextColor(Color.parseColor("#888888"))
             tvStatus.text = "Live Lyrics Off"
             tvTrackInfo.text = "Turn on the switch above to start streaming lyrics."
-            oscilloscopeView.updateWaveform(0f, 0f)
+            liveStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#444444"))
             ivAlbumArt.visibility = View.GONE
             return
         }
@@ -446,6 +444,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             tvMasterState.setTextColor(Color.parseColor("#EA3323"))
             tvStatus.text = "Notification Access Required"
             tvTrackInfo.text = "Enable Notification Access below to read media playback."
+            liveStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#EA3323"))
             ivAlbumArt.visibility = View.GONE
             return
         }
@@ -455,12 +454,14 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             tvMasterState.setTextColor(Color.parseColor("#EA3323"))
             tvStatus.text = "Waiting for music"
             tvTrackInfo.text = "Play a track to begin."
+            liveStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#888888"))
             ivAlbumArt.visibility = View.GONE
         } else {
             val title = MusicPlaybackState.trackTitle
             val artist = MusicPlaybackState.artist
             tvMasterState.text = "STREAMING"
             tvMasterState.setTextColor(Color.parseColor("#EA3323"))
+            liveStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#EA3323"))
             
             if (MusicPlaybackState.albumArt != null) {
                 ivAlbumArt.setImageBitmap(MusicPlaybackState.albumArt)

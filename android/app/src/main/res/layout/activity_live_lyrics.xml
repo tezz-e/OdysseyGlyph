@@ -96,109 +96,76 @@
             android:paddingHorizontal="15dp"
             android:paddingBottom="30dp">
 
-            <!-- Hero Dual-Lens Card -->
+            <!-- Hero Telemetry Single-Row Strip -->
             <FrameLayout
                 android:id="@+id/heroTelemetryCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_glass_card"
-                android:padding="13dp"
-                android:layout_marginTop="3dp"
-                android:layout_marginBottom="7dp">
+                android:padding="12dp"
+                android:layout_marginTop="2dp"
+                android:layout_marginBottom="6dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-                    <!-- Dual Lenses: Left Matrix Mirror, Right Oscilloscope -->
+                    <!-- Left: Authentic 25x25 Glyph Matrix Mirror -->
+                    <com.example.odysseyglyph.GlyphMatrixMirrorView
+                        android:id="@+id/liveMatrixMirror"
+                        android:layout_width="66dp"
+                        android:layout_height="66dp"
+                        android:layout_gravity="center_vertical" />
+
+                    <!-- Right: Telemetry & Live Track Info -->
                     <LinearLayout
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginBottom="9dp">
+                        android:orientation="vertical"
+                        android:layout_marginStart="14dp">
 
                         <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:gravity="center">
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
 
-                            <com.example.odysseyglyph.GlyphMatrixMirrorView
-                                android:id="@+id/liveMatrixMirror"
-                                android:layout_width="74dp"
-                                android:layout_height="74dp" />
+                            <View
+                                android:id="@+id/liveStatusDot"
+                                android:layout_width="7dp"
+                                android:layout_height="7dp"
+                                android:layout_marginEnd="6dp"
+                                android:background="@drawable/bg_indicator_dot" />
 
                             <TextView
+                                android:id="@+id/tvStatus"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Rear Matrix"
+                                android:text="Waiting for music"
                                 android:fontFamily="@font/font_geist"
                                 app:fontFamily="@font/font_geist"
                                 android:textStyle="bold"
-                                android:textColor="#B0B0B0"
-                                android:textSize="10sp"
-                                android:letterSpacing="0.04"
-                                android:layout_marginTop="3dp" />
+                                android:textColor="#FFFFFF"
+                                android:textSize="13sp"
+                                android:letterSpacing="0.04" />
                         </LinearLayout>
 
-                        <View
-                            android:layout_width="1dp"
-                            android:layout_height="68dp"
-                            android:background="#222222"
-                            android:layout_marginHorizontal="9dp" />
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
+                        <TextView
+                            android:id="@+id/tvTrackInfo"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:gravity="center">
-
-                            <com.example.odysseyglyph.OscilloscopeReticleView
-                                android:id="@+id/oscilloscopeView"
-                                android:layout_width="74dp"
-                                android:layout_height="74dp" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Audio Scope"
-                                android:fontFamily="@font/font_geist"
-                                app:fontFamily="@font/font_geist"
-                                android:textStyle="bold"
-                                android:textColor="#B0B0B0"
-                                android:textSize="10sp"
-                                android:letterSpacing="0.04"
-                                android:layout_marginTop="3dp" />
-                        </LinearLayout>
+                            android:text="Play a track to begin."
+                            android:fontFamily="@font/font_geist"
+                            app:fontFamily="@font/font_geist"
+                            android:textColor="#A0A0A0"
+                            android:textSize="11.5sp"
+                            android:layout_marginTop="3dp"
+                            android:maxLines="2"
+                            android:ellipsize="end" />
                     </LinearLayout>
-
-                    <!-- Live Playback Status -->
-                    <TextView
-                        android:id="@+id/tvStatus"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Waiting for music"
-                        android:fontFamily="@font/font_geist"
-                        app:fontFamily="@font/font_geist"
-                        android:textStyle="bold"
-                        android:textColor="#FFFFFF"
-                        android:textSize="13.5sp"
-                        android:letterSpacing="0.04" />
-
-                    <TextView
-                        android:id="@+id/tvTrackInfo"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Play a track in Spotify, YouTube Music, or your media player."
-                        android:fontFamily="@font/font_geist"
-                        app:fontFamily="@font/font_geist"
-                        android:textColor="#A0A0A0"
-                        android:textSize="11.5sp"
-                        android:layout_marginTop="2dp" />
                 </LinearLayout>
             </FrameLayout>
 
