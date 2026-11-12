@@ -558,6 +558,11 @@
                         android:id="@+id/rangeSlider"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        app:trackHeight="4dp"
+                        app:thumbRadius="10dp"
+                        app:thumbElevation="2dp"
+                        app:haloRadius="0dp"
+                        app:labelBehavior="gone"
                         app:tickVisible="false" />
                 </LinearLayout>
 

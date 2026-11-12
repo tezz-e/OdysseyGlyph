@@ -126,9 +126,9 @@ class GalleryActivity : AppCompatActivity() {
 
         dialogView.findViewById<TextView>(R.id.tvOptionsTitle).text = preset.name
         dialogView.findViewById<TextView>(R.id.tvOptionsBadge).text = if (preset.type == "LYRIC") {
-            "LYRIC STUDIO // SYNCED LRC"
+            "Synced Lyric Animation"
         } else {
-            "MEDIA PRESET // 25×25 LED MATRIX"
+            "25×25 Matrix Preset"
         }
 
         val ivLargePreview = dialogView.findViewById<android.widget.ImageView>(R.id.ivLargePreview)
@@ -187,6 +187,7 @@ class GalleryActivity : AppCompatActivity() {
         val btnSlot3 = dialogView.findViewById<MaterialButton>(R.id.btnSlot3)
         val btnShare = dialogView.findViewById<MaterialButton>(R.id.btnShare)
         val btnDelete = dialogView.findViewById<MaterialButton>(R.id.btnDelete)
+        btnShare.setTextColor(android.graphics.Color.WHITE)
 
         btnSlot1.applyLiquidGlass(pressedScale = 0.96f)
         btnSlot2.applyLiquidGlass(pressedScale = 0.96f)

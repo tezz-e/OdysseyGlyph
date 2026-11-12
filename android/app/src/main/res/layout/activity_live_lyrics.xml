@@ -337,7 +337,11 @@
                         app:thumbColor="#EA3323"
                         app:trackColorActive="#EA3323"
                         app:trackColorInactive="#262626"
-                        app:labelStyle="@style/Widget.Odyssey.SliderTooltip" />
+                        app:trackHeight="4dp"
+                        app:thumbRadius="10dp"
+                        app:thumbElevation="2dp"
+                        app:haloRadius="0dp"
+                        app:labelBehavior="gone" />
 
                     <!-- Hairline Divider -->
                     <View

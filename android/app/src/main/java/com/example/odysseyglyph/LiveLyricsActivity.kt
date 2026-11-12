@@ -178,14 +178,30 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         
         val tvSyncOffset: TextView = findViewById(R.id.tvSyncOffset)
         val sliderSync: com.google.android.material.slider.Slider = findViewById(R.id.sliderSync)
-        sliderSync.setLabelFormatter { value ->
-            val ms = value.toInt()
-            when {
-                ms > 0 -> "+${ms}ms"
-                ms < 0 -> "${ms}ms"
-                else -> "0ms"
+        sliderSync.labelBehavior = com.google.android.material.slider.LabelFormatter.LABEL_GONE
+        
+        val restRadius = (10f * resources.displayMetrics.density).toInt()
+        val liftedRadius = (15f * resources.displayMetrics.density).toInt() // 1.5x expansion (GlassSlider pattern)
+        sliderSync.addOnSliderTouchListener(object : com.google.android.material.slider.Slider.OnSliderTouchListener {
+            override fun onStartTrackingTouch(slider: com.google.android.material.slider.Slider) {
+                slider.vibrateTick()
+                android.animation.ValueAnimator.ofInt(slider.thumbRadius, liftedRadius).apply {
+                    duration = 160L
+                    interpolator = android.view.animation.OvershootInterpolator(1.4f)
+                    addUpdateListener { slider.thumbRadius = it.animatedValue as Int }
+                    start()
+                }
             }
-        }
+
+            override fun onStopTrackingTouch(slider: com.google.android.material.slider.Slider) {
+                android.animation.ValueAnimator.ofInt(slider.thumbRadius, restRadius).apply {
+                    duration = 200L
+                    interpolator = android.view.animation.DecelerateInterpolator()
+                    addUpdateListener { slider.thumbRadius = it.animatedValue as Int }
+                    start()
+                }
+            }
+        })
         
         val savedSyncOffset = prefs.getInt("live_sync_offset", 0)
         sliderSync.value = savedSyncOffset.toFloat()
