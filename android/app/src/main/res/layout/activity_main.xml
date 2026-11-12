@@ -48,7 +48,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="1dp"
                 android:text="25×25 LED Matrix Console"
-                android:fontFamily="monospace"
+                android:fontFamily="@font/font_geist"
+                app:fontFamily="@font/font_geist"
                 android:textSize="11sp"
                 android:textColor="#888888"
                 android:letterSpacing="0.04" />
@@ -587,7 +588,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="TRIM: 0.0s - 0.0s"
-                        android:fontFamily="monospace"
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
+                        android:textStyle="bold"
                         android:textSize="12sp"
                         android:textColor="#FFFFFF"
                         android:layout_marginBottom="@dimen/spacing_small" />
@@ -619,7 +622,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="none"
-                        android:fontFamily="monospace"
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
                         app:simpleItems="@array/playback_modes" />
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -635,7 +639,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="none"
-                        android:fontFamily="monospace"
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
                         app:simpleItems="@array/save_slots" />
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -655,8 +660,10 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="INCLUDE VIDEO AUDIO"
-                        android:fontFamily="monospace"
-                        android:textSize="14sp" />
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
+                        android:textStyle="bold"
+                        android:textSize="13sp" />
                 </LinearLayout>
 
                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#33FFFFFF" android:layout_marginBottom="@dimen/spacing_medium"/>
@@ -679,8 +686,10 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:text="ADVANCED SETTINGS"
-                        android:fontFamily="monospace"
-                        android:textSize="14sp"
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
+                        android:textStyle="bold"
+                        android:textSize="13sp"
                         android:textColor="#FFFFFF" />
                         
                     <ImageView

@@ -4,8 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="?attr/colorSurface"
-    android:padding="24dp">
+    android:background="@drawable/bg_glass_card"
+    android:padding="22dp">
 
     <TextView
         android:id="@+id/tvDialogTitle"
@@ -13,20 +13,23 @@
         android:layout_height="wrap_content"
         android:text="TITLE"
         android:fontFamily="@font/ndot57"
-        android:textAppearance="?attr/textAppearanceHeadlineSmall"
-        android:textColor="?attr/colorOnSurface"
-        android:layout_marginBottom="16dp" />
+        app:fontFamily="@font/ndot57"
+        android:textSize="18sp"
+        android:letterSpacing="0.06"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="12dp" />
 
     <TextView
         android:id="@+id/tvDialogMessage"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Message goes here."
-        android:fontFamily="@font/jetbrains_mono"
-        android:textAppearance="?attr/textAppearanceBodyMedium"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        android:lineSpacingExtra="4dp"
-        android:layout_marginBottom="24dp" />
+        android:fontFamily="@font/font_geist"
+        app:fontFamily="@font/font_geist"
+        android:textSize="13sp"
+        android:textColor="#B0B0B0"
+        android:lineSpacingExtra="3dp"
+        android:layout_marginBottom="22dp" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -36,31 +39,37 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnDialogCancel"
-            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:layout_weight="1"
             android:text="CANCEL"
-            android:fontFamily="@font/jetbrains_mono"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            app:strokeColor="?attr/colorOnSurfaceVariant"
-            app:cornerRadius="0dp"
-            android:layout_marginEnd="8dp"
-            android:paddingVertical="12dp" />
+            android:fontFamily="@font/font_geist"
+            app:fontFamily="@font/font_geist"
+            android:textStyle="bold"
+            android:textSize="11.5sp"
+            android:letterSpacing="0.04"
+            android:textColor="#FFFFFF"
+            app:backgroundTint="#14FFFFFF"
+            app:strokeColor="#24FFFFFF"
+            app:strokeWidth="1dp"
+            app:cornerRadius="20dp"
+            android:layout_marginEnd="6dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnDialogConfirm"
-            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:layout_weight="1"
             android:text="CONFIRM"
-            android:fontFamily="@font/jetbrains_mono"
-            android:textColor="@android:color/holo_red_dark"
-            app:strokeColor="@android:color/holo_red_dark"
-            app:cornerRadius="0dp"
-            android:layout_marginStart="8dp"
-            android:paddingVertical="12dp" />
+            android:fontFamily="@font/font_geist"
+            app:fontFamily="@font/font_geist"
+            android:textStyle="bold"
+            android:textSize="11.5sp"
+            android:letterSpacing="0.04"
+            android:textColor="#FFFFFF"
+            app:backgroundTint="#EA3323"
+            app:cornerRadius="20dp"
+            android:layout_marginStart="6dp" />
     </LinearLayout>
 
 </LinearLayout>

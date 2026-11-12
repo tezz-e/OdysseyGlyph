@@ -5,15 +5,17 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:background="@drawable/bg_glass_card"
-    android:padding="24dp">
+    android:padding="22dp">
 
     <!-- Header badge -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="ACCESS DISCLOSURE"
-        android:fontFamily="monospace"
-        android:textSize="11sp"
+        android:fontFamily="@font/font_geist"
+        app:fontFamily="@font/font_geist"
+        android:textStyle="bold"
+        android:textSize="10.5sp"
         android:textColor="#EA3323"
         android:letterSpacing="0.08" />
 
@@ -22,7 +24,9 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="Media Playback Access"
-        android:textSize="18sp"
+        android:fontFamily="@font/font_geist"
+        app:fontFamily="@font/font_geist"
+        android:textSize="17sp"
         android:textStyle="bold"
         android:textColor="#FFFFFF" />
 
@@ -31,37 +35,49 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:text="Glyph Odyssey requires Notification Listener access exclusively to read currently playing music metadata (track title, artist, playback timeline) to render synchronized live lyrics on the rear 25×25 LED matrix.\n\n• Zero personal messages, emails, or personal notifications are read, tracked, or saved.\n• No data ever leaves your device."
-        android:textSize="13sp"
+        android:fontFamily="@font/font_geist"
+        app:fontFamily="@font/font_geist"
+        android:textSize="12.5sp"
         android:textColor="#B0B0B0"
-        android:lineSpacingExtra="4dp" />
+        android:lineSpacingExtra="3dp" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="22dp"
         android:orientation="horizontal"
         android:gravity="end">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnDisclosureDecline"
-            style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="wrap_content"
-            android:layout_height="44dp"
+            android:layout_height="40dp"
             android:text="CANCEL"
-            android:textColor="#8A8A93"
-            android:fontFamily="monospace" />
+            android:fontFamily="@font/font_geist"
+            app:fontFamily="@font/font_geist"
+            android:textStyle="bold"
+            android:textSize="11.5sp"
+            android:letterSpacing="0.04"
+            android:textColor="#FFFFFF"
+            app:backgroundTint="#14FFFFFF"
+            app:strokeColor="#24FFFFFF"
+            app:strokeWidth="1dp"
+            app:cornerRadius="20dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnDisclosureAccept"
             android:layout_width="wrap_content"
-            android:layout_height="44dp"
+            android:layout_height="40dp"
             android:layout_marginStart="8dp"
             android:text="ENABLE ACCESS"
+            android:fontFamily="@font/font_geist"
+            app:fontFamily="@font/font_geist"
+            android:textStyle="bold"
+            android:textSize="11.5sp"
+            android:letterSpacing="0.04"
             app:backgroundTint="#FFFFFF"
             android:textColor="#000000"
-            app:cornerRadius="22dp"
-            android:fontFamily="monospace"
-            android:textStyle="bold" />
+            app:cornerRadius="20dp" />
     </LinearLayout>
 
 </LinearLayout>

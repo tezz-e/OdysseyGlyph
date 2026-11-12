@@ -4,17 +4,19 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="24dp"
-    android:background="?attr/colorSurface">
+    android:padding="22dp"
+    android:background="@drawable/bg_sheet_glass">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="ADVANCED SETTINGS"
-        android:fontFamily="@font/jetbrains_mono"
-        android:textAppearance="?attr/textAppearanceTitleMedium"
-        android:textColor="?attr/colorOnSurface"
-        android:layout_marginBottom="24dp" />
+        android:fontFamily="@font/ndot57"
+        app:fontFamily="@font/ndot57"
+        android:textSize="18sp"
+        android:letterSpacing="0.06"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="20dp" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/fpsInputLayout"
@@ -22,12 +24,17 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
+        app:boxCornerRadiusTopStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusBottomEnd="12dp"
         android:hint="Target FPS (Max 30)">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etFps"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/jetbrains_mono"
+            android:fontFamily="@font/font_geist"
+            app:fontFamily="@font/font_geist"
             android:inputType="number"
             android:text="12" />
     </com.google.android.material.textfield.TextInputLayout>
@@ -36,7 +43,10 @@
         android:id="@+id/cbInvert"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:fontFamily="@font/jetbrains_mono"
+        android:fontFamily="@font/font_geist"
+        app:fontFamily="@font/font_geist"
+        android:textStyle="bold"
+        android:textSize="13sp"
         android:layout_marginBottom="8dp"
         android:text="INVERT COLORS" />
 
@@ -44,7 +54,10 @@
         android:id="@+id/sharpenSwitch"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:fontFamily="@font/jetbrains_mono"
+        android:fontFamily="@font/font_geist"
+        app:fontFamily="@font/font_geist"
+        android:textStyle="bold"
+        android:textSize="13sp"
         android:layout_marginBottom="16dp"
         android:text="SHARPEN IMAGE"
         android:checked="true" />
@@ -53,7 +66,12 @@
         android:id="@+id/contrastLabel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:fontFamily="@font/jetbrains_mono"
+        android:fontFamily="@font/font_geist"
+        app:fontFamily="@font/font_geist"
+        android:textStyle="bold"
+        android:textSize="12sp"
+        android:letterSpacing="0.04"
+        android:textColor="#FFFFFF"
         android:text="CONTRAST MULTIPLIER: 1.0x"
         android:layout_marginTop="8dp" />
     <com.google.android.material.slider.Slider
@@ -74,7 +92,12 @@
         android:id="@+id/brightnessLabel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:fontFamily="@font/jetbrains_mono"
+        android:fontFamily="@font/font_geist"
+        app:fontFamily="@font/font_geist"
+        android:textStyle="bold"
+        android:textSize="12sp"
+        android:letterSpacing="0.04"
+        android:textColor="#FFFFFF"
         android:text="LED BRIGHTNESS: 100%" />
     <com.google.android.material.slider.Slider
         android:id="@+id/brightnessSlider"
@@ -94,7 +117,12 @@
         android:id="@+id/durationLabel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:fontFamily="@font/jetbrains_mono"
+        android:fontFamily="@font/font_geist"
+        app:fontFamily="@font/font_geist"
+        android:textStyle="bold"
+        android:textSize="12sp"
+        android:letterSpacing="0.04"
+        android:textColor="#FFFFFF"
         android:text="IMAGE DURATION: 5s"
         android:visibility="gone" />
     <com.google.android.material.slider.Slider
