@@ -38,9 +38,10 @@ object VideoProcessor {
         frameMin: Float,
         frameMax: Float,
         activeLuma: List<Float>,
-        spreadThreshold: Float = 150f
+        spreadThreshold: Float = 150f,
+        mode: Int = 0 // 0 = Auto, 1 = On, 2 = Off
     ): AdaptiveRange {
-        if (activeLuma.isEmpty() || frameMax <= frameMin) {
+        if (mode == 2 || activeLuma.isEmpty() || frameMax <= frameMin) {
             val safeRange = (frameMax - frameMin).coerceAtLeast(1f)
             return AdaptiveRange(frameMin, frameMax, safeRange, 0f)
         }
@@ -48,8 +49,17 @@ object VideoProcessor {
         val sorted = activeLuma.sorted()
         val p5 = sorted[(sorted.size * 0.05f).toInt().coerceIn(0, sorted.size - 1)]
         val p95 = sorted[(sorted.size * 0.95f).toInt().coerceIn(0, sorted.size - 1)]
-        val dynamicSpread = p95 - p5
 
+        if (mode == 1) {
+            // Force ON: maximize dynamic range stretch on the active region
+            val effectiveMin = frameMin * 0.35f + p5 * 0.65f
+            val effectiveMax = frameMax * 0.35f + p95 * 0.65f
+            val effectiveRange = (effectiveMax - effectiveMin).coerceAtLeast(1f)
+            return AdaptiveRange(effectiveMin, effectiveMax, effectiveRange, 1.0f)
+        }
+
+        // Mode 0: AUTO
+        val dynamicSpread = p95 - p5
         val adaptiveGain = if (dynamicSpread < spreadThreshold) {
             ((spreadThreshold - dynamicSpread) / spreadThreshold).coerceIn(0f, 1f)
         } else {
@@ -89,6 +99,7 @@ object VideoProcessor {
         brightnessMulti: Float = 1.0f,
         imageDurationSec: Int = 5,
         sharpen: Boolean = true,
+        enhancementMode: Int = 0,
         cropCx: Float,
         cropCy: Float,
         cropRadius: Float,
@@ -147,7 +158,7 @@ object VideoProcessor {
                             val timeUs = (validStartMs + i * intervalMs) * 1000
                             val bitmap = retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST)
                             if (bitmap != null) {
-                                val frame = extractAndDownsampleFrame(bitmap, videoCx, videoCy, videoRadius)
+                                val frame = extractAndDownsampleFrame(bitmap, videoCx, videoCy, videoRadius, enhancementMode)
                                 if (frame != null) rawFrames.add(frame)
                                 bitmap.recycle()
                             }
@@ -190,7 +201,7 @@ object VideoProcessor {
                         canvas.drawColor(android.graphics.Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR)
                         movie.draw(canvas, 0f, 0f)
                         
-                        val frame = extractAndDownsampleFrame(bitmap, videoCx, videoCy, videoRadius)
+                        val frame = extractAndDownsampleFrame(bitmap, videoCx, videoCy, videoRadius, enhancementMode)
                         if (frame != null) rawFrames.add(frame)
                         
                         val prog = (i.toFloat() / totalFrames * 50).toInt()
@@ -244,7 +255,7 @@ object VideoProcessor {
                     val scaledCy = videoCy * scaleY
                     val scaledRadius = videoRadius * Math.max(scaleX, scaleY)
                     
-                    val frame = extractAndDownsampleFrame(fullBitmap, scaledCx, scaledCy, scaledRadius)
+                    val frame = extractAndDownsampleFrame(fullBitmap, scaledCx, scaledCy, scaledRadius, enhancementMode)
                     if (frame != null) {
                         val totalFrames = imageDurationSec * targetFps
                         for (i in 0 until totalFrames) {
@@ -298,7 +309,7 @@ object VideoProcessor {
                     if (frameMax <= frameMin) frameMax = frameMin + 1
                     
                     // Auto-detect dynamic range and compute adaptive contrast stretch & sharpening weights
-                    val adaptiveRange = calculateAdaptiveRange(frameMin, frameMax, activeLuma)
+                    val adaptiveRange = calculateAdaptiveRange(frameMin, frameMax, activeLuma, mode = enhancementMode)
                     val (centerWeight, neighborWeight) = calculateSharpeningWeights(adaptiveRange.adaptiveGain)
 
                     // Apply 3x3 Sharpening kernel
@@ -398,7 +409,7 @@ object VideoProcessor {
         }
     }
 
-    private fun extractAndDownsampleFrame(bitmap: Bitmap, videoCx: Float, videoCy: Float, videoRadius: Float): ByteArray? {
+    private fun extractAndDownsampleFrame(bitmap: Bitmap, videoCx: Float, videoCy: Float, videoRadius: Float, enhancementMode: Int = 0): ByteArray? {
         val cropSide = (videoRadius * 2).toInt()
         val left = (videoCx - videoRadius).toInt().coerceIn(0, bitmap.width - 1)
         val top = (videoCy - videoRadius).toInt().coerceIn(0, bitmap.height - 1)
@@ -408,12 +419,12 @@ object VideoProcessor {
         if (width <= 0 || height <= 0) return null
 
         val square = Bitmap.createBitmap(bitmap, left, top, width, height)
-        val result = downsampleSquareFrame(square)
+        val result = downsampleSquareFrame(square, mode = enhancementMode)
         if (square != bitmap) square.recycle()
         return result
     }
 
-    fun downsampleSquareFrame(square: Bitmap): ByteArray? {
+    fun downsampleSquareFrame(square: Bitmap, mode: Int = 0): ByteArray? {
         val small = Bitmap.createBitmap(MATRIX_SIZE, MATRIX_SIZE, Bitmap.Config.ARGB_8888)
         val scaleX = square.width.toFloat() / MATRIX_SIZE
         val scaleY = square.height.toFloat() / MATRIX_SIZE
@@ -424,10 +435,12 @@ object VideoProcessor {
         // For camera photos (scaleX > 20), featureWeight is 0.0 (pure arithmetic mean).
         // For low-res crops (scaleX < 20), featureWeight gently prevents fine dark features (pupils, whiskers)
         // from being averaged into oblivion by surrounding skin/fur.
-        val featureWeight = if (scaleX < 20f) {
-            (0.22f * (1f - (scaleX / 20f))).coerceIn(0f, 0.22f)
-        } else {
-            0f
+        val featureWeight = when (mode) {
+            2 -> 0f // OFF (Legacy)
+            1 -> 0.22f // Force ON
+            else -> { // 0 = AUTO
+                if (scaleX < 20f) (0.22f * (1f - (scaleX / 20f))).coerceIn(0f, 0.22f) else 0f
+            }
         }
         
         val outPixels = IntArray(MATRIX_SIZE * MATRIX_SIZE)

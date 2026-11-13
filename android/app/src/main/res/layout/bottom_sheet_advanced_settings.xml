@@ -63,6 +63,25 @@
         android:checked="true" />
 
     <TextView
+        android:id="@+id/tvEnhancementLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/font_geist"
+        app:fontFamily="@font/font_geist"
+        android:textStyle="bold"
+        android:textSize="12sp"
+        android:letterSpacing="0.04"
+        android:textColor="#FFFFFF"
+        android:text="DYNAMIC RANGE &amp; FACE BOOST"
+        android:layout_marginBottom="6dp" />
+
+    <com.example.odysseyglyph.LiquidGlassSegmentedBar
+        android:id="@+id/toggleEnhancement"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
         android:id="@+id/contrastLabel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

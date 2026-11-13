@@ -459,6 +459,48 @@ class FoundationUnitTest {
     }
 
     @Test
+    fun testVideoProcessor_adaptiveRange_modeOff_strictlyZeroGain() {
+        // Even with narrow low-res midtone cluster, mode = 2 (OFF) must strictly enforce 0.0 gain (legacy)
+        val lumaList = mutableListOf<Float>()
+        for (i in 0 until 100) {
+            lumaList.add(110f + (i % 41))
+        }
+
+        val range = VideoProcessor.calculateAdaptiveRange(
+            frameMin = 10f,
+            frameMax = 245f,
+            activeLuma = lumaList,
+            spreadThreshold = 150f,
+            mode = 2 // OFF
+        )
+
+        assertEquals("OFF mode must strictly yield zero adaptive gain", 0f, range.adaptiveGain, 0.001f)
+        assertEquals("OFF mode must strictly preserve frameMin", 10f, range.effectiveMin, 0.001f)
+        assertEquals("OFF mode must strictly preserve frameMax", 245f, range.effectiveMax, 0.001f)
+        assertEquals("OFF mode must strictly preserve frameRange", 235f, range.effectiveRange, 0.001f)
+    }
+
+    @Test
+    fun testVideoProcessor_adaptiveRange_modeOn_forcesMaxGain() {
+        // Even with wide camera photo spread, mode = 1 (ON) forces 1.0 gain
+        val lumaList = mutableListOf<Float>()
+        for (i in 0 until 100) {
+            lumaList.add(i * 2.55f)
+        }
+
+        val range = VideoProcessor.calculateAdaptiveRange(
+            frameMin = 0f,
+            frameMax = 255f,
+            activeLuma = lumaList,
+            spreadThreshold = 150f,
+            mode = 1 // Force ON
+        )
+
+        assertEquals("Force ON mode must yield 1.0 adaptive gain", 1.0f, range.adaptiveGain, 0.001f)
+        assertTrue("Force ON mode must contract effective range", range.effectiveRange < 255f)
+    }
+
+    @Test
     fun testVideoProcessor_sharpeningWeights_preservesMeanEnergy() {
         // For any gain in [0, 1], centerWeight - 4 * neighborWeight must equal 1.0 (mean preserving)
         val testGains = floatArrayOf(0.0f, 0.25f, 0.5f, 0.75f, 1.0f)

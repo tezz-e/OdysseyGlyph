@@ -77,6 +77,7 @@ class MainActivity : AppCompatActivity() {
     private var advContrast = 1.0f
     private var advBrightness = 100.0f
     private var advDuration = 5.0f
+    private var advEnhancementMode = 0 // 0 = Auto, 1 = On, 2 = Off
 
     private val selectMediaLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         uri?.let {
@@ -233,6 +234,7 @@ class MainActivity : AppCompatActivity() {
         advContrast = prefs.getFloat("adv_contrast", 1.0f)
         advBrightness = prefs.getFloat("adv_brightness", 100.0f)
         advDuration = prefs.getFloat("adv_duration", 5.0f)
+        advEnhancementMode = prefs.getInt("adv_enhancement_mode", 0)
     }
 
     private fun saveAdvancedSettings() {
@@ -243,6 +245,7 @@ class MainActivity : AppCompatActivity() {
             .putFloat("adv_contrast", advContrast)
             .putFloat("adv_brightness", advBrightness)
             .putFloat("adv_duration", advDuration)
+            .putInt("adv_enhancement_mode", advEnhancementMode)
             .apply()
     }
 
@@ -516,6 +519,11 @@ class MainActivity : AppCompatActivity() {
         }
         cbInvert.setOnCheckedChangeListener { _, isChecked -> advInvert = isChecked }
         sharpenSwitch.setOnCheckedChangeListener { _, isChecked -> advSharpen = isChecked }
+        val toggleEnhancement = view.findViewById<LiquidGlassSegmentedBar>(R.id.toggleEnhancement)
+        toggleEnhancement?.setSegments(listOf("Auto", "On", "Off"), initialIndex = advEnhancementMode)
+        toggleEnhancement?.onSegmentSelected = { index, _ ->
+            advEnhancementMode = index
+        }
 
         dialog.setOnDismissListener {
             val parsedFps = etFps.text.toString().toIntOrNull() ?: 12
@@ -757,6 +765,7 @@ class MainActivity : AppCompatActivity() {
             brightnessMulti = brightnessMulti,
             imageDurationSec = imageDurationSec,
             sharpen = sharpen,
+            enhancementMode = advEnhancementMode,
             cropCx = cropOverlay.circleX,
             cropCy = cropOverlay.circleY,
             cropRadius = cropOverlay.circleRadius,
