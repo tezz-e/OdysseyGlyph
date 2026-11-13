@@ -57,7 +57,7 @@ object VideoProcessor {
             val effectiveMin = frameMin * 0.25f + p3 * 0.75f
             val effectiveMax = frameMax * 0.25f + p97 * 0.75f
             val effectiveRange = (effectiveMax - effectiveMin).coerceAtLeast(1f)
-            return AdaptiveRange(effectiveMin, effectiveMax, effectiveRange, 1.0f, 0.85f)
+            return AdaptiveRange(effectiveMin, effectiveMax, effectiveRange, 1.0f, 0.82f)
         }
 
         // Mode 0: AUTO
@@ -71,7 +71,7 @@ object VideoProcessor {
         val effectiveMin = frameMin * (1f - adaptiveGain * 0.70f) + p3 * (adaptiveGain * 0.70f)
         val effectiveMax = frameMax * (1f - adaptiveGain * 0.70f) + p97 * (adaptiveGain * 0.70f)
         val effectiveRange = (effectiveMax - effectiveMin).coerceAtLeast(1f)
-        val gamma = 1.0f - (adaptiveGain * 0.15f) // Smooth lift from 1.0 down to 0.85
+        val gamma = 1.0f - (adaptiveGain * 0.18f) // Smooth lift from 1.0 down to 0.82
 
         return AdaptiveRange(effectiveMin, effectiveMax, effectiveRange, adaptiveGain, gamma)
     }
@@ -491,51 +491,97 @@ object VideoProcessor {
             val b = px and 0xFF
             luma[i] = 0.299f * r + 0.587f * g + 0.114f * b
         }
-        
-        // Fast local unsharp pre-filter on source pixels to boost micro-features (pupils, fangs, whiskers)
-        val sharpLuma = FloatArray(w * h)
-        val blurRad = Math.max(1, (Math.min(scaleX, scaleY) * 0.4f).toInt())
+
+        // Fast separable two-pass box blur for large-scale base illumination estimation
+        val baseIllum = FloatArray(w * h)
+        val illumRadius = Math.max(8, (Math.min(w, h) * 0.12f).toInt())
+
+        val tempBlur = FloatArray(w * h)
         for (y in 0 until h) {
-            val rowOffset = y * w
-            val dyMin = Math.max(0, y - blurRad)
-            val dyMax = Math.min(h - 1, y + blurRad)
+            var sum = 0f
+            var count = 0
+            val initMax = Math.min(w - 1, illumRadius)
+            for (x in 0..initMax) {
+                sum += luma[y * w + x]
+                count++
+            }
             for (x in 0 until w) {
-                var sum = 0f
-                var count = 0
-                val dxMin = Math.max(0, x - blurRad)
-                val dxMax = Math.min(w - 1, x + blurRad)
-                for (ny in dyMin..dyMax) {
-                    val nRow = ny * w
-                    for (nx in dxMin..dxMax) {
-                        sum += luma[nRow + nx]
-                        count++
-                    }
-                }
-                val blurred = sum / count
-                val diff = luma[rowOffset + x] - blurred
-                sharpLuma[rowOffset + x] = (luma[rowOffset + x] + 1.25f * diff).coerceIn(0f, 255f)
+                tempBlur[y * w + x] = sum / count
+                val addX = x + illumRadius + 1
+                if (addX < w) { sum += luma[y * w + addX]; count++ }
+                val remX = x - illumRadius
+                if (remX >= 0) { sum -= luma[y * w + remX]; count-- }
             }
         }
-        
-        // 2D Bilateral downsampling (Kopf et al., SIGGRAPH Asia 2013)
+
+        for (x in 0 until w) {
+            var sum = 0f
+            var count = 0
+            val initMax = Math.min(h - 1, illumRadius)
+            for (y in 0..initMax) {
+                sum += tempBlur[y * w + x]
+                count++
+            }
+            for (y in 0 until h) {
+                baseIllum[y * w + x] = sum / count
+                val addY = y + illumRadius + 1
+                if (addY < h) { sum += tempBlur[addY * w + x]; count++ }
+                val remY = y - illumRadius
+                if (remY >= 0) { sum -= tempBlur[remY * w + x]; count-- }
+            }
+        }
+
+        // Compute mean illumination across circular crop
+        val circleCx = w / 2f
+        val circleCy = h / 2f
+        val circleRad = Math.min(w, h) / 2f
+        val circleRadSq = circleRad * circleRad
+
+        var meanIllumSum = 0f
+        var meanIllumCount = 0
+        for (y in 0 until h) {
+            val dy = y - circleCy
+            val rowOffset = y * w
+            for (x in 0 until w) {
+                val dx = x - circleCx
+                if (dx * dx + dy * dy <= circleRadSq) {
+                    meanIllumSum += baseIllum[rowOffset + x]
+                    meanIllumCount++
+                }
+            }
+        }
+        val meanIllum = if (meanIllumCount > 0) (meanIllumSum / meanIllumCount) else 128f
+
+        // Retinex illumination dynamic range balance
+        val baseCompression = 0.35f
+        val detailBoost = 1.65f
+        val toneMappedLuma = FloatArray(w * h)
+        for (i in 0 until (w * h)) {
+            val baseDiff = baseIllum[i] - meanIllum
+            val detail = luma[i] - baseIllum[i]
+            val v = meanIllum + baseDiff * baseCompression + detail * detailBoost
+            toneMappedLuma[i] = v.coerceIn(0f, 255f)
+        }
+
+        // Bilateral content-adaptive downsampling (Kopf et al., SIGGRAPH Asia 2013)
         val out = ByteArray(MATRIX_SIZE * MATRIX_SIZE)
         val sigmaSpace = Math.max(1.0f, (scaleX + scaleY) * 0.28f)
         val twoSigmaSpaceSq = 2f * sigmaSpace * sigmaSpace
-        val sigmaColor = 38f
+        val sigmaColor = 30f
         val twoSigmaColorSq = 2f * sigmaColor * sigmaColor
-        
+
         for (gy in 0 until MATRIX_SIZE) {
             val cellCenterY = (gy + 0.5f) * scaleY
-            val startY = Math.max(0, (cellCenterY - scaleY * 0.8f).toInt())
-            val endY = Math.min(h, (cellCenterY + scaleY * 0.8f + 1).toInt())
+            val startY = Math.max(0, (cellCenterY - scaleY * 0.85f).toInt())
+            val endY = Math.min(h, (cellCenterY + scaleY * 0.85f + 1).toInt())
             for (gx in 0 until MATRIX_SIZE) {
                 val cellCenterX = (gx + 0.5f) * scaleX
-                val startX = Math.max(0, (cellCenterX - scaleX * 0.8f).toInt())
-                val endX = Math.min(w, (cellCenterX + scaleX * 0.8f + 1).toInt())
+                val startX = Math.max(0, (cellCenterX - scaleX * 0.85f).toInt())
+                val endX = Math.min(w, (cellCenterX + scaleX * 0.85f + 1).toInt())
                 val cyInt = Math.min(h - 1, cellCenterY.toInt())
                 val cxInt = Math.min(w - 1, cellCenterX.toInt())
-                val centerVal = sharpLuma[cyInt * w + cxInt]
-                
+                val centerVal = toneMappedLuma[cyInt * w + cxInt]
+
                 var weightSum = 0.0
                 var valSum = 0.0
                 for (sy in startY until endY) {
@@ -543,7 +589,7 @@ object VideoProcessor {
                     val sRow = sy * w
                     for (sx in startX until endX) {
                         val dx = sx - cellCenterX
-                        val v = sharpLuma[sRow + sx]
+                        val v = toneMappedLuma[sRow + sx]
                         val dColor = v - centerVal
                         val spatialWeight = kotlin.math.exp(-(dx * dx + dy * dy) / twoSigmaSpaceSq)
                         val colorWeight = kotlin.math.exp(-(dColor * dColor) / twoSigmaColorSq)
