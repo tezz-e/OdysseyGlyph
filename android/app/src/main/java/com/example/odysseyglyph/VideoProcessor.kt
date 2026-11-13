@@ -348,7 +348,7 @@ object VideoProcessor {
                                 // Apply contrast multiplier
                                 val adjustedStretched = ((lifted - 0.5f) * contrastMulti + 0.5f).coerceIn(0f, 1f)
                                 
-                                val contrasted = if (enhancementMode == 2) adjustedStretched * adjustedStretched * (3f - 2f * adjustedStretched) else adjustedStretched
+                                val contrasted = adjustedStretched * adjustedStretched * (3f - 2f * adjustedStretched)
                                 var finalValue = (contrasted * 255f * brightnessMulti).toInt()
                                 
                                 if (invertColors) {
@@ -476,13 +476,12 @@ object VideoProcessor {
             return grayFrame
         }
         
-        // --- MODE 0 (AUTO) & MODE 1 (ON): RESEARCH-BACKED BILATERAL CONTENT-ADAPTIVE ENGINE ---
-        return downsampleBilateral(pixels, w, h)
+        // --- MODE 0 (AUTO) & MODE 1 (ON): HIGH-DPI SUPER-RESOLUTION & SALIENT FEATURE DOWNSAMPLER ---
+        return downsampleSuperRes(pixels, w, h)
     }
     
-    fun downsampleBilateral(pixels: IntArray, w: Int, h: Int): ByteArray {
-        val scaleX = w.toFloat() / MATRIX_SIZE
-        val scaleY = h.toFloat() / MATRIX_SIZE
+    fun downsampleSuperRes(pixels: IntArray, w: Int, h: Int): ByteArray {
+        // 1. Convert to luma
         val luma = FloatArray(w * h)
         for (i in 0 until (w * h)) {
             val px = pixels[i]
@@ -492,117 +491,192 @@ object VideoProcessor {
             luma[i] = 0.299f * r + 0.587f * g + 0.114f * b
         }
 
-        // Fast separable two-pass box blur for large-scale base illumination estimation
-        val baseIllum = FloatArray(w * h)
-        val illumRadius = Math.max(8, (Math.min(w, h) * 0.12f).toInt())
+        // 2. High-DPI Super-Resolution Upscaling (target ~600-800px)
+        val upScale = Math.max(2, 600 / Math.max(1, Math.min(w, h)))
+        val upW = w * upScale
+        val upH = h * upScale
+        val upLuma = upscaleSuperRes(luma, w, h, upW, upH, 2.0f)
 
-        val tempBlur = FloatArray(w * h)
+        // 3. Multi-scale local detail enhancement (boosts shadow details like eyes/wrinkles without lifting DC black)
+        val boostedLuma = applyLocalFeatureBoost(upLuma, upW, upH, 1.8f)
+
+        // 4. Salient Extrema Feature Downsampling to 25x25
+        val scaleX = upW.toFloat() / MATRIX_SIZE
+        val scaleY = upH.toFloat() / MATRIX_SIZE
+        val out = ByteArray(MATRIX_SIZE * MATRIX_SIZE)
+
+        for (gy in 0 until MATRIX_SIZE) {
+            val cellCY = (gy + 0.5f) * scaleY
+            val sy0 = Math.max(0, (cellCY - scaleY * 0.5f).toInt())
+            val sy1 = Math.min(upH - 1, (cellCY + scaleY * 0.5f).toInt())
+
+            for (gx in 0 until MATRIX_SIZE) {
+                val cellCX = (gx + 0.5f) * scaleX
+                val sx0 = Math.max(0, (cellCX - scaleX * 0.5f).toInt())
+                val sx1 = Math.min(upW - 1, (cellCX + scaleX * 0.5f).toInt())
+
+                var minV = 255f
+                var maxV = 0f
+                var sumV = 0f
+                var count = 0
+
+                for (sy in sy0..sy1) {
+                    val row = sy * upW
+                    for (sx in sx0..sx1) {
+                        val v = boostedLuma[row + sx]
+                        sumV += v
+                        count++
+                        if (v < minV) minV = v
+                        if (v > maxV) maxV = v
+                    }
+                }
+
+                val avg = if (count > 0) (sumV / count) else 128f
+                val localContrast = maxV - minV
+
+                val valToUse = if (localContrast > 40f) {
+                    val distToMax = maxV - avg
+                    val distToMin = avg - minV
+                    if (distToMax > distToMin * 1.2f) {
+                        // Sharp bright spike (e.g. canine fang, incisor tooth, whisker, catchlight)
+                        avg * 0.3f + maxV * 0.7f
+                    } else if (distToMin > distToMax * 1.2f) {
+                        // Sharp dark crevice (e.g. pupil, nostril, deep oral cavity)
+                        avg * 0.3f + minV * 0.7f
+                    } else {
+                        if (avg > 128f) avg * 0.65f + maxV * 0.35f else avg * 0.65f + minV * 0.35f
+                    }
+                } else {
+                    avg
+                }
+
+                out[gy * MATRIX_SIZE + gx] = valToUse.toInt().coerceIn(0, 255).toByte()
+            }
+        }
+        return out
+    }
+
+    private fun upscaleSuperRes(src: FloatArray, sw: Int, sh: Int, dw: Int, dh: Int, edgeGain: Float): FloatArray {
+        val dst = FloatArray(dw * dh)
+        val scaleX = sw.toFloat() / dw
+        val scaleY = sh.toFloat() / dh
+
+        for (dy in 0 until dh) {
+            val sy = (dy + 0.5f) * scaleY - 0.5f
+            val iy = Math.floor(sy.toDouble()).toInt()
+            val fy = sy - iy
+            val row = dy * dw
+            for (dx in 0 until dw) {
+                val sx = (dx + 0.5f) * scaleX - 0.5f
+                val ix = Math.floor(sx.toDouble()).toInt()
+                val fx = sx - ix
+
+                var value = 0f
+                for (m in -1..2) {
+                    val py = (iy + m).coerceIn(0, sh - 1)
+                    val wy = cubicWeight(m - fy)
+                    val srcRow = py * sw
+                    for (n in -1..2) {
+                        val px = (ix + n).coerceIn(0, sw - 1)
+                        val wx = cubicWeight(n - fx)
+                        value += src[srcRow + px] * wx * wy
+                    }
+                }
+                dst[row + dx] = value.coerceIn(0f, 255f)
+            }
+        }
+
+        val enhanced = FloatArray(dw * dh)
+        val rad = Math.max(1, (dw / sw) / 2)
+        for (y in 0 until dh) {
+            val row = y * dw
+            val y0 = Math.max(0, y - rad)
+            val y1 = Math.min(dh - 1, y + rad)
+            for (x in 0 until dw) {
+                val x0 = Math.max(0, x - rad)
+                val x1 = Math.min(dw - 1, x + rad)
+                var sum = 0f
+                var count = 0
+                for (ny in y0..y1) {
+                    val nRow = ny * dw
+                    for (nx in x0..x1) {
+                        sum += dst[nRow + nx]
+                        count++
+                    }
+                }
+                val blurred = sum / count
+                val diff = dst[row + x] - blurred
+                enhanced[row + x] = (dst[row + x] + edgeGain * diff).coerceIn(0f, 255f)
+            }
+        }
+        return enhanced
+    }
+
+    private fun cubicWeight(x: Float): Float {
+        val ax = Math.abs(x)
+        return if (ax <= 1f) {
+            (1.5f * ax - 2.5f) * ax * ax + 1f
+        } else if (ax < 2f) {
+            ((-0.5f * ax + 2.5f) * ax - 4f) * ax + 2f
+        } else {
+            0f
+        }
+    }
+
+    private fun applyLocalFeatureBoost(src: FloatArray, w: Int, h: Int, shadowBoost: Float): FloatArray {
+        val bg = FloatArray(w * h)
+        val bgRad = Math.max(8, (Math.min(w, h) * 0.10f).toInt())
+        val temp = FloatArray(w * h)
+
         for (y in 0 until h) {
+            val row = y * w
             var sum = 0f
             var count = 0
-            val initMax = Math.min(w - 1, illumRadius)
-            for (x in 0..initMax) {
-                sum += luma[y * w + x]
+            val maxInit = Math.min(w - 1, bgRad)
+            for (x in 0..maxInit) {
+                sum += src[row + x]
                 count++
             }
             for (x in 0 until w) {
-                tempBlur[y * w + x] = sum / count
-                val addX = x + illumRadius + 1
-                if (addX < w) { sum += luma[y * w + addX]; count++ }
-                val remX = x - illumRadius
-                if (remX >= 0) { sum -= luma[y * w + remX]; count-- }
+                temp[row + x] = sum / count
+                val addX = x + bgRad + 1
+                if (addX < w) { sum += src[row + addX]; count++ }
+                val remX = x - bgRad
+                if (remX >= 0) { sum -= src[row + remX]; count-- }
             }
         }
 
         for (x in 0 until w) {
             var sum = 0f
             var count = 0
-            val initMax = Math.min(h - 1, illumRadius)
-            for (y in 0..initMax) {
-                sum += tempBlur[y * w + x]
+            val maxInit = Math.min(h - 1, bgRad)
+            for (y in 0..maxInit) {
+                sum += temp[y * w + x]
                 count++
             }
             for (y in 0 until h) {
-                baseIllum[y * w + x] = sum / count
-                val addY = y + illumRadius + 1
-                if (addY < h) { sum += tempBlur[addY * w + x]; count++ }
-                val remY = y - illumRadius
-                if (remY >= 0) { sum -= tempBlur[remY * w + x]; count-- }
+                bg[y * w + x] = sum / count
+                val addY = y + bgRad + 1
+                if (addY < h) { sum += temp[addY * w + x]; count++ }
+                val remY = y - bgRad
+                if (remY >= 0) { sum -= temp[remY * w + x]; count-- }
             }
         }
 
-        // Compute mean illumination across circular crop
-        val circleCx = w / 2f
-        val circleCy = h / 2f
-        val circleRad = Math.min(w, h) / 2f
-        val circleRadSq = circleRad * circleRad
-
-        var meanIllumSum = 0f
-        var meanIllumCount = 0
-        for (y in 0 until h) {
-            val dy = y - circleCy
-            val rowOffset = y * w
-            for (x in 0 until w) {
-                val dx = x - circleCx
-                if (dx * dx + dy * dy <= circleRadSq) {
-                    meanIllumSum += baseIllum[rowOffset + x]
-                    meanIllumCount++
-                }
-            }
-        }
-        val meanIllum = if (meanIllumCount > 0) (meanIllumSum / meanIllumCount) else 128f
-
-        // Retinex illumination dynamic range balance
-        val baseCompression = 0.35f
-        val detailBoost = 1.65f
-        val toneMappedLuma = FloatArray(w * h)
+        val result = FloatArray(w * h)
         for (i in 0 until (w * h)) {
-            val baseDiff = baseIllum[i] - meanIllum
-            val detail = luma[i] - baseIllum[i]
-            val v = meanIllum + baseDiff * baseCompression + detail * detailBoost
-            toneMappedLuma[i] = v.coerceIn(0f, 255f)
+            val value = src[i]
+            val localBg = bg[i]
+            val detail = value - localBg
+            val shadowWeight = Math.max(0f, (140f - localBg) / 140f)
+            val gain = 1.0f + shadowWeight * shadowBoost
+            result[i] = (localBg + detail * gain).coerceIn(0f, 255f)
         }
+        return result
+    }
 
-        // Bilateral content-adaptive downsampling (Kopf et al., SIGGRAPH Asia 2013)
-        val out = ByteArray(MATRIX_SIZE * MATRIX_SIZE)
-        val sigmaSpace = Math.max(1.0f, (scaleX + scaleY) * 0.28f)
-        val twoSigmaSpaceSq = 2f * sigmaSpace * sigmaSpace
-        val sigmaColor = 30f
-        val twoSigmaColorSq = 2f * sigmaColor * sigmaColor
-
-        for (gy in 0 until MATRIX_SIZE) {
-            val cellCenterY = (gy + 0.5f) * scaleY
-            val startY = Math.max(0, (cellCenterY - scaleY * 0.85f).toInt())
-            val endY = Math.min(h, (cellCenterY + scaleY * 0.85f + 1).toInt())
-            for (gx in 0 until MATRIX_SIZE) {
-                val cellCenterX = (gx + 0.5f) * scaleX
-                val startX = Math.max(0, (cellCenterX - scaleX * 0.85f).toInt())
-                val endX = Math.min(w, (cellCenterX + scaleX * 0.85f + 1).toInt())
-                val cyInt = Math.min(h - 1, cellCenterY.toInt())
-                val cxInt = Math.min(w - 1, cellCenterX.toInt())
-                val centerVal = toneMappedLuma[cyInt * w + cxInt]
-
-                var weightSum = 0.0
-                var valSum = 0.0
-                for (sy in startY until endY) {
-                    val dy = sy - cellCenterY
-                    val sRow = sy * w
-                    for (sx in startX until endX) {
-                        val dx = sx - cellCenterX
-                        val v = toneMappedLuma[sRow + sx]
-                        val dColor = v - centerVal
-                        val spatialWeight = kotlin.math.exp(-(dx * dx + dy * dy) / twoSigmaSpaceSq)
-                        val colorWeight = kotlin.math.exp(-(dColor * dColor) / twoSigmaColorSq)
-                        val weight = spatialWeight * colorWeight
-                        valSum += v * weight
-                        weightSum += weight
-                    }
-                }
-                val finalVal = if (weightSum > 1e-6) (valSum / weightSum).toFloat() else centerVal
-                out[gy * MATRIX_SIZE + gx] = finalVal.toInt().coerceIn(0, 255).toByte()
-            }
-        }
-        return out
+    fun downsampleBilateral(pixels: IntArray, w: Int, h: Int): ByteArray {
+        return downsampleSuperRes(pixels, w, h)
     }
 
     private fun convertToGrayscaleByteArray(bitmap: Bitmap): ByteArray {
