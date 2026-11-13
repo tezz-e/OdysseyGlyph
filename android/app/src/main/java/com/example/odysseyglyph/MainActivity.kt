@@ -97,9 +97,19 @@ class MainActivity : AppCompatActivity() {
                     setupVideo(it)
                 }
             }
+            launcherGroup.visibility = View.GONE
+            findViewById<View>(R.id.layoutHeaderTitle)?.visibility = View.GONE
+            toolbar.visibility = View.VISIBLE
+            toolbar.navigationIcon = ContextCompat.getDrawable(this, R.drawable.ic_arrow_back)
+            supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
             settingsPanel.visibility = View.VISIBLE
             btnAdvancedToggle.visibility = View.VISIBLE
             bottomActionBar.visibility = View.VISIBLE
+            btnProcess.visibility = View.VISIBLE
+            btnCancel.visibility = View.GONE
+            progressBar.visibility = View.GONE
+            successActionsContainer.visibility = View.GONE
             audioCard.visibility = if (currentMediaType == 0) View.VISIBLE else View.GONE
         }
     }
@@ -654,6 +664,8 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
         supportActionBar?.setDisplayShowHomeEnabled(false)
         
+        findViewById<View>(R.id.layoutHeaderTitle)?.visibility = View.VISIBLE
+        toolbar.visibility = View.GONE
         launcherGroup.visibility = View.VISIBLE
         settingsPanel.visibility = View.GONE
         trimmerCard.visibility = View.GONE

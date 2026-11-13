@@ -26,10 +26,10 @@
             app:layout_scrollFlags="scroll|enterAlways">
 
             <LinearLayout
+                android:id="@+id/layoutHeaderTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/tvHeaderTitle"
@@ -41,18 +41,18 @@
                     android:textSize="20sp"
                     android:textColor="#FFFFFF"
                     android:letterSpacing="0.08" />
-            </LinearLayout>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="1dp"
-                android:text="25×25 LED Matrix Console"
-                android:fontFamily="@font/font_geist"
-                app:fontFamily="@font/font_geist"
-                android:textSize="11sp"
-                android:textColor="#888888"
-                android:letterSpacing="0.04" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:text="25×25 LED Matrix Console"
+                    android:fontFamily="@font/font_geist"
+                    app:fontFamily="@font/font_geist"
+                    android:textSize="11sp"
+                    android:textColor="#888888"
+                    android:letterSpacing="0.04" />
+            </LinearLayout>
 
             <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
@@ -60,6 +60,8 @@
                 android:layout_height="?attr/actionBarSize"
                 app:navigationIcon="@drawable/ic_arrow_back"
                 app:navigationIconTint="#FFFFFF"
+                app:title="CROP &amp; TRIM"
+                app:titleTextColor="#FFFFFF"
                 android:visibility="gone" />
         </LinearLayout>
     </com.google.android.material.appbar.AppBarLayout>
@@ -423,21 +425,6 @@
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:visibility="gone" />
-
-                        <com.otaliastudios.zoom.ZoomLayout
-                            android:id="@+id/zoomLayout"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            app:hasClickableChildren="false"
-                            app:overScrollHorizontal="false"
-                            app:overScrollVertical="false"
-                            app:overPinchable="false">
-
-                            <com.example.odysseyglyph.CenteredVideoView
-                                android:id="@+id/zoomVideoView"
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent" />
-                        </com.otaliastudios.zoom.ZoomLayout>
 
                         <!-- Circular Crop Overlay with touch-activated grid & bezel -->
                         <com.example.odysseyglyph.CropOverlayView
