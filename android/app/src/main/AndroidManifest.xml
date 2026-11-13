@@ -38,11 +38,6 @@
             android:exported="false">
         </activity>
 
-        <activity
-            android:name=".LyricStudioActivity"
-            android:exported="false"
-            android:theme="@style/Theme.OdysseyGlyph" />
-
         <!-- Slot 1 -->
         <service
             android:name=".OdysseyToyServiceSlot1"

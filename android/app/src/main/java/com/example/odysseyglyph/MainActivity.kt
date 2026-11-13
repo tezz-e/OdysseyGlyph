@@ -61,7 +61,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnOpenManager: MaterialButton
     private lateinit var btnOpenGallerySuccess: MaterialButton
 
-    private lateinit var btnLaunchLyricStudio: MaterialButton
     private lateinit var btnLaunchVisualizer: MaterialButton
     private lateinit var btnLaunchLiveLyrics: MaterialButton
     private lateinit var bottomActionBar: LinearLayout
@@ -172,18 +171,12 @@ class MainActivity : AppCompatActivity() {
             card.setOnClickListener { btnSelectVideo.performClick() }
         }
 
-        findViewById<View>(R.id.cardLyricStudio)?.let { card ->
-            card.applyLiquidGlass(pressedScale = 0.98f)
-            card.setOnClickListener { btnLaunchLyricStudio.performClick() }
-        }
-
         findViewById<View>(R.id.cardVisualizer)?.let { card ->
             card.applyLiquidGlass(pressedScale = 0.98f)
             card.setOnClickListener { btnLaunchVisualizer.performClick() }
         }
 
         btnSelectVideo.applyLiquidGlass(pressedScale = 0.96f)
-        btnLaunchLyricStudio.applyLiquidGlass(pressedScale = 0.96f)
         btnLaunchVisualizer.applyLiquidGlass(pressedScale = 0.96f)
         btnLaunchLiveLyrics.applyLiquidGlass(pressedScale = 0.96f)
         findViewById<View>(R.id.btnAddTileMain)?.let { TouchSpringAnimator.attach(it) }
@@ -245,7 +238,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun bindViews() {
         btnSelectVideo = findViewById(R.id.btnSelectVideo)
-        btnLaunchLyricStudio = findViewById(R.id.btnLaunchLyricStudio)
         btnLaunchVisualizer = findViewById(R.id.btnLaunchVisualizer)
         btnLaunchLiveLyrics = findViewById(R.id.btnLaunchLiveLyrics)
         toolbar = findViewById(R.id.toolbar)
@@ -301,10 +293,6 @@ class MainActivity : AppCompatActivity() {
             if (launcherGroup.visibility == View.GONE && !isRendering.get()) {
                 resetToLauncher()
             }
-        }
-
-        btnLaunchLyricStudio.setOnClickListener {
-            startActivity(Intent(this, LyricStudioActivity::class.java))
         }
 
         val btnAddTileMain = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddTileMain)

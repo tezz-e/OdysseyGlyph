@@ -175,119 +175,7 @@
                     </LinearLayout>
                 </FrameLayout>
 
-                <!-- BENTO ROW 2: SPLIT TILES (Media Pipeline & Lyric Studio) -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="12dp">
-
-                    <!-- Left: Media Ingest / Video Crop -->
-                    <LinearLayout
-                        android:id="@+id/cardMediaPipeline"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="4dp"
-                        android:background="@drawable/bg_glass_card"
-                        android:padding="16dp"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Media Import"
-                            android:fontFamily="@font/font_geist"
-                            app:fontFamily="@font/font_geist"
-                            android:textSize="15.5sp"
-                            android:textStyle="bold"
-                            android:textColor="#FFFFFF" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="3dp"
-                            android:text="Crop video &amp; GIF for 25×25 matrix"
-                            android:fontFamily="@font/font_geist"
-                            app:fontFamily="@font/font_geist"
-                            android:textSize="12sp"
-                            android:textColor="#888888" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSelectVideo"
-                            android:layout_width="match_parent"
-                            android:layout_height="44dp"
-                            android:layout_marginTop="10dp"
-                            android:text="IMPORT"
-                            android:fontFamily="@font/font_geist"
-                            app:fontFamily="@font/font_geist"
-                            android:textStyle="bold"
-                            android:letterSpacing="0.04"
-                            android:textSize="12sp"
-                            app:cornerRadius="22dp"
-                            app:backgroundTint="#14FFFFFF"
-                            app:strokeColor="#24FFFFFF"
-                            app:strokeWidth="1dp"
-                            android:textColor="#FFFFFF"
-                            app:icon="@drawable/ic_folder"
-                            app:iconSize="14dp"
-                            app:iconTint="#FFFFFF" />
-                    </LinearLayout>
-
-                    <!-- Right: Lyric Studio -->
-                    <LinearLayout
-                        android:id="@+id/cardLyricStudio"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="4dp"
-                        android:background="@drawable/bg_glass_card"
-                        android:padding="16dp"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Lyric Studio"
-                            android:fontFamily="@font/font_geist"
-                            app:fontFamily="@font/font_geist"
-                            android:textSize="15.5sp"
-                            android:textStyle="bold"
-                            android:textColor="#FFFFFF" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="3dp"
-                            android:text="Create lyric animations"
-                            android:fontFamily="@font/font_geist"
-                            app:fontFamily="@font/font_geist"
-                            android:textSize="12sp"
-                            android:textColor="#888888" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnLaunchLyricStudio"
-                            android:layout_width="match_parent"
-                            android:layout_height="44dp"
-                            android:layout_marginTop="10dp"
-                            android:text="STUDIO"
-                            android:fontFamily="@font/font_geist"
-                            app:fontFamily="@font/font_geist"
-                            android:textStyle="bold"
-                            android:letterSpacing="0.04"
-                            android:textSize="12sp"
-                            app:cornerRadius="22dp"
-                            app:backgroundTint="#14FFFFFF"
-                            app:strokeColor="#24FFFFFF"
-                            app:strokeWidth="1dp"
-                            android:textColor="#FFFFFF"
-                            app:icon="@drawable/ic_lyrics"
-                            app:iconSize="14dp"
-                            app:iconTint="#FFFFFF" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <!-- BENTO ROW 3: STANDALONE VISUALIZER -->
+                <!-- CARD 2: STANDALONE VISUALIZER -->
                 <LinearLayout
                     android:id="@+id/cardVisualizer"
                     android:layout_width="match_parent"
@@ -346,7 +234,86 @@
                         app:iconTint="#FFFFFF" />
                 </LinearLayout>
 
-                <!-- BENTO ROW 4: QUICK ACCESS & HARDWARE TOYS DECK -->
+                <!-- CARD 3: MEDIA IMPORT & PRESETS -->
+                <LinearLayout
+                    android:id="@+id/cardMediaPipeline"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_glass_card"
+                    android:padding="16dp"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Media Import"
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
+                        android:textSize="15.5sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="Crop video &amp; GIF into 25×25 matrix animations"
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
+                        android:textSize="12sp"
+                        android:textColor="#888888" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="12dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSelectVideo"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="6dp"
+                            android:text="IMPORT VIDEO"
+                            android:fontFamily="@font/font_geist"
+                            app:fontFamily="@font/font_geist"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.04"
+                            android:textSize="12sp"
+                            app:cornerRadius="22dp"
+                            app:backgroundTint="#14FFFFFF"
+                            app:strokeColor="#24FFFFFF"
+                            app:strokeWidth="1dp"
+                            android:textColor="#FFFFFF"
+                            app:icon="@drawable/ic_folder"
+                            app:iconSize="14dp"
+                            app:iconTint="#FFFFFF" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnVaultMain"
+                            android:layout_width="wrap_content"
+                            android:layout_height="44dp"
+                            android:layout_marginStart="6dp"
+                            android:text="PRESETS"
+                            android:fontFamily="@font/font_geist"
+                            app:fontFamily="@font/font_geist"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.04"
+                            android:textSize="12sp"
+                            app:cornerRadius="22dp"
+                            app:backgroundTint="#14FFFFFF"
+                            app:strokeColor="#24FFFFFF"
+                            app:strokeWidth="1dp"
+                            android:textColor="#FFFFFF"
+                            app:icon="@drawable/ic_folder"
+                            app:iconSize="14dp"
+                            app:iconTint="#FFFFFF" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- CARD 4: PHONE CONTROLS (QS Tile & Widget) -->
                 <LinearLayout
                     android:id="@+id/quickAccessSection"
                     android:layout_width="match_parent"
@@ -377,19 +344,13 @@
                             android:layout_width="0dp"
                             android:layout_height="44dp"
                             android:layout_weight="1"
-                            android:layout_marginEnd="4dp"
+                            android:layout_marginEnd="6dp"
                             android:text="QS TILE"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
-                            android:textSize="11sp"
-                            android:letterSpacing="0.01"
-                            android:maxLines="1"
-                            android:singleLine="true"
-                            android:ellipsize="none"
-                            android:paddingHorizontal="4dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
+                            android:textSize="12sp"
+                            android:letterSpacing="0.04"
                             app:cornerRadius="22dp"
                             app:backgroundTint="#14FFFFFF"
                             app:strokeColor="#14FFFFFF"
@@ -397,7 +358,7 @@
                             android:textColor="#FFFFFF"
                             app:icon="@drawable/ic_settings"
                             app:iconSize="14dp"
-                            app:iconPadding="3dp"
+                            app:iconPadding="4dp"
                             app:iconGravity="textStart"
                             app:iconTint="#FFFFFF" />
 
@@ -406,19 +367,13 @@
                             android:layout_width="0dp"
                             android:layout_height="44dp"
                             android:layout_weight="1"
-                            android:layout_marginHorizontal="2dp"
+                            android:layout_marginStart="6dp"
                             android:text="WIDGET"
                             android:fontFamily="@font/font_geist"
                             app:fontFamily="@font/font_geist"
                             android:textStyle="bold"
-                            android:textSize="11sp"
-                            android:letterSpacing="0.01"
-                            android:maxLines="1"
-                            android:singleLine="true"
-                            android:ellipsize="none"
-                            android:paddingHorizontal="4dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
+                            android:textSize="12sp"
+                            android:letterSpacing="0.04"
                             app:cornerRadius="22dp"
                             app:backgroundTint="#14FFFFFF"
                             app:strokeColor="#14FFFFFF"
@@ -426,36 +381,7 @@
                             android:textColor="#FFFFFF"
                             app:icon="@drawable/ic_folder"
                             app:iconSize="14dp"
-                            app:iconPadding="3dp"
-                            app:iconGravity="textStart"
-                            app:iconTint="#FFFFFF" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnVaultMain"
-                            android:layout_width="0dp"
-                            android:layout_height="44dp"
-                            android:layout_weight="1"
-                            android:layout_marginStart="4dp"
-                            android:text="VAULT"
-                            android:fontFamily="@font/font_geist"
-                            app:fontFamily="@font/font_geist"
-                            android:textStyle="bold"
-                            android:textSize="11sp"
-                            android:letterSpacing="0.01"
-                            android:maxLines="1"
-                            android:singleLine="true"
-                            android:ellipsize="none"
-                            android:paddingHorizontal="4dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            app:cornerRadius="22dp"
-                            app:backgroundTint="#14FFFFFF"
-                            app:strokeColor="#14FFFFFF"
-                            app:strokeWidth="1dp"
-                            android:textColor="#FFFFFF"
-                            app:icon="@drawable/ic_folder"
-                            app:iconSize="14dp"
-                            app:iconPadding="3dp"
+                            app:iconPadding="4dp"
                             app:iconGravity="textStart"
                             app:iconTint="#FFFFFF" />
                     </LinearLayout>

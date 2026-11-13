@@ -475,7 +475,4 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Global Liquid Glass Navigation Dock (Console | Lyrics | Studio | Vault) -->
-    <include layout="@layout/layout_odyssey_nav_dock" />
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
