@@ -57,7 +57,7 @@ object VideoProcessor {
             val effectiveMin = frameMin * 0.25f + p3 * 0.75f
             val effectiveMax = frameMax * 0.25f + p97 * 0.75f
             val effectiveRange = (effectiveMax - effectiveMin).coerceAtLeast(1f)
-            return AdaptiveRange(effectiveMin, effectiveMax, effectiveRange, 1.0f, 0.82f)
+            return AdaptiveRange(effectiveMin, effectiveMax, effectiveRange, 1.0f, 0.80f)
         }
 
         // Mode 0: AUTO
@@ -71,7 +71,7 @@ object VideoProcessor {
         val effectiveMin = frameMin * (1f - adaptiveGain * 0.70f) + p3 * (adaptiveGain * 0.70f)
         val effectiveMax = frameMax * (1f - adaptiveGain * 0.70f) + p97 * (adaptiveGain * 0.70f)
         val effectiveRange = (effectiveMax - effectiveMin).coerceAtLeast(1f)
-        val gamma = 1.0f - (adaptiveGain * 0.18f) // Smooth lift from 1.0 down to 0.82
+        val gamma = 1.0f - (adaptiveGain * 0.20f) // Smooth lift from 1.0 down to 0.82
 
         return AdaptiveRange(effectiveMin, effectiveMax, effectiveRange, adaptiveGain, gamma)
     }
@@ -491,188 +491,135 @@ object VideoProcessor {
             luma[i] = 0.299f * r + 0.587f * g + 0.114f * b
         }
 
-        // 2. High-DPI Super-Resolution Upscaling (target ~600-800px)
-        val upScale = Math.max(2, 600 / Math.max(1, Math.min(w, h)))
-        val upW = w * upScale
-        val upH = h * upScale
-        val upLuma = upscaleSuperRes(luma, w, h, upW, upH, 2.0f)
+        // 2. Bilateral Denoising on source: removes fur micro-texture (hairs) while preserving strong edges
+        val denoised = bilateralFilterFast(luma, w, h, 4, 30f)
 
-        // 3. Multi-scale local detail enhancement (boosts shadow details like eyes/wrinkles without lifting DC black)
-        val boostedLuma = applyLocalFeatureBoost(upLuma, upW, upH, 1.8f)
+        // 3. Macro-structure edge enhancement (enhances face contours, eyes, mouth without high-freq noise)
+        val macroRad = Math.max(3, w / 35)
+        val macroBlur = boxBlurFast(denoised, w, h, macroRad)
+        val edgeEnhanced = FloatArray(w * h)
+        for (i in 0 until (w * h)) {
+            val diff = denoised[i] - macroBlur[i]
+            edgeEnhanced[i] = (denoised[i] + diff * 0.75f).coerceIn(0f, 255f)
+        }
 
-        // 4. Salient Extrema Feature Downsampling to 25x25
-        val scaleX = upW.toFloat() / MATRIX_SIZE
-        val scaleY = upH.toFloat() / MATRIX_SIZE
+        // 4. Area-weighted downsampling to 25x25 (guarantees smooth, cohesive diode clusters)
+        val scaleX = w.toFloat() / MATRIX_SIZE
+        val scaleY = h.toFloat() / MATRIX_SIZE
         val out = ByteArray(MATRIX_SIZE * MATRIX_SIZE)
 
         for (gy in 0 until MATRIX_SIZE) {
-            val cellCY = (gy + 0.5f) * scaleY
-            val sy0 = Math.max(0, (cellCY - scaleY * 0.5f).toInt())
-            val sy1 = Math.min(upH - 1, (cellCY + scaleY * 0.5f).toInt())
-
+            val sy0 = (gy * scaleY).toInt()
+            val sy1 = Math.min(h, ((gy + 1) * scaleY).toInt())
             for (gx in 0 until MATRIX_SIZE) {
-                val cellCX = (gx + 0.5f) * scaleX
-                val sx0 = Math.max(0, (cellCX - scaleX * 0.5f).toInt())
-                val sx1 = Math.min(upW - 1, (cellCX + scaleX * 0.5f).toInt())
+                val sx0 = (gx * scaleX).toInt()
+                val sx1 = Math.min(w, ((gx + 1) * scaleX).toInt())
 
+                var sum = 0f
+                var count = 0
                 var minV = 255f
                 var maxV = 0f
-                var sumV = 0f
-                var count = 0
 
-                for (sy in sy0..sy1) {
-                    val row = sy * upW
-                    for (sx in sx0..sx1) {
-                        val v = boostedLuma[row + sx]
-                        sumV += v
+                for (y in sy0 until sy1) {
+                    val row = y * w
+                    for (x in sx0 until sx1) {
+                        val v = edgeEnhanced[row + x]
+                        sum += v
                         count++
                         if (v < minV) minV = v
                         if (v > maxV) maxV = v
                     }
                 }
+                val avg = if (count > 0) (sum / count) else 128f
 
-                val avg = if (count > 0) (sumV / count) else 128f
-                val localContrast = maxV - minV
-
-                val valToUse = if (localContrast > 40f) {
-                    val distToMax = maxV - avg
-                    val distToMin = avg - minV
-                    if (distToMax > distToMin * 1.2f) {
-                        // Sharp bright spike (e.g. canine fang, incisor tooth, whisker, catchlight)
-                        avg * 0.3f + maxV * 0.7f
-                    } else if (distToMin > distToMax * 1.2f) {
-                        // Sharp dark crevice (e.g. pupil, nostril, deep oral cavity)
-                        avg * 0.3f + minV * 0.7f
+                // Feature landmark preservation: ONLY for massive contrast steps (>= 90)
+                // (e.g. sharp canine fangs in dark mouth or dark pupil in white sclera)
+                val stepContrast = maxV - minV
+                val finalVal = if (stepContrast > 90f) {
+                    if ((maxV - avg) > (avg - minV) * 1.5f) {
+                        avg * 0.5f + maxV * 0.5f
+                    } else if ((avg - minV) > (maxV - avg) * 1.5f) {
+                        avg * 0.5f + minV * 0.5f
                     } else {
-                        if (avg > 128f) avg * 0.65f + maxV * 0.35f else avg * 0.65f + minV * 0.35f
+                        avg
                     }
                 } else {
                     avg
                 }
-
-                out[gy * MATRIX_SIZE + gx] = valToUse.toInt().coerceIn(0, 255).toByte()
+                out[gy * MATRIX_SIZE + gx] = finalVal.toInt().coerceIn(0, 255).toByte()
             }
         }
         return out
     }
 
-    private fun upscaleSuperRes(src: FloatArray, sw: Int, sh: Int, dw: Int, dh: Int, edgeGain: Float): FloatArray {
-        val dst = FloatArray(dw * dh)
-        val scaleX = sw.toFloat() / dw
-        val scaleY = sh.toFloat() / dh
-
-        for (dy in 0 until dh) {
-            val sy = (dy + 0.5f) * scaleY - 0.5f
-            val iy = Math.floor(sy.toDouble()).toInt()
-            val fy = sy - iy
-            val row = dy * dw
-            for (dx in 0 until dw) {
-                val sx = (dx + 0.5f) * scaleX - 0.5f
-                val ix = Math.floor(sx.toDouble()).toInt()
-                val fx = sx - ix
-
-                var value = 0f
-                for (m in -1..2) {
-                    val py = (iy + m).coerceIn(0, sh - 1)
-                    val wy = cubicWeight(m - fy)
-                    val srcRow = py * sw
-                    for (n in -1..2) {
-                        val px = (ix + n).coerceIn(0, sw - 1)
-                        val wx = cubicWeight(n - fx)
-                        value += src[srcRow + px] * wx * wy
-                    }
-                }
-                dst[row + dx] = value.coerceIn(0f, 255f)
-            }
-        }
-
-        val enhanced = FloatArray(dw * dh)
-        val rad = Math.max(1, (dw / sw) / 2)
-        for (y in 0 until dh) {
-            val row = y * dw
+    private fun bilateralFilterFast(src: FloatArray, w: Int, h: Int, rad: Int, sigmaR: Float): FloatArray {
+        val dst = FloatArray(w * h)
+        val twoSigmaRSq = 2f * sigmaR * sigmaR
+        val twoSigmaSSq = 2f * rad * rad
+        for (y in 0 until h) {
             val y0 = Math.max(0, y - rad)
-            val y1 = Math.min(dh - 1, y + rad)
-            for (x in 0 until dw) {
+            val y1 = Math.min(h - 1, y + rad)
+            for (x in 0 until w) {
                 val x0 = Math.max(0, x - rad)
-                val x1 = Math.min(dw - 1, x + rad)
+                val x1 = Math.min(w - 1, x + rad)
+                val centerVal = src[y * w + x]
                 var sum = 0f
-                var count = 0
+                var wSum = 0f
                 for (ny in y0..y1) {
-                    val nRow = ny * dw
+                    val dy = ny - y
+                    val nRow = ny * w
                     for (nx in x0..x1) {
-                        sum += dst[nRow + nx]
-                        count++
+                        val dx = nx - x
+                        val v = src[nRow + nx]
+                        val dVal = v - centerVal
+                        val weight = kotlin.math.exp(-(dx * dx + dy * dy) / twoSigmaSSq - (dVal * dVal) / twoSigmaRSq)
+                        sum += v * weight
+                        wSum += weight
                     }
                 }
-                val blurred = sum / count
-                val diff = dst[row + x] - blurred
-                enhanced[row + x] = (dst[row + x] + edgeGain * diff).coerceIn(0f, 255f)
+                dst[y * w + x] = if (wSum > 0f) (sum / wSum) else centerVal
             }
         }
-        return enhanced
+        return dst
     }
 
-    private fun cubicWeight(x: Float): Float {
-        val ax = Math.abs(x)
-        return if (ax <= 1f) {
-            (1.5f * ax - 2.5f) * ax * ax + 1f
-        } else if (ax < 2f) {
-            ((-0.5f * ax + 2.5f) * ax - 4f) * ax + 2f
-        } else {
-            0f
-        }
-    }
-
-    private fun applyLocalFeatureBoost(src: FloatArray, w: Int, h: Int, shadowBoost: Float): FloatArray {
-        val bg = FloatArray(w * h)
-        val bgRad = Math.max(8, (Math.min(w, h) * 0.10f).toInt())
+    private fun boxBlurFast(src: FloatArray, w: Int, h: Int, rad: Int): FloatArray {
         val temp = FloatArray(w * h)
-
+        val out = FloatArray(w * h)
         for (y in 0 until h) {
             val row = y * w
             var sum = 0f
             var count = 0
-            val maxInit = Math.min(w - 1, bgRad)
+            val maxInit = Math.min(w - 1, rad)
             for (x in 0..maxInit) {
                 sum += src[row + x]
                 count++
             }
             for (x in 0 until w) {
                 temp[row + x] = sum / count
-                val addX = x + bgRad + 1
+                val addX = x + rad + 1
                 if (addX < w) { sum += src[row + addX]; count++ }
-                val remX = x - bgRad
+                val remX = x - rad
                 if (remX >= 0) { sum -= src[row + remX]; count-- }
             }
         }
-
         for (x in 0 until w) {
             var sum = 0f
             var count = 0
-            val maxInit = Math.min(h - 1, bgRad)
+            val maxInit = Math.min(h - 1, rad)
             for (y in 0..maxInit) {
                 sum += temp[y * w + x]
                 count++
             }
             for (y in 0 until h) {
-                bg[y * w + x] = sum / count
-                val addY = y + bgRad + 1
+                out[y * w + x] = sum / count
+                val addY = y + rad + 1
                 if (addY < h) { sum += temp[addY * w + x]; count++ }
-                val remY = y - bgRad
+                val remY = y - rad
                 if (remY >= 0) { sum -= temp[remY * w + x]; count-- }
             }
         }
-
-        val result = FloatArray(w * h)
-        for (i in 0 until (w * h)) {
-            val value = src[i]
-            val localBg = bg[i]
-            val detail = value - localBg
-            val shadowWeight = Math.max(0f, (140f - localBg) / 140f)
-            val gain = 1.0f + shadowWeight * shadowBoost
-            result[i] = (localBg + detail * gain).coerceIn(0f, 255f)
-        }
-        return result
+        return out
     }
 
     fun downsampleBilateral(pixels: IntArray, w: Int, h: Int): ByteArray {
