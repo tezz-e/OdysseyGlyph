@@ -319,7 +319,7 @@ object VideoProcessor {
                     val sharpenedGrid = Array(MATRIX_SIZE) { FloatArray(MATRIX_SIZE) }
                     for (y in 0 until MATRIX_SIZE) {
                         for (x in 0 until MATRIX_SIZE) {
-                            if (y == 0 || y == MATRIX_SIZE - 1 || x == 0 || x == MATRIX_SIZE - 1 || !sharpen) {
+                            if (y == 0 || y == MATRIX_SIZE - 1 || x == 0 || x == MATRIX_SIZE - 1 || !sharpen || enhancementMode != 2) {
                                 sharpenedGrid[y][x] = grid[y][x]
                             } else {
                                 val sum = centerWeight * grid[y][x] - 
@@ -348,7 +348,7 @@ object VideoProcessor {
                                 // Apply contrast multiplier
                                 val adjustedStretched = ((lifted - 0.5f) * contrastMulti + 0.5f).coerceIn(0f, 1f)
                                 
-                                var contrasted = adjustedStretched * adjustedStretched * (3f - 2f * adjustedStretched)
+                                val contrasted = if (enhancementMode == 2) adjustedStretched * adjustedStretched * (3f - 2f * adjustedStretched) else adjustedStretched
                                 var finalValue = (contrasted * 255f * brightnessMulti).toInt()
                                 
                                 if (invertColors) {
