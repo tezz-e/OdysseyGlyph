@@ -25,7 +25,8 @@ object VideoProcessor {
         val effectiveMin: Float,
         val effectiveMax: Float,
         val effectiveRange: Float,
-        val adaptiveGain: Float
+        val adaptiveGain: Float,
+        val gammaLift: Float = 1.0f
     )
 
     /**
@@ -43,34 +44,36 @@ object VideoProcessor {
     ): AdaptiveRange {
         if (mode == 2 || activeLuma.isEmpty() || frameMax <= frameMin) {
             val safeRange = (frameMax - frameMin).coerceAtLeast(1f)
-            return AdaptiveRange(frameMin, frameMax, safeRange, 0f)
+            return AdaptiveRange(frameMin, frameMax, safeRange, 0f, 1.0f)
         }
 
         val sorted = activeLuma.sorted()
-        val p5 = sorted[(sorted.size * 0.05f).toInt().coerceIn(0, sorted.size - 1)]
-        val p95 = sorted[(sorted.size * 0.95f).toInt().coerceIn(0, sorted.size - 1)]
+        // Robust 3rd and 97th percentiles
+        val p3 = sorted[(sorted.size * 0.03f).toInt().coerceIn(0, sorted.size - 1)]
+        val p97 = sorted[(sorted.size * 0.97f).toInt().coerceIn(0, sorted.size - 1)]
 
         if (mode == 1) {
-            // Force ON: maximize dynamic range stretch on the active region
-            val effectiveMin = frameMin * 0.35f + p5 * 0.65f
-            val effectiveMax = frameMax * 0.35f + p95 * 0.65f
+            // Force ON: maximize dynamic range stretch and perceptual shadow lift
+            val effectiveMin = frameMin * 0.25f + p3 * 0.75f
+            val effectiveMax = frameMax * 0.25f + p97 * 0.75f
             val effectiveRange = (effectiveMax - effectiveMin).coerceAtLeast(1f)
-            return AdaptiveRange(effectiveMin, effectiveMax, effectiveRange, 1.0f)
+            return AdaptiveRange(effectiveMin, effectiveMax, effectiveRange, 1.0f, 0.85f)
         }
 
         // Mode 0: AUTO
-        val dynamicSpread = p95 - p5
+        val dynamicSpread = p97 - p3
         val adaptiveGain = if (dynamicSpread < spreadThreshold) {
             ((spreadThreshold - dynamicSpread) / spreadThreshold).coerceIn(0f, 1f)
         } else {
             0f
         }
 
-        val effectiveMin = frameMin * (1f - adaptiveGain * 0.65f) + p5 * (adaptiveGain * 0.65f)
-        val effectiveMax = frameMax * (1f - adaptiveGain * 0.65f) + p95 * (adaptiveGain * 0.65f)
+        val effectiveMin = frameMin * (1f - adaptiveGain * 0.70f) + p3 * (adaptiveGain * 0.70f)
+        val effectiveMax = frameMax * (1f - adaptiveGain * 0.70f) + p97 * (adaptiveGain * 0.70f)
         val effectiveRange = (effectiveMax - effectiveMin).coerceAtLeast(1f)
+        val gamma = 1.0f - (adaptiveGain * 0.15f) // Smooth lift from 1.0 down to 0.85
 
-        return AdaptiveRange(effectiveMin, effectiveMax, effectiveRange, adaptiveGain)
+        return AdaptiveRange(effectiveMin, effectiveMax, effectiveRange, adaptiveGain, gamma)
     }
 
     /**
@@ -320,7 +323,7 @@ object VideoProcessor {
                                 sharpenedGrid[y][x] = grid[y][x]
                             } else {
                                 val sum = centerWeight * grid[y][x] - 
-                                          neighborWeight * (grid[y-1][x] + grid[y+1][x] + grid[y][x-1] + grid[y+1][x])
+                                          neighborWeight * (grid[y-1][x] + grid[y+1][x] + grid[y][x-1] + grid[y][x+1])
                                 sharpenedGrid[y][x] = sum.coerceIn(0f, 255f)
                             }
                         }
@@ -335,8 +338,15 @@ object VideoProcessor {
                                 
                                 val stretched = ((original - adaptiveRange.effectiveMin) / adaptiveRange.effectiveRange).coerceIn(0f, 1f)
                                 
+                                // Perceptual LED curve: lift shadow midtones so facial features & contours don't crush into black
+                                val lifted = if (adaptiveRange.gammaLift < 1.0f) {
+                                    Math.pow(stretched.toDouble(), adaptiveRange.gammaLift.toDouble()).toFloat()
+                                } else {
+                                    stretched
+                                }
+                                
                                 // Apply contrast multiplier
-                                val adjustedStretched = ((stretched - 0.5f) * contrastMulti + 0.5f).coerceIn(0f, 1f)
+                                val adjustedStretched = ((lifted - 0.5f) * contrastMulti + 0.5f).coerceIn(0f, 1f)
                                 
                                 var contrasted = adjustedStretched * adjustedStretched * (3f - 2f * adjustedStretched)
                                 var finalValue = (contrasted * 255f * brightnessMulti).toInt()
@@ -425,86 +435,128 @@ object VideoProcessor {
     }
 
     fun downsampleSquareFrame(square: Bitmap, mode: Int = 0): ByteArray? {
-        val small = Bitmap.createBitmap(MATRIX_SIZE, MATRIX_SIZE, Bitmap.Config.ARGB_8888)
-        val scaleX = square.width.toFloat() / MATRIX_SIZE
-        val scaleY = square.height.toFloat() / MATRIX_SIZE
+        val w = square.width
+        val h = square.height
+        val pixels = IntArray(w * h)
+        square.getPixels(pixels, 0, w, 0, 0, w, h)
         
-        val pixels = IntArray(square.width * square.height)
-        square.getPixels(pixels, 0, square.width, 0, 0, square.width, square.height)
-        
-        // For camera photos (scaleX > 20), featureWeight is 0.0 (pure arithmetic mean).
-        // For low-res crops (scaleX < 20), featureWeight gently prevents fine dark features (pupils, whiskers)
-        // from being averaged into oblivion by surrounding skin/fur.
-        val featureWeight = when (mode) {
-            2 -> 0f // OFF (Legacy)
-            1 -> 0.22f // Force ON
-            else -> { // 0 = AUTO
-                if (scaleX < 20f) (0.22f * (1f - (scaleX / 20f))).coerceIn(0f, 0.22f) else 0f
-            }
-        }
-        
-        val outPixels = IntArray(MATRIX_SIZE * MATRIX_SIZE)
-        for (y in 0 until MATRIX_SIZE) {
-            for (x in 0 until MATRIX_SIZE) {
-                var rSum = 0L
-                var gSum = 0L
-                var bSum = 0L
-                var count = 0
-                
-                var minLuma = 255
-                var minPx = 0
-                
-                val startX = (x * scaleX).toInt()
-                val endX = ((x + 1) * scaleX).toInt().coerceIn(startX + 1, square.width)
-                val startY = (y * scaleY).toInt()
-                val endY = ((y + 1) * scaleY).toInt().coerceIn(startY + 1, square.height)
-                
-                for (sy in startY until endY) {
-                    val offset = sy * square.width
-                    for (sx in startX until endX) {
-                        val px = pixels[offset + sx]
-                        val r = android.graphics.Color.red(px)
-                        val g = android.graphics.Color.green(px)
-                        val b = android.graphics.Color.blue(px)
-                        rSum += r
-                        gSum += g
-                        bSum += b
-                        count++
-                        
-                        if (featureWeight > 0f) {
-                            val luma = (r * 299 + g * 587 + b * 114) / 1000
-                            if (luma < minLuma) {
-                                minLuma = luma
-                                minPx = px
-                            }
+        if (mode == 2) {
+            // --- MODE 2: STRICT 100% LEGACY BOX FILTER ---
+            val small = Bitmap.createBitmap(MATRIX_SIZE, MATRIX_SIZE, Bitmap.Config.ARGB_8888)
+            val scaleX = w.toFloat() / MATRIX_SIZE
+            val scaleY = h.toFloat() / MATRIX_SIZE
+            val outPixels = IntArray(MATRIX_SIZE * MATRIX_SIZE)
+            for (y in 0 until MATRIX_SIZE) {
+                for (x in 0 until MATRIX_SIZE) {
+                    var rSum = 0L; var gSum = 0L; var bSum = 0L; var count = 0
+                    val startX = (x * scaleX).toInt()
+                    val endX = Math.min(w, ((x + 1) * scaleX).toInt())
+                    val startY = (y * scaleY).toInt()
+                    val endY = Math.min(h, ((y + 1) * scaleY).toInt())
+                    for (sy in startY until endY) {
+                        val offset = sy * w
+                        for (sx in startX until endX) {
+                            val px = pixels[offset + sx]
+                            rSum += (px shr 16) and 0xFF
+                            gSum += (px shr 8) and 0xFF
+                            bSum += px and 0xFF
+                            count++
                         }
                     }
-                }
-                
-                if (count > 0) {
-                    val avgR = (rSum / count).toInt()
-                    val avgG = (gSum / count).toInt()
-                    val avgB = (bSum / count).toInt()
-                    
-                    if (featureWeight > 0f) {
-                        val minR = android.graphics.Color.red(minPx)
-                        val minG = android.graphics.Color.green(minPx)
-                        val minB = android.graphics.Color.blue(minPx)
-                        val blendedR = (avgR * (1f - featureWeight) + minR * featureWeight).toInt().coerceIn(0, 255)
-                        val blendedG = (avgG * (1f - featureWeight) + minG * featureWeight).toInt().coerceIn(0, 255)
-                        val blendedB = (avgB * (1f - featureWeight) + minB * featureWeight).toInt().coerceIn(0, 255)
-                        outPixels[y * MATRIX_SIZE + x] = android.graphics.Color.rgb(blendedR, blendedG, blendedB)
-                    } else {
-                        outPixels[y * MATRIX_SIZE + x] = android.graphics.Color.rgb(avgR, avgG, avgB)
+                    if (count > 0) {
+                        outPixels[y * MATRIX_SIZE + x] = android.graphics.Color.rgb(
+                            (rSum / count).toInt(), (gSum / count).toInt(), (bSum / count).toInt()
+                        )
                     }
                 }
             }
+            small.setPixels(outPixels, 0, MATRIX_SIZE, 0, 0, MATRIX_SIZE, MATRIX_SIZE)
+            val grayFrame = convertToGrayscaleByteArray(small)
+            small.recycle()
+            return grayFrame
         }
-        small.setPixels(outPixels, 0, MATRIX_SIZE, 0, 0, MATRIX_SIZE, MATRIX_SIZE)
         
-        val grayFrame = convertToGrayscaleByteArray(small)
-        small.recycle()
-        return grayFrame
+        // --- MODE 0 (AUTO) & MODE 1 (ON): RESEARCH-BACKED BILATERAL CONTENT-ADAPTIVE ENGINE ---
+        return downsampleBilateral(pixels, w, h)
+    }
+    
+    fun downsampleBilateral(pixels: IntArray, w: Int, h: Int): ByteArray {
+        val scaleX = w.toFloat() / MATRIX_SIZE
+        val scaleY = h.toFloat() / MATRIX_SIZE
+        val luma = FloatArray(w * h)
+        for (i in 0 until (w * h)) {
+            val px = pixels[i]
+            val r = (px shr 16) and 0xFF
+            val g = (px shr 8) and 0xFF
+            val b = px and 0xFF
+            luma[i] = 0.299f * r + 0.587f * g + 0.114f * b
+        }
+        
+        // Fast local unsharp pre-filter on source pixels to boost micro-features (pupils, fangs, whiskers)
+        val sharpLuma = FloatArray(w * h)
+        val blurRad = Math.max(1, (Math.min(scaleX, scaleY) * 0.4f).toInt())
+        for (y in 0 until h) {
+            val rowOffset = y * w
+            val dyMin = Math.max(0, y - blurRad)
+            val dyMax = Math.min(h - 1, y + blurRad)
+            for (x in 0 until w) {
+                var sum = 0f
+                var count = 0
+                val dxMin = Math.max(0, x - blurRad)
+                val dxMax = Math.min(w - 1, x + blurRad)
+                for (ny in dyMin..dyMax) {
+                    val nRow = ny * w
+                    for (nx in dxMin..dxMax) {
+                        sum += luma[nRow + nx]
+                        count++
+                    }
+                }
+                val blurred = sum / count
+                val diff = luma[rowOffset + x] - blurred
+                sharpLuma[rowOffset + x] = (luma[rowOffset + x] + 1.25f * diff).coerceIn(0f, 255f)
+            }
+        }
+        
+        // 2D Bilateral downsampling (Kopf et al., SIGGRAPH Asia 2013)
+        val out = ByteArray(MATRIX_SIZE * MATRIX_SIZE)
+        val sigmaSpace = Math.max(1.0f, (scaleX + scaleY) * 0.28f)
+        val twoSigmaSpaceSq = 2f * sigmaSpace * sigmaSpace
+        val sigmaColor = 38f
+        val twoSigmaColorSq = 2f * sigmaColor * sigmaColor
+        
+        for (gy in 0 until MATRIX_SIZE) {
+            val cellCenterY = (gy + 0.5f) * scaleY
+            val startY = Math.max(0, (cellCenterY - scaleY * 0.8f).toInt())
+            val endY = Math.min(h, (cellCenterY + scaleY * 0.8f + 1).toInt())
+            for (gx in 0 until MATRIX_SIZE) {
+                val cellCenterX = (gx + 0.5f) * scaleX
+                val startX = Math.max(0, (cellCenterX - scaleX * 0.8f).toInt())
+                val endX = Math.min(w, (cellCenterX + scaleX * 0.8f + 1).toInt())
+                val cyInt = Math.min(h - 1, cellCenterY.toInt())
+                val cxInt = Math.min(w - 1, cellCenterX.toInt())
+                val centerVal = sharpLuma[cyInt * w + cxInt]
+                
+                var weightSum = 0.0
+                var valSum = 0.0
+                for (sy in startY until endY) {
+                    val dy = sy - cellCenterY
+                    val sRow = sy * w
+                    for (sx in startX until endX) {
+                        val dx = sx - cellCenterX
+                        val v = sharpLuma[sRow + sx]
+                        val dColor = v - centerVal
+                        val spatialWeight = kotlin.math.exp(-(dx * dx + dy * dy) / twoSigmaSpaceSq)
+                        val colorWeight = kotlin.math.exp(-(dColor * dColor) / twoSigmaColorSq)
+                        val weight = spatialWeight * colorWeight
+                        valSum += v * weight
+                        weightSum += weight
+                    }
+                }
+                val finalVal = if (weightSum > 1e-6) (valSum / weightSum).toFloat() else centerVal
+                out[gy * MATRIX_SIZE + gx] = finalVal.toInt().coerceIn(0, 255).toByte()
+            }
+        }
+        return out
     }
 
     private fun convertToGrayscaleByteArray(bitmap: Bitmap): ByteArray {
