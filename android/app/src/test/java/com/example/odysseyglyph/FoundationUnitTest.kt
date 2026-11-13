@@ -390,4 +390,87 @@ class FoundationUnitTest {
         // When IME is open (imeBottom = 350, navBarBottom = 48)
         assertEquals(-302f, WindowInsetsUtil.calculateImeTranslationY(imeBottom = 350, navBarBottom = 48), 0.001f)
     }
+
+    // =========================================================================
+    // 6. VideoProcessor Adaptive Range & Sharpening Tests
+    // =========================================================================
+
+    @Test
+    fun testVideoProcessor_adaptiveRange_cameraPhoto_zeroGain() {
+        // High dynamic range typical of direct camera photos (spread >= 150)
+        val lumaList = mutableListOf<Float>()
+        for (i in 0 until 100) {
+            lumaList.add(i * 2.55f) // 0f to 255f evenly spread
+        }
+
+        val range = VideoProcessor.calculateAdaptiveRange(
+            frameMin = 0f,
+            frameMax = 255f,
+            activeLuma = lumaList,
+            spreadThreshold = 150f
+        )
+
+        assertEquals("Camera photo spread must yield zero adaptive gain", 0f, range.adaptiveGain, 0.001f)
+        assertEquals("Effective min must be identical to frameMin", 0f, range.effectiveMin, 0.001f)
+        assertEquals("Effective max must be identical to frameMax", 255f, range.effectiveMax, 0.001f)
+        assertEquals("Effective range must be identical to frameRange", 255f, range.effectiveRange, 0.001f)
+    }
+
+    @Test
+    fun testVideoProcessor_adaptiveRange_lowResFace_enhancesDynamicRange() {
+        // Low dynamic range typical of compressed web images/faces (clustered between 110 and 150)
+        val lumaList = mutableListOf<Float>()
+        for (i in 0 until 100) {
+            lumaList.add(110f + (i % 41)) // tightly clustered in midtones
+        }
+
+        val range = VideoProcessor.calculateAdaptiveRange(
+            frameMin = 10f, // stray background shadow
+            frameMax = 245f, // stray background highlight
+            activeLuma = lumaList,
+            spreadThreshold = 150f
+        )
+
+        assertTrue("Low-res midtone cluster must trigger adaptive gain > 0", range.adaptiveGain > 0f)
+        assertTrue("Effective min must adapt towards subject's lower bound", range.effectiveMin > 10f)
+        assertTrue("Effective max must adapt towards subject's upper bound", range.effectiveMax < 245f)
+        assertTrue("Effective range must be narrower than raw frameRange to expand subject contrast", range.effectiveRange < (245f - 10f))
+    }
+
+    @Test
+    fun testVideoProcessor_adaptiveRange_emptyOrUniform_safe() {
+        // Edge case: uniform frame (all diodes identical)
+        val rangeUniform = VideoProcessor.calculateAdaptiveRange(
+            frameMin = 128f,
+            frameMax = 128f,
+            activeLuma = listOf(128f, 128f, 128f)
+        )
+        assertEquals(0f, rangeUniform.adaptiveGain, 0.001f)
+        assertTrue("Effective range must be at least 1f to prevent divide-by-zero", rangeUniform.effectiveRange >= 1f)
+
+        // Edge case: empty list
+        val rangeEmpty = VideoProcessor.calculateAdaptiveRange(
+            frameMin = 0f,
+            frameMax = 255f,
+            activeLuma = emptyList()
+        )
+        assertEquals(0f, rangeEmpty.adaptiveGain, 0.001f)
+        assertEquals(255f, rangeEmpty.effectiveRange, 0.001f)
+    }
+
+    @Test
+    fun testVideoProcessor_sharpeningWeights_preservesMeanEnergy() {
+        // For any gain in [0, 1], centerWeight - 4 * neighborWeight must equal 1.0 (mean preserving)
+        val testGains = floatArrayOf(0.0f, 0.25f, 0.5f, 0.75f, 1.0f)
+        for (gain in testGains) {
+            val (center, neighbor) = VideoProcessor.calculateSharpeningWeights(gain)
+            val sum = center - 4f * neighbor
+            assertEquals("Sharpening kernel must preserve overall brightness energy", 1.0f, sum, 0.001f)
+        }
+
+        // Gain = 0.0 must exactly match standard 5.0 and 1.0 weights
+        val (c0, n0) = VideoProcessor.calculateSharpeningWeights(0f)
+        assertEquals(5.0f, c0, 0.001f)
+        assertEquals(1.0f, n0, 0.001f)
+    }
 }

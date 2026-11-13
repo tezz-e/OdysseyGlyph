@@ -21,6 +21,60 @@ import kotlin.concurrent.thread
 object VideoProcessor {
     const val MATRIX_SIZE = 25
 
+    data class AdaptiveRange(
+        val effectiveMin: Float,
+        val effectiveMax: Float,
+        val effectiveRange: Float,
+        val adaptiveGain: Float
+    )
+
+    /**
+     * Automatically analyzes the luminance distribution within the active circular aperture.
+     * For high-contrast media (e.g. camera close-ups), adaptiveGain is 0.0 and min/max are preserved untouched.
+     * For low-contrast or low-res media (e.g. faces or compressed images with narrow dynamic range),
+     * adaptiveGain smoothly scales up to expand the subject's midtones across the full LED range.
+     */
+    fun calculateAdaptiveRange(
+        frameMin: Float,
+        frameMax: Float,
+        activeLuma: List<Float>,
+        spreadThreshold: Float = 150f
+    ): AdaptiveRange {
+        if (activeLuma.isEmpty() || frameMax <= frameMin) {
+            val safeRange = (frameMax - frameMin).coerceAtLeast(1f)
+            return AdaptiveRange(frameMin, frameMax, safeRange, 0f)
+        }
+
+        val sorted = activeLuma.sorted()
+        val p5 = sorted[(sorted.size * 0.05f).toInt().coerceIn(0, sorted.size - 1)]
+        val p95 = sorted[(sorted.size * 0.95f).toInt().coerceIn(0, sorted.size - 1)]
+        val dynamicSpread = p95 - p5
+
+        val adaptiveGain = if (dynamicSpread < spreadThreshold) {
+            ((spreadThreshold - dynamicSpread) / spreadThreshold).coerceIn(0f, 1f)
+        } else {
+            0f
+        }
+
+        val effectiveMin = frameMin * (1f - adaptiveGain * 0.65f) + p5 * (adaptiveGain * 0.65f)
+        val effectiveMax = frameMax * (1f - adaptiveGain * 0.65f) + p95 * (adaptiveGain * 0.65f)
+        val effectiveRange = (effectiveMax - effectiveMin).coerceAtLeast(1f)
+
+        return AdaptiveRange(effectiveMin, effectiveMax, effectiveRange, adaptiveGain)
+    }
+
+    /**
+     * Computes energy-preserving 3x3 Laplacian sharpening weights.
+     * When adaptiveGain is 0.0 (standard camera shots), returns standard weights (center=5.0, neighbor=1.0).
+     * For low-contrast subjects (adaptiveGain > 0.0), edge contrast is smoothly enhanced.
+     * Always satisfies center - 4 * neighbor == 1.0 (mean-preserving).
+     */
+    fun calculateSharpeningWeights(adaptiveGain: Float): Pair<Float, Float> {
+        val center = 5f + (adaptiveGain.coerceIn(0f, 1f) * 1.5f)
+        val neighbor = (center - 1f) / 4f
+        return Pair(center, neighbor)
+    }
+
     fun processMedia(
         context: Context, 
         mediaUri: Uri, 
@@ -227,6 +281,7 @@ object VideoProcessor {
                     val grid = Array(MATRIX_SIZE) { FloatArray(MATRIX_SIZE) }
                     var frameMin = 255f
                     var frameMax = 0f
+                    val activeLuma = ArrayList<Float>(500)
                     for (y in 0 until MATRIX_SIZE) {
                         for (x in 0 until MATRIX_SIZE) {
                             val distSq = (x - center) * (x - center) + (y - center) * (y - center)
@@ -235,12 +290,16 @@ object VideoProcessor {
                             if (distSq <= radiusSq) {
                                 if (v < frameMin) frameMin = v
                                 if (v > frameMax) frameMax = v
+                                activeLuma.add(v)
                             }
                         }
                     }
                     
                     if (frameMax <= frameMin) frameMax = frameMin + 1
-                    val frameRange = frameMax - frameMin
+                    
+                    // Auto-detect dynamic range and compute adaptive contrast stretch & sharpening weights
+                    val adaptiveRange = calculateAdaptiveRange(frameMin, frameMax, activeLuma)
+                    val (centerWeight, neighborWeight) = calculateSharpeningWeights(adaptiveRange.adaptiveGain)
 
                     // Apply 3x3 Sharpening kernel
                     val sharpenedGrid = Array(MATRIX_SIZE) { FloatArray(MATRIX_SIZE) }
@@ -249,7 +308,8 @@ object VideoProcessor {
                             if (y == 0 || y == MATRIX_SIZE - 1 || x == 0 || x == MATRIX_SIZE - 1 || !sharpen) {
                                 sharpenedGrid[y][x] = grid[y][x]
                             } else {
-                                val sum = 5 * grid[y][x] - grid[y-1][x] - grid[y+1][x] - grid[y][x-1] - grid[y][x+1]
+                                val sum = centerWeight * grid[y][x] - 
+                                          neighborWeight * (grid[y-1][x] + grid[y+1][x] + grid[y][x-1] + grid[y+1][x])
                                 sharpenedGrid[y][x] = sum.coerceIn(0f, 255f)
                             }
                         }
@@ -262,7 +322,7 @@ object VideoProcessor {
                             if (distSq <= radiusSq) {
                                 val original = sharpenedGrid[y][x]
                                 
-                                val stretched = ((original - frameMin) / frameRange).coerceIn(0f, 1f)
+                                val stretched = ((original - adaptiveRange.effectiveMin) / adaptiveRange.effectiveRange).coerceIn(0f, 1f)
                                 
                                 // Apply contrast multiplier
                                 val adjustedStretched = ((stretched - 0.5f) * contrastMulti + 0.5f).coerceIn(0f, 1f)
@@ -353,13 +413,22 @@ object VideoProcessor {
         return result
     }
 
-    private fun downsampleSquareFrame(square: Bitmap): ByteArray? {
+    fun downsampleSquareFrame(square: Bitmap): ByteArray? {
         val small = Bitmap.createBitmap(MATRIX_SIZE, MATRIX_SIZE, Bitmap.Config.ARGB_8888)
         val scaleX = square.width.toFloat() / MATRIX_SIZE
         val scaleY = square.height.toFloat() / MATRIX_SIZE
         
         val pixels = IntArray(square.width * square.height)
         square.getPixels(pixels, 0, square.width, 0, 0, square.width, square.height)
+        
+        // For camera photos (scaleX > 20), featureWeight is 0.0 (pure arithmetic mean).
+        // For low-res crops (scaleX < 20), featureWeight gently prevents fine dark features (pupils, whiskers)
+        // from being averaged into oblivion by surrounding skin/fur.
+        val featureWeight = if (scaleX < 20f) {
+            (0.22f * (1f - (scaleX / 20f))).coerceIn(0f, 0.22f)
+        } else {
+            0f
+        }
         
         val outPixels = IntArray(MATRIX_SIZE * MATRIX_SIZE)
         for (y in 0 until MATRIX_SIZE) {
@@ -369,28 +438,52 @@ object VideoProcessor {
                 var bSum = 0L
                 var count = 0
                 
+                var minLuma = 255
+                var minPx = 0
+                
                 val startX = (x * scaleX).toInt()
-                val endX = ((x + 1) * scaleX).toInt().coerceAtMost(square.width)
+                val endX = ((x + 1) * scaleX).toInt().coerceIn(startX + 1, square.width)
                 val startY = (y * scaleY).toInt()
-                val endY = ((y + 1) * scaleY).toInt().coerceAtMost(square.height)
+                val endY = ((y + 1) * scaleY).toInt().coerceIn(startY + 1, square.height)
                 
                 for (sy in startY until endY) {
                     val offset = sy * square.width
                     for (sx in startX until endX) {
                         val px = pixels[offset + sx]
-                        rSum += android.graphics.Color.red(px)
-                        gSum += android.graphics.Color.green(px)
-                        bSum += android.graphics.Color.blue(px)
+                        val r = android.graphics.Color.red(px)
+                        val g = android.graphics.Color.green(px)
+                        val b = android.graphics.Color.blue(px)
+                        rSum += r
+                        gSum += g
+                        bSum += b
                         count++
+                        
+                        if (featureWeight > 0f) {
+                            val luma = (r * 299 + g * 587 + b * 114) / 1000
+                            if (luma < minLuma) {
+                                minLuma = luma
+                                minPx = px
+                            }
+                        }
                     }
                 }
                 
                 if (count > 0) {
-                    outPixels[y * MATRIX_SIZE + x] = android.graphics.Color.rgb(
-                        (rSum / count).toInt(),
-                        (gSum / count).toInt(),
-                        (bSum / count).toInt()
-                    )
+                    val avgR = (rSum / count).toInt()
+                    val avgG = (gSum / count).toInt()
+                    val avgB = (bSum / count).toInt()
+                    
+                    if (featureWeight > 0f) {
+                        val minR = android.graphics.Color.red(minPx)
+                        val minG = android.graphics.Color.green(minPx)
+                        val minB = android.graphics.Color.blue(minPx)
+                        val blendedR = (avgR * (1f - featureWeight) + minR * featureWeight).toInt().coerceIn(0, 255)
+                        val blendedG = (avgG * (1f - featureWeight) + minG * featureWeight).toInt().coerceIn(0, 255)
+                        val blendedB = (avgB * (1f - featureWeight) + minB * featureWeight).toInt().coerceIn(0, 255)
+                        outPixels[y * MATRIX_SIZE + x] = android.graphics.Color.rgb(blendedR, blendedG, blendedB)
+                    } else {
+                        outPixels[y * MATRIX_SIZE + x] = android.graphics.Color.rgb(avgR, avgG, avgB)
+                    }
                 }
             }
         }
