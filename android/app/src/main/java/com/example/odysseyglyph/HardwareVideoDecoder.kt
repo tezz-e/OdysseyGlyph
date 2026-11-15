@@ -37,6 +37,7 @@ object HardwareVideoDecoder {
         isCancelled: AtomicBoolean,
         onProgress: (Int) -> Unit
     ): Boolean {
+        val startTimeWallClock = System.currentTimeMillis()
         var extractor: MediaExtractor? = null
         var decoder: MediaCodec? = null
 
@@ -164,13 +165,13 @@ object HardwareVideoDecoder {
 
                     decoder.releaseOutputBuffer(outIndex, false)
 
-                    if ((bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0 || (ptsUs > endUs && decodedCount >= missingIndices.size)) {
+                    if ((bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0 || ptsUs > endUs + (intervalMs * 1000L)) {
                         break
                     }
                 } else if (outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                     Log.d(TAG, "MediaCodec output format changed: ${decoder.outputFormat}")
                 } else if (isEOS && outIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
-                    if (loopCount > maxLoopsWithoutOutput) break
+                    if (loopCount > 30) break
                 }
             }
 
@@ -196,6 +197,9 @@ object HardwareVideoDecoder {
             }
 
             val allFilled = neededIndices.all { framesByIndex.containsKey(it) }
+            val elapsedMs = System.currentTimeMillis() - startTimeWallClock
+            val effectiveFps = if (elapsedMs > 0) (decodedCount * 1000f / elapsedMs) else 0f
+            Log.i(TAG, "[BENCHMARK] Hardware decoding completed: " + decodedCount + " frames in " + elapsedMs + " ms (" + effectiveFps + " FPS)")
             onProgress(85)
             return allFilled && !isCancelled.get()
 

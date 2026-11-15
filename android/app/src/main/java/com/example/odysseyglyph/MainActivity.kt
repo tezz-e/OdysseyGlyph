@@ -188,6 +188,11 @@ class MainActivity : AppCompatActivity() {
         if (intent.getBooleanExtra("open_advanced_settings", false)) {
             window.decorView.postDelayed({ showAdvancedSettingsBottomSheet() }, 300)
         }
+        if (intent.getBooleanExtra("auto_process", false)) {
+            window.decorView.postDelayed({
+                findViewById<android.widget.Button>(R.id.btnProcess)?.performClick()
+            }, 1200)
+        }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
