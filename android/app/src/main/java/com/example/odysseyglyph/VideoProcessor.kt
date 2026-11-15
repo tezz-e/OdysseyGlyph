@@ -293,7 +293,8 @@ object VideoProcessor {
                     }
 
                     if (enhancementMode != 2) {
-                        val mapped = LedTone.toneMap(frame, tone, gain = if (enhancementMode == 1) 2.6f else 2.2f)
+                        val params = if (enhancementMode == 1) LedTone.MAX else LedTone.NORMAL
+                        val mapped = LedTone.toneMap(frame, tone, p = params)
                         val out = ByteArray(MATRIX_SIZE * MATRIX_SIZE)
                         for (idx in mapped.indices) {
                             if (!LedTone.mask[idx]) { out[idx] = 0; continue }
