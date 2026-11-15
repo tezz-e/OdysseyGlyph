@@ -205,23 +205,48 @@ object VideoProcessor {
                         if (missingIndices.isEmpty()) {
                             mainHandler.post { onProgress(85) }
                         } else {
-                            val alreadyCached = neededIndices.size - missingIndices.size
-                            for ((doneCount, frameIdx) in missingIndices.withIndex()) {
-                                if (isCancelled.get()) {
-                                    mainHandler.post { onComplete(false, "Cancelled by user.") }
-                                    return@thread
-                                }
-                                val timeUs = frameIdx * intervalMs * 1000L
-                                val bitmap = retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST)
-                                if (bitmap != null) {
-                                    val frame = extractAndDownsampleFrame(bitmap, videoCx, videoCy, videoRadius, enhancementMode)
-                                    if (frame != null) {
-                                        currentCache.framesByIndex[frameIdx] = frame
+                            // Hardware-Accelerated decoding on Qualcomm VPU via MediaCodec + MediaExtractor
+                            val hardwareSuccess = try {
+                                HardwareVideoDecoder.decodeVideoFrames(
+                                    context = context,
+                                    mediaUri = mediaUri,
+                                    startTimeMs = validStartMs,
+                                    endTimeMs = validEndMs,
+                                    targetFps = targetFps,
+                                    neededIndices = neededIndices,
+                                    framesByIndex = currentCache.framesByIndex,
+                                    videoCx = videoCx,
+                                    videoCy = videoCy,
+                                    videoRadius = videoRadius,
+                                    enhancementMode = enhancementMode,
+                                    isCancelled = isCancelled,
+                                    onProgress = { prog -> mainHandler.post { onProgress(prog) } }
+                                )
+                            } catch (e: Throwable) {
+                                false
+                            }
+
+                            // Fallback to MediaMetadataRetriever if any frames are still missing
+                            val stillMissing = neededIndices.filter { !currentCache.framesByIndex.containsKey(it) }
+                            if (!hardwareSuccess || stillMissing.isNotEmpty()) {
+                                val alreadyCached = neededIndices.size - stillMissing.size
+                                for ((doneCount, frameIdx) in stillMissing.withIndex()) {
+                                    if (isCancelled.get()) {
+                                        mainHandler.post { onComplete(false, "Cancelled by user.") }
+                                        return@thread
                                     }
-                                    bitmap.recycle()
+                                    val timeUs = frameIdx * intervalMs * 1000L
+                                    val bitmap = retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST)
+                                    if (bitmap != null) {
+                                        val frame = extractAndDownsampleFrame(bitmap, videoCx, videoCy, videoRadius, enhancementMode)
+                                        if (frame != null) {
+                                            currentCache.framesByIndex[frameIdx] = frame
+                                        }
+                                        bitmap.recycle()
+                                    }
+                                    val prog = ((alreadyCached + doneCount).toFloat() / neededIndices.size * 85).toInt().coerceIn(0, 85)
+                                    mainHandler.post { onProgress(prog) }
                                 }
-                                val prog = ((alreadyCached + doneCount).toFloat() / neededIndices.size * 85).toInt().coerceIn(0, 85)
-                                mainHandler.post { onProgress(prog) }
                             }
                             mainHandler.post { onProgress(85) }
                         }
