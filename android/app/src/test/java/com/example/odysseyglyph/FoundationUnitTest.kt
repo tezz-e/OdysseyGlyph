@@ -574,4 +574,30 @@ class FoundationUnitTest {
         assertEquals("Missing frames must start exactly at 125", 125, missing4.first())
         assertEquals("Missing frames must end at 199", 199, missing4.last())
     }
+
+    @Test
+    fun testLedTone_scratchBuffer_producesByteIdenticalResults() {
+        val w = 200
+        val h = 200
+        val pixels = IntArray(w * h)
+        for (y in 0 until h) {
+            for (x in 0 until w) {
+                val r = (x * 255 / w)
+                val g = (y * 255 / h)
+                val b = ((x + y) * 128 / (w + h))
+                pixels[y * w + x] = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
+            }
+        }
+
+        val resWithoutScratch = LedTone.downsampleArea(pixels, w, h, null)
+
+        val scratch = LedTone.ScratchBuffer()
+        val resWithScratch = LedTone.downsampleArea(pixels, w, h, scratch)
+
+        assertArrayEquals("Output with ScratchBuffer must be byte-identical to standard output", resWithoutScratch, resWithScratch)
+
+        // Run again with reused scratch (verify zero cross-frame bleed)
+        val resReusedScratch = LedTone.downsampleArea(pixels, w, h, scratch)
+        assertArrayEquals("Output with reused ScratchBuffer must be byte-identical", resWithoutScratch, resReusedScratch)
+    }
 }

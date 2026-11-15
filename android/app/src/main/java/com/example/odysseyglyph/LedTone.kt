@@ -73,9 +73,9 @@ object LedTone {
      * Fast running-sum separable box blur for Retinex illumination estimation.
      * Runs in strict O(W * H) time with zero allocations beyond the destination buffer.
      */
-    private fun fastBoxBlur(src: FloatArray, w: Int, h: Int, radius: Int): FloatArray {
+    private fun fastBoxBlur(src: FloatArray, w: Int, h: Int, radius: Int, scratch: ScratchBuffer? = null): FloatArray {
         if (radius <= 0) return src.clone()
-        val temp = FloatArray(w * h)
+        val temp = scratch?.temp ?: FloatArray(w * h)
         // Horizontal pass
         for (y in 0 until h) {
             val rowOffset = y * w
@@ -95,7 +95,7 @@ object LedTone {
             }
         }
         // Vertical pass
-        val out = FloatArray(w * h)
+        val out = scratch?.illum ?: FloatArray(w * h)
         for (x in 0 until w) {
             var acc = 0f
             var cnt = 0
@@ -118,9 +118,9 @@ object LedTone {
     /**
      * Fast separable min/max filter for morphological landmark extraction (TopHat / BlackHat).
      */
-    private fun fastMinMaxFilter(src: FloatArray, w: Int, h: Int, radius: Int): Pair<FloatArray, FloatArray> {
-        val tempMin = FloatArray(w * h)
-        val tempMax = FloatArray(w * h)
+    private fun fastMinMaxFilter(src: FloatArray, w: Int, h: Int, radius: Int, scratch: ScratchBuffer? = null): Pair<FloatArray, FloatArray> {
+        val tempMin = scratch?.tempMin ?: FloatArray(w * h)
+        val tempMax = scratch?.tempMax ?: FloatArray(w * h)
         // Horizontal pass
         for (y in 0 until h) {
             val rowOffset = y * w
@@ -139,8 +139,8 @@ object LedTone {
             }
         }
         // Vertical pass
-        val outMin = FloatArray(w * h)
-        val outMax = FloatArray(w * h)
+        val outMin = scratch?.minF ?: FloatArray(w * h)
+        val outMax = scratch?.maxF ?: FloatArray(w * h)
         for (x in 0 until w) {
             for (y in 0 until h) {
                 var minV = tempMin[y * w + x]
@@ -206,9 +206,10 @@ object LedTone {
      * Full feature-preserving downsampling pipeline:
      * Chromatic Saliency -> Retinex Illumination Equalization -> Morphological Landmark Anchoring -> Area Downsample.
      */
-    fun downsampleArea(pixels: IntArray, w: Int, h: Int): ByteArray {
+    fun downsampleArea(pixels: IntArray, w: Int, h: Int, scratch: ScratchBuffer? = null): ByteArray {
         val total = w * h
-        val lumaSal = FloatArray(total)
+        scratch?.ensureCapacity(total)
+        val lumaSal = scratch?.lumaSal ?: FloatArray(total)
         for (i in 0 until total) {
             val p = pixels[i]
             val r = ((p shr 16) and 0xFF).toFloat()
@@ -225,12 +226,12 @@ object LedTone {
         // If resolution is high, apply Retinex macro-illumination flattening + morphological feature anchoring
         if (w > 50 && h > 50) {
             val boxRadius = max(4, w / 14)
-            val illum = fastBoxBlur(lumaSal, w, h, boxRadius)
+            val illum = fastBoxBlur(lumaSal, w, h, boxRadius, scratch)
             var sumIllum = 0f
-            for (v in illum) sumIllum += v
+            for (i in 0 until total) sumIllum += illum[i]
             val meanIllum = sumIllum / total
 
-            val lumaEq = FloatArray(total)
+            val lumaEq = scratch?.lumaEq ?: FloatArray(total)
             for (i in 0 until total) {
                 val il = illum[i]
                 lumaEq[i] = (meanIllum + (il - meanIllum) * 0.35f + (lumaSal[i] - il) * 1.4f).coerceIn(0f, 255f)
@@ -238,9 +239,9 @@ object LedTone {
 
             // Morphological landmark anchoring: boost thin bright fangs/glints, carve deep dark pupils/holes
             val morphRadius = max(1, (w / 50f).roundToInt()).coerceIn(1, 3)
-            val (minF, maxF) = fastMinMaxFilter(lumaEq, w, h, morphRadius)
+            val (minF, maxF) = fastMinMaxFilter(lumaEq, w, h, morphRadius, scratch)
 
-            val anchored = FloatArray(total)
+            val anchored = scratch?.anchored ?: FloatArray(total)
             for (i in 0 until total) {
                 val orig = lumaEq[i]
                 val tophat = max(0f, orig - minF[i])
@@ -299,6 +300,34 @@ object LedTone {
             if (cum >= p.highPct) { hi = o[idx[k]]; break }
         }
         return Triple(lo, mid, hi)
+    }
+
+    class ScratchBuffer(size: Int = 0) {
+        var capacity = size
+        var lumaSal = FloatArray(size)
+        var illum = FloatArray(size)
+        var lumaEq = FloatArray(size)
+        var minF = FloatArray(size)
+        var maxF = FloatArray(size)
+        var tempMin = FloatArray(size)
+        var tempMax = FloatArray(size)
+        var temp = FloatArray(size)
+        var anchored = FloatArray(size)
+
+        fun ensureCapacity(needed: Int) {
+            if (needed > capacity) {
+                capacity = needed
+                lumaSal = FloatArray(needed)
+                illum = FloatArray(needed)
+                lumaEq = FloatArray(needed)
+                minF = FloatArray(needed)
+                maxF = FloatArray(needed)
+                tempMin = FloatArray(needed)
+                tempMax = FloatArray(needed)
+                temp = FloatArray(needed)
+                anchored = FloatArray(needed)
+            }
+        }
     }
 
     /** Smoothed black/mid/white points so video doesn't flicker when frame content shifts. */

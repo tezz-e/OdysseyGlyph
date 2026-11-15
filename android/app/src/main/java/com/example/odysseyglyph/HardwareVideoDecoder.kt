@@ -9,16 +9,29 @@ import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.util.Log
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
+import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 object HardwareVideoDecoder {
     private const val TAG = "HardwareVideoDecoder"
     private const val TIMEOUT_US = 10000L // 10ms
     const val MATRIX_SIZE = 25
 
+    class CropData(
+        val pixels: IntArray,
+        val width: Int,
+        val height: Int
+    )
+
     /**
      * Decodes video frames directly on the Qualcomm hardware VPU via MediaCodec + MediaExtractor.
-     * Extracts monochrome luminance directly from ImageFormat.YUV_420_888 Plane 0 without Bitmap allocation.
+     * Decouples VPU decoding from parallel CPU downsampling across all 8 cores with worker-local
+     * scratch buffers to eliminate garbage collection overhead and maximize throughput.
      *
      * @return true if decoding succeeded and populated the needed frames; false if caller should fallback.
      */
@@ -40,6 +53,14 @@ object HardwareVideoDecoder {
         val startTimeWallClock = System.currentTimeMillis()
         var extractor: MediaExtractor? = null
         var decoder: MediaCodec? = null
+
+        val numCores = Runtime.getRuntime().availableProcessors().coerceIn(2, 8)
+        val executor = Executors.newFixedThreadPool(numCores)
+        val threadLocalScratch = ThreadLocal.withInitial { LedTone.ScratchBuffer() }
+        val inFlightPermits = Semaphore(numCores * 2) // Cap in-flight memory to ~16 frames (< 20MB)
+        val futures = ArrayList<Future<*>>()
+        val processedCount = AtomicInteger(0)
+        val timeDownsampleCpuNs = AtomicLong(0L)
 
         try {
             extractor = MediaExtractor()
@@ -107,10 +128,8 @@ object HardwareVideoDecoder {
             }
 
             val alreadyCached = neededIndices.size - missingIndices.size
-            var decodedCount = 0
-
+            var timeCodecNs = 0L
             var loopCount = 0
-            val maxLoopsWithoutOutput = 1000
 
             while (!isCancelled.get()) {
                 loopCount++
@@ -132,7 +151,9 @@ object HardwareVideoDecoder {
                     }
                 }
 
+                val tCodec0 = System.nanoTime()
                 val outIndex = decoder.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
+                timeCodecNs += (System.nanoTime() - tCodec0)
                 if (outIndex >= 0) {
                     loopCount = 0 // reset idle loop counter
                     val ptsUs = bufferInfo.presentationTimeUs
@@ -144,21 +165,35 @@ object HardwareVideoDecoder {
                         if (missingIndices.contains(frameIdx) && !framesByIndex.containsKey(frameIdx)) {
                             val image = decoder.getOutputImage(outIndex)
                             if (image != null) {
-                                val frame = downsampleYuvImage(
+                                val cropData = extractCropPixels(
                                     image = image,
                                     videoCx = videoCx,
                                     videoCy = videoCy,
                                     videoRadius = videoRadius,
-                                    enhancementMode = enhancementMode,
                                     rotation = rotation
                                 )
-                                if (frame != null) {
-                                    framesByIndex[frameIdx] = frame
-                                    decodedCount++
-                                    val prog = ((alreadyCached + decodedCount).toFloat() / neededIndices.size * 85).toInt().coerceIn(0, 85)
-                                    onProgress(prog)
-                                }
                                 image.close()
+
+                                if (cropData != null) {
+                                    inFlightPermits.acquire()
+                                    val future = executor.submit {
+                                        try {
+                                            if (!isCancelled.get()) {
+                                                val t0 = System.nanoTime()
+                                                val scratch = threadLocalScratch.get()
+                                                val frame = downsampleCrop(cropData, enhancementMode, scratch)
+                                                timeDownsampleCpuNs.addAndGet(System.nanoTime() - t0)
+                                                framesByIndex[frameIdx] = frame
+                                                val count = processedCount.incrementAndGet()
+                                                val prog = ((alreadyCached + count).toFloat() / neededIndices.size * 85).toInt().coerceIn(0, 85)
+                                                onProgress(prog)
+                                            }
+                                        } finally {
+                                            inFlightPermits.release()
+                                        }
+                                    }
+                                    futures.add(future)
+                                }
                             }
                         }
                     }
@@ -174,6 +209,18 @@ object HardwareVideoDecoder {
                     if (loopCount > 30) break
                 }
             }
+
+            // Await all parallel workers to complete downsampling
+            for (f in futures) {
+                if (isCancelled.get()) break
+                try {
+                    f.get()
+                } catch (ignored: Exception) {}
+            }
+            executor.shutdown()
+            try {
+                executor.awaitTermination(30, TimeUnit.SECONDS)
+            } catch (ignored: InterruptedException) {}
 
             // Fill any minor framerate decimation gaps by repeating the nearest decoded frame
             if (neededIndices.isNotEmpty()) {
@@ -198,8 +245,11 @@ object HardwareVideoDecoder {
 
             val allFilled = neededIndices.all { framesByIndex.containsKey(it) }
             val elapsedMs = System.currentTimeMillis() - startTimeWallClock
-            val effectiveFps = if (elapsedMs > 0) (decodedCount * 1000f / elapsedMs) else 0f
-            Log.i(TAG, "[BENCHMARK] Hardware decoding completed: " + decodedCount + " frames in " + elapsedMs + " ms (" + effectiveFps + " FPS)")
+            val decodedTotal = processedCount.get()
+            val effectiveFps = if (elapsedMs > 0) (decodedTotal * 1000f / elapsedMs) else 0f
+            val codecMs = timeCodecNs / 1000000L
+            val totalCpuWorkMs = timeDownsampleCpuNs.get() / 1000000L
+            Log.i(TAG, "[BENCHMARK] Hardware decoding completed: $decodedTotal frames in ${elapsedMs}ms ($effectiveFps FPS) [VPU Codec: ${codecMs}ms, CPU Work: ${totalCpuWorkMs}ms across $numCores cores]")
             onProgress(85)
             return allFilled && !isCancelled.get()
 
@@ -207,20 +257,20 @@ object HardwareVideoDecoder {
             Log.w(TAG, "Hardware video decoding failed, falling back to MediaMetadataRetriever", e)
             return false
         } finally {
+            try { executor.shutdownNow() } catch (ignored: Throwable) {}
             try { decoder?.stop() } catch (ignored: Throwable) {}
             try { decoder?.release() } catch (ignored: Throwable) {}
             try { extractor?.release() } catch (ignored: Throwable) {}
         }
     }
 
-    fun downsampleYuvImage(
+    fun extractCropPixels(
         image: Image,
         videoCx: Float,
         videoCy: Float,
         videoRadius: Float,
-        enhancementMode: Int,
         rotation: Int = 0
-    ): ByteArray? {
+    ): CropData? {
         val plane = image.planes[0] // Luminance Y plane
         val buffer = plane.buffer
         val rowStride = plane.rowStride
@@ -269,6 +319,17 @@ object HardwareVideoDecoder {
                 cropPixels[dstOffset + x] = (0xFF shl 24) or (luma shl 16) or (luma shl 8) or luma
             }
         }
+        return CropData(cropPixels, width, height)
+    }
+
+    fun downsampleCrop(
+        cropData: CropData,
+        enhancementMode: Int,
+        scratch: LedTone.ScratchBuffer? = null
+    ): ByteArray {
+        val width = cropData.width
+        val height = cropData.height
+        val cropPixels = cropData.pixels
 
         return if (enhancementMode == 2) {
             // --- MODE 2: STRICT 100% LEGACY BOX FILTER ---
@@ -298,7 +359,19 @@ object HardwareVideoDecoder {
             }
             out
         } else {
-            LedTone.downsampleArea(cropPixels, width, height)
+            LedTone.downsampleArea(cropPixels, width, height, scratch)
         }
+    }
+
+    fun downsampleYuvImage(
+        image: Image,
+        videoCx: Float,
+        videoCy: Float,
+        videoRadius: Float,
+        enhancementMode: Int,
+        rotation: Int = 0
+    ): ByteArray? {
+        val cropData = extractCropPixels(image, videoCx, videoCy, videoRadius, rotation) ?: return null
+        return downsampleCrop(cropData, enhancementMode)
     }
 }

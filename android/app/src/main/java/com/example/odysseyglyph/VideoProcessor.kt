@@ -15,6 +15,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
@@ -29,7 +30,7 @@ object VideoProcessor {
         val videoCy: Float,
         val videoRadius: Float,
         val enhancementMode: Int,
-        val framesByIndex: MutableMap<Int, ByteArray> = HashMap()
+        val framesByIndex: MutableMap<Int, ByteArray> = ConcurrentHashMap()
     )
 
     @Volatile
