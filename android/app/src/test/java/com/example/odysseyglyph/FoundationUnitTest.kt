@@ -600,4 +600,25 @@ class FoundationUnitTest {
         val resReusedScratch = LedTone.downsampleArea(pixels, w, h, scratch)
         assertArrayEquals("Output with reused ScratchBuffer must be byte-identical", resWithoutScratch, resReusedScratch)
     }
+
+    @Test
+    fun testLedTone_downsampleLuma_matchesDownsampleAreaMonochrome() {
+        val w = 150
+        val h = 150
+        val lumaBytes = ByteArray(w * h)
+        val argbPixels = IntArray(w * h)
+
+        for (y in 0 until h) {
+            for (x in 0 until w) {
+                val luma = ((x * 200 / w) + (y * 55 / h)).coerceIn(0, 255)
+                lumaBytes[y * w + x] = luma.toByte()
+                argbPixels[y * w + x] = (0xFF shl 24) or (luma shl 16) or (luma shl 8) or luma
+            }
+        }
+
+        val resArea = LedTone.downsampleArea(argbPixels, w, h)
+        val resLuma = LedTone.downsampleLuma(lumaBytes, w, h)
+
+        assertArrayEquals("downsampleLuma must produce byte-identical output to downsampleArea on monochrome inputs", resArea, resLuma)
+    }
 }

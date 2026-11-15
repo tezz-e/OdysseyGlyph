@@ -203,6 +203,20 @@ object LedTone {
     }
 
     /**
+     * Optimized entry point for pre-extracted monochrome luminance buffers (e.g. MediaCodec Y-plane).
+     * Bypasses RGB unpacking and chromatic saliency projections, directly feeding normalized luminance.
+     */
+    fun downsampleLuma(luma: ByteArray, w: Int, h: Int, scratch: ScratchBuffer? = null): ByteArray {
+        val total = w * h
+        scratch?.ensureCapacity(total)
+        val lumaSal = scratch?.lumaSal ?: FloatArray(total)
+        for (i in 0 until total) {
+            lumaSal[i] = (luma[i].toInt() and 0xFF).toFloat()
+        }
+        return processDownsampleLuma(lumaSal, w, h, scratch)
+    }
+
+    /**
      * Full feature-preserving downsampling pipeline:
      * Chromatic Saliency -> Retinex Illumination Equalization -> Morphological Landmark Anchoring -> Area Downsample.
      */
@@ -222,7 +236,11 @@ object LedTone {
             val chromaSal = min(120f, chromaExcess * 1.2f)
             lumaSal[i] = baseLuma + 0.60f * chromaSal
         }
+        return processDownsampleLuma(lumaSal, w, h, scratch)
+    }
 
+    private fun processDownsampleLuma(lumaSal: FloatArray, w: Int, h: Int, scratch: ScratchBuffer? = null): ByteArray {
+        val total = w * h
         // If resolution is high, apply Retinex macro-illumination flattening + morphological feature anchoring
         if (w > 50 && h > 50) {
             val boxRadius = max(4, w / 14)

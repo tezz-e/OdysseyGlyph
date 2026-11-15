@@ -23,7 +23,7 @@ object HardwareVideoDecoder {
     const val MATRIX_SIZE = 25
 
     class CropData(
-        val pixels: IntArray,
+        val luma: ByteArray,
         val width: Int,
         val height: Int
     )
@@ -55,7 +55,14 @@ object HardwareVideoDecoder {
         var decoder: MediaCodec? = null
 
         val numCores = Runtime.getRuntime().availableProcessors().coerceIn(2, 8)
-        val executor = Executors.newFixedThreadPool(numCores)
+        val executor = Executors.newFixedThreadPool(numCores) { runnable ->
+            Thread {
+                try {
+                    android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_DISPLAY)
+                } catch (ignored: Throwable) {}
+                runnable.run()
+            }
+        }
         val threadLocalScratch = ThreadLocal.withInitial { LedTone.ScratchBuffer() }
         val inFlightPermits = Semaphore(numCores * 2) // Cap in-flight memory to ~16 frames (< 20MB)
         val futures = ArrayList<Future<*>>()
@@ -289,7 +296,7 @@ object HardwareVideoDecoder {
 
         if (width <= 0 || height <= 0) return null
 
-        val cropPixels = IntArray(width * height)
+        val cropLuma = ByteArray(width * height)
         for (y in 0 until height) {
             val dispY = top + y
             val dstOffset = y * width
@@ -315,11 +322,10 @@ object HardwareVideoDecoder {
                         by = dispY.coerceIn(0, bufH - 1)
                     }
                 }
-                val luma = buffer.get(by * rowStride + bx * pixelStride).toInt() and 0xFF
-                cropPixels[dstOffset + x] = (0xFF shl 24) or (luma shl 16) or (luma shl 8) or luma
+                cropLuma[dstOffset + x] = buffer.get(by * rowStride + bx * pixelStride)
             }
         }
-        return CropData(cropPixels, width, height)
+        return CropData(cropLuma, width, height)
     }
 
     fun downsampleCrop(
@@ -329,7 +335,7 @@ object HardwareVideoDecoder {
     ): ByteArray {
         val width = cropData.width
         val height = cropData.height
-        val cropPixels = cropData.pixels
+        val cropLuma = cropData.luma
 
         return if (enhancementMode == 2) {
             // --- MODE 2: STRICT 100% LEGACY BOX FILTER ---
@@ -347,8 +353,7 @@ object HardwareVideoDecoder {
                     for (y in y0 until y1) {
                         val rowOff = y * width
                         for (x in x0 until x1) {
-                            val p = cropPixels[rowOff + x]
-                            val lum = p and 0xFF
+                            val lum = cropLuma[rowOff + x].toInt() and 0xFF
                             sumLuma += lum
                             count++
                         }
@@ -359,7 +364,7 @@ object HardwareVideoDecoder {
             }
             out
         } else {
-            LedTone.downsampleArea(cropPixels, width, height, scratch)
+            LedTone.downsampleLuma(cropLuma, width, height, scratch)
         }
     }
 
