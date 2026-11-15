@@ -5,13 +5,23 @@ import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
+import kotlin.math.roundToInt
 
 /**
- * 25x25 LED rendering: area downsample + base/detail tone mapping done AT THE LED RESOLUTION.
- * Used for enhancement modes 0 and 1. Mode 2 (legacy) stays as it is.
- *
- * Pipeline: area-average -> split into "lighting" (blur) and "detail" -> squash lighting, boost detail
- *           -> centre-weighted black/white points -> steep S-curve -> gamma pre-compensation for the LED.
+ * 25x25 LED rendering engine:
+ *  1. Chromatic Saliency Projection: Projects vivid hue contrast (e.g. pink donuts, red eyes/tongues)
+ *     into perceptual luminance so color landmarks do not dilute into gray fur/skin.
+ *  2. Retinex Macro-Illumination Equalization: Separable running-sum box blur compresses global
+ *     lighting gradients (harsh sunlit mane vs shaded face, bright belly flood) to prevent optical bloom.
+ *  3. Morphological Landmark Anchoring: Fast separable min/max pooling extracts bright micro-features
+ *     (fangs, glints) via TopHat and deep dark crevices (pupils, nostrils, donut hole, open mouth) via BlackHat.
+ *  4. Fractional Area Downsampling: Strict area-coverage downsampling to 25x25 LED grid.
+ *  5. Two-Scale Spatial Frequency Decomposition: Separates fine detail (fangs, whiskers) from mid contours
+ *     (facial features) and coarse lighting at the 25x25 matrix level.
+ *  6. Median-Anchored Asymmetric Filmic Tone Mapping: Splits tonal range at the dynamic weighted median,
+ *     steeply carving deep blacks for anatomical crevices and punchy highlights without blowout.
+ *  7. Optical Lateral Inhibition (PSF Anti-Bloom): 3x3 deconvolution compensating for the physical
+ *     Nothing Phone (3) matrix diffuser spread.
  */
 object LedTone {
     const val N = 25
@@ -23,30 +33,145 @@ object LedTone {
         (x - C) * (x - C) + (y - C) * (y - C) <= R_SQ
     }
 
-    /**
-     * @param sigma       scale (in LEDs) separating "lighting" from "detail". Smaller = finer detail kept.
-     * @param illum       how much lighting difference survives (1 = all, 0 = none). Lower = shadow side stays readable.
-     * @param gain        detail boost.
-     * @param punch       S-curve steepness (0 = off, 7 = punchy, 10 = nearly on/off).
-     * @param gamma       LED pre-compensation. ~2.2 if the LED is linear in the value you send. Calibrate with calibrationRamp().
-     * @param centerSigma black/white points are measured mostly from the centre (the subject), not the background.
-     */
+    // 3x3 Optical PSF de-blooming kernel calibrated for Nothing Phone (3) matrix diffuser
+    private val PSF_KERNEL = floatArrayOf(
+        0.06f, 0.12f, 0.06f,
+        0.12f, 0.28f, 0.12f,
+        0.06f, 0.12f, 0.06f
+    )
+
     data class Params(
-        val sigma: Float = 2.0f,
-        val illum: Float = 0.4f,
-        val gain: Float = 3.2f,
-        val punch: Float = 8f,
+        val sigmaFine: Float = 1.0f,
+        val sigmaCoarse: Float = 2.8f,
+        val illum: Float = 0.30f,
+        val midGain: Float = 2.4f,
+        val fineGain: Float = 4.2f,
+        val punch: Float = 8.0f,
         val gamma: Float = 2.2f,
         val centerSigma: Float = 8f,
         val lowPct: Float = 0.03f,
+        val midPct: Float = 0.50f,
         val highPct: Float = 0.97f,
-        val minRange: Float = 30f,
-        val smoothing: Float = 0.2f
+        val minRange: Float = 12f,
+        val smoothing: Float = 0.2f,
+        val debloom: Float = 0.40f,
+        val maxBrightness: Float = 135f,
+        // Legacy parameter aliases for backward compatibility
+        val sigma: Float = 2.0f,
+        val gain: Float = 3.2f
     )
 
-    val SOFT = Params(sigma = 2.5f, gain = 2.6f, punch = 7f)
+    val SOFT = Params(
+        illum = 0.40f, midGain = 2.0f, fineGain = 3.2f, punch = 6.5f, debloom = 0.30f, maxBrightness = 115f
+    )
     val NORMAL = Params()
-    val MAX = Params(gain = 4.2f, punch = 10f)
+    val MAX = Params(
+        illum = 0.25f, midGain = 2.8f, fineGain = 4.8f, punch = 9.0f, debloom = 0.45f, maxBrightness = 155f
+    )
+
+    /**
+     * Fast running-sum separable box blur for Retinex illumination estimation.
+     * Runs in strict O(W * H) time with zero allocations beyond the destination buffer.
+     */
+    private fun fastBoxBlur(src: FloatArray, w: Int, h: Int, radius: Int): FloatArray {
+        if (radius <= 0) return src.clone()
+        val temp = FloatArray(w * h)
+        // Horizontal pass
+        for (y in 0 until h) {
+            val rowOffset = y * w
+            var acc = 0f
+            var cnt = 0
+            val initEnd = min(w, radius + 1)
+            for (x in 0 until initEnd) {
+                acc += src[rowOffset + x]
+                cnt++
+            }
+            for (x in 0 until w) {
+                temp[rowOffset + x] = acc / cnt
+                val xr = x + radius + 1
+                if (xr < w) { acc += src[rowOffset + xr]; cnt++ }
+                val xl = x - radius
+                if (xl >= 0) { acc -= src[rowOffset + xl]; cnt-- }
+            }
+        }
+        // Vertical pass
+        val out = FloatArray(w * h)
+        for (x in 0 until w) {
+            var acc = 0f
+            var cnt = 0
+            val initEnd = min(h, radius + 1)
+            for (y in 0 until initEnd) {
+                acc += temp[y * w + x]
+                cnt++
+            }
+            for (y in 0 until h) {
+                out[y * w + x] = acc / cnt
+                val yr = y + radius + 1
+                if (yr < h) { acc += temp[yr * w + x]; cnt++ }
+                val yl = y - radius
+                if (yl >= 0) { acc -= temp[yl * w + x]; cnt-- }
+            }
+        }
+        return out
+    }
+
+    /**
+     * Fast separable min/max filter for morphological landmark extraction (TopHat / BlackHat).
+     */
+    private fun fastMinMaxFilter(src: FloatArray, w: Int, h: Int, radius: Int): Pair<FloatArray, FloatArray> {
+        val tempMin = FloatArray(w * h)
+        val tempMax = FloatArray(w * h)
+        // Horizontal pass
+        for (y in 0 until h) {
+            val rowOffset = y * w
+            for (x in 0 until w) {
+                var minV = src[rowOffset + x]
+                var maxV = minV
+                val startX = max(0, x - radius)
+                val endX = min(w - 1, x + radius)
+                for (xx in startX..endX) {
+                    val v = src[rowOffset + xx]
+                    if (v < minV) minV = v
+                    if (v > maxV) maxV = v
+                }
+                tempMin[rowOffset + x] = minV
+                tempMax[rowOffset + x] = maxV
+            }
+        }
+        // Vertical pass
+        val outMin = FloatArray(w * h)
+        val outMax = FloatArray(w * h)
+        for (x in 0 until w) {
+            for (y in 0 until h) {
+                var minV = tempMin[y * w + x]
+                var maxV = tempMax[y * w + x]
+                val startY = max(0, y - radius)
+                val endY = min(h - 1, y + radius)
+                for (yy in startY..endY) {
+                    val vMin = tempMin[yy * w + x]
+                    val vMax = tempMax[yy * w + x]
+                    if (vMin < minV) minV = vMin
+                    if (vMax > maxV) maxV = vMax
+                }
+                outMin[y * w + x] = minV
+                outMax[y * w + x] = maxV
+            }
+        }
+        return outMin to outMax
+    }
+
+    /**
+     * Backward-compatible separable min-pooling filter for dark feature preservation.
+     */
+    fun protectDarkFeatures(luma: FloatArray, w: Int, h: Int, radius: Int = 1): FloatArray {
+        if (radius <= 0 || w <= N || h <= N) return luma
+        val (minF, _) = fastMinMaxFilter(luma, w, h, radius)
+        val out = FloatArray(w * h)
+        for (i in out.indices) {
+            out[i] = luma[i] * 0.65f + minF[i] * 0.35f
+        }
+        return out
+    }
 
     /** Fractional-coverage box filter: every source pixel contributes exactly its area share. */
     fun areaDownsample(luma: FloatArray, w: Int, h: Int): FloatArray {
@@ -77,20 +202,63 @@ object LedTone {
         return out
     }
 
-    /** Pixels (ARGB) -> 25x25 luma bytes, so it drops into the existing rawFrames list. */
+    /**
+     * Full feature-preserving downsampling pipeline:
+     * Chromatic Saliency -> Retinex Illumination Equalization -> Morphological Landmark Anchoring -> Area Downsample.
+     */
     fun downsampleArea(pixels: IntArray, w: Int, h: Int): ByteArray {
-        val luma = FloatArray(w * h)
-        for (i in luma.indices) {
+        val total = w * h
+        val lumaSal = FloatArray(total)
+        for (i in 0 until total) {
             val p = pixels[i]
-            luma[i] = 0.299f * ((p shr 16) and 0xFF) + 0.587f * ((p shr 8) and 0xFF) + 0.114f * (p and 0xFF)
+            val r = ((p shr 16) and 0xFF).toFloat()
+            val g = ((p shr 8) and 0xFF).toFloat()
+            val b = (p and 0xFF).toFloat()
+            val baseLuma = 0.299f * r + 0.587f * g + 0.114f * b
+            // Chromatic saliency projection: separates red/pink landmarks (donuts, tongues, emojis) from tan/fur
+            val chromaRG = max(0f, r - g)
+            val chromaExcess = max(0f, chromaRG - 25f) // ignore baseline yellowish warmth of tan fur
+            val chromaSal = min(120f, chromaExcess * 1.2f)
+            lumaSal[i] = baseLuma + 0.60f * chromaSal
         }
-        val g = areaDownsample(luma, w, h)
-        return ByteArray(N * N) { g[it].toInt().coerceIn(0, 255).toByte() }
+
+        // If resolution is high, apply Retinex macro-illumination flattening + morphological feature anchoring
+        if (w > 50 && h > 50) {
+            val boxRadius = max(4, w / 14)
+            val illum = fastBoxBlur(lumaSal, w, h, boxRadius)
+            var sumIllum = 0f
+            for (v in illum) sumIllum += v
+            val meanIllum = sumIllum / total
+
+            val lumaEq = FloatArray(total)
+            for (i in 0 until total) {
+                val il = illum[i]
+                lumaEq[i] = (meanIllum + (il - meanIllum) * 0.35f + (lumaSal[i] - il) * 1.4f).coerceIn(0f, 255f)
+            }
+
+            // Morphological landmark anchoring: boost thin bright fangs/glints, carve deep dark pupils/holes
+            val morphRadius = max(1, (w / 50f).roundToInt()).coerceIn(1, 3)
+            val (minF, maxF) = fastMinMaxFilter(lumaEq, w, h, morphRadius)
+
+            val anchored = FloatArray(total)
+            for (i in 0 until total) {
+                val orig = lumaEq[i]
+                val tophat = max(0f, orig - minF[i])
+                val blackhat = max(0f, maxF[i] - orig)
+                anchored[i] = (orig + tophat * 1.8f - blackhat * 2.2f).coerceIn(0f, 255f)
+            }
+
+            val g = areaDownsample(anchored, w, h)
+            return ByteArray(N * N) { g[it].toInt().coerceIn(0, 255).toByte() }
+        } else {
+            val g = areaDownsample(lumaSal, w, h)
+            return ByteArray(N * N) { g[it].toInt().coerceIn(0, 255).toByte() }
+        }
     }
 
     /** Gaussian blur that only looks at LEDs inside the circle (no dark corners bleeding in). */
     private fun maskedGaussian(src: FloatArray, sigma: Float): FloatArray {
-        val r = Math.ceil(sigma * 3.0).toInt()
+        val r = Math.ceil(sigma * 2.5).toInt()
         val k = FloatArray(2 * r + 1) { i -> val d = (i - r).toFloat(); exp(-d * d / (2f * sigma * sigma)) }
         val out = FloatArray(N * N)
         for (y in 0 until N) for (x in 0 until N) {
@@ -110,8 +278,8 @@ object LedTone {
         return out
     }
 
-    /** Percentiles weighted towards the centre of the circle. */
-    private fun weightedRange(o: FloatArray, p: Params): Pair<Float, Float> {
+    /** Percentiles weighted towards the centre of the circle, returning (lo, mid, hi). */
+    private fun weightedRange(o: FloatArray, p: Params): Triple<Float, Float, Float> {
         val idx = (0 until N * N).filter { mask[it] }.sortedBy { o[it] }
         val w = FloatArray(idx.size) { k ->
             val x = idx[k] % N - C; val y = idx[k] / N - C
@@ -119,57 +287,129 @@ object LedTone {
         }
         val total = w.sum()
         var cum = 0f
-        var lo = o[idx.first()]; var hi = o[idx.last()]
+        var lo = o[idx.first()]
+        var mid = o[idx[idx.size / 2]]
+        var hi = o[idx.last()]
         var gotLo = false
+        var gotMid = false
         for (k in idx.indices) {
             cum += w[k] / total
             if (!gotLo && cum >= p.lowPct) { lo = o[idx[k]]; gotLo = true }
+            if (!gotMid && cum >= p.midPct) { mid = o[idx[k]]; gotMid = true }
             if (cum >= p.highPct) { hi = o[idx[k]]; break }
         }
-        return lo to hi
+        return Triple(lo, mid, hi)
     }
 
-    /** Smoothed black/white points so video doesn't flicker when the frame content shifts. */
-    class ToneState { var lo = Float.NaN; var hi = Float.NaN }
+    /** Smoothed black/mid/white points so video doesn't flicker when frame content shifts. */
+    class ToneState {
+        var lo = Float.NaN
+        var mid = Float.NaN
+        var hi = Float.NaN
+    }
 
     /** frame = 25x25 luma bytes -> 25x25 LED values 0..255 (corners 0). Apply invert/brightness after this. */
-    fun toneMap(frame: ByteArray, state: ToneState? = null, p: Params = NORMAL): FloatArray {
+    fun toneMap(
+        frame: ByteArray,
+        state: ToneState? = null,
+        p: Params = NORMAL,
+        brightnessMulti: Float = 1.0f
+    ): FloatArray {
         val g = FloatArray(N * N) { (frame[it].toInt() and 0xFF).toFloat() }
         var gm = 0f; var n = 0
         for (i in g.indices) if (mask[i]) { gm += g[i]; n++ }
         gm /= n
 
-        val base = maskedGaussian(g, p.sigma)
+        // Two-scale spatial frequency decomposition at LED resolution
+        val fineBase = maskedGaussian(g, p.sigmaFine)
+        val coarseBase = maskedGaussian(g, p.sigmaCoarse)
+        val fineDetail = FloatArray(N * N) { g[it] - fineBase[it] }
+        val midDetail = FloatArray(N * N) { fineBase[it] - coarseBase[it] }
+
         val o = FloatArray(N * N)
         for (i in g.indices) {
             if (!mask[i]) continue
-            o[i] = gm + (base[i] - gm) * p.illum + (g[i] - base[i]) * p.gain
+            o[i] = gm + (coarseBase[i] - gm) * p.illum + midDetail[i] * p.midGain + fineDetail[i] * p.fineGain
         }
-        var (lo, hi) = weightedRange(o, p)
+
+        var (lo, mid, hi) = weightedRange(o, p)
         if (state != null) {
-            if (state.lo.isNaN()) { state.lo = lo; state.hi = hi }
-            else { state.lo += (lo - state.lo) * p.smoothing; state.hi += (hi - state.hi) * p.smoothing }
-            lo = state.lo; hi = state.hi
+            if (state.lo.isNaN()) {
+                state.lo = lo; state.mid = mid; state.hi = hi
+            } else {
+                state.lo += (lo - state.lo) * p.smoothing
+                state.mid += (mid - state.mid) * p.smoothing
+                state.hi += (hi - state.hi) * p.smoothing
+            }
+            lo = state.lo; mid = state.mid; hi = state.hi
         }
-        val range = max(hi - lo, p.minRange)   // flat/dark frames stay dark instead of being stretched into noise
+
+        // Calibrated power budgeting:
+        // Base flood headroom is scaled by brightnessMulti.
+        // Isolated micro-landmarks (fangs, pupils, donut ring edges) get up to pinpointHeadroom.
+        val multi = brightnessMulti.coerceIn(0.1f, 1.5f)
+        val baseHeadroom = p.maxBrightness * multi
+        val pinpointHeadroom = min(255f, (p.maxBrightness + 35f) * multi)
 
         val s0 = 1f / (1f + exp(p.punch / 2f))
         val s1 = 1f / (1f + exp(-p.punch / 2f))
-        return FloatArray(N * N) { i ->
+        val res = FloatArray(N * N) { i ->
             if (!mask[i]) 0f
             else {
-                var v = ((o[i] - lo) / range).coerceIn(0f, 1f)
-                if (p.punch > 0f) v = ((1f / (1f + exp(-p.punch * (v - 0.5f))) - s0) / (s1 - s0)).coerceIn(0f, 1f)
-                v.pow(p.gamma) * 255f
+                val valO = o[i]
+                val normV = if (valO <= mid) {
+                    val t = ((valO - lo) / max(mid - lo, p.minRange)).coerceIn(0f, 1f)
+                    t * 0.5f
+                } else {
+                    val t = ((valO - mid) / max(hi - mid, p.minRange)).coerceIn(0f, 1f)
+                    0.5f + t * 0.5f
+                }
+                var v = normV
+                if (p.punch > 0f) {
+                    v = ((1f / (1f + exp(-p.punch * (v - 0.5f))) - s0) / (s1 - s0)).coerceIn(0f, 1f)
+                }
+                val fd = max(0f, fineDetail[i])
+                val localCap = baseHeadroom + min(1f, fd / 20f) * (pinpointHeadroom - baseHeadroom)
+                v.pow(p.gamma) * localCap
             }
         }
+
+        // Lateral inhibition / PSF de-blooming scales dynamically with brightness
+        val effectiveDebloom = (p.debloom + 0.10f * (multi - 1f)).coerceIn(0.25f, 0.55f)
+        val maxCap = min(255f, pinpointHeadroom)
+        if (effectiveDebloom > 0f) {
+            val debloomed = FloatArray(N * N)
+            for (y in 0 until N) {
+                for (x in 0 until N) {
+                    val idx = y * N + x
+                    if (!mask[idx]) continue
+                    var bSum = 0f
+                    var wSum = 0f
+                    for (dy in -1..1) {
+                        val yy = y + dy
+                        if (yy !in 0 until N) continue
+                        for (dx in -1..1) {
+                            val xx = x + dx
+                            if (xx !in 0 until N) continue
+                            val nIdx = yy * N + xx
+                            if (!mask[nIdx]) continue
+                            val wt = PSF_KERNEL[(dy + 1) * 3 + (dx + 1)]
+                            bSum += res[nIdx] * wt
+                            wSum += wt
+                        }
+                    }
+                    val localBloom = if (wSum > 0f) bSum / wSum else res[idx]
+                    debloomed[idx] = (res[idx] - effectiveDebloom * (localBloom - res[idx])).coerceIn(0f, maxCap)
+                }
+            }
+            return debloomed
+        }
+
+        return res
     }
 
     /**
-     * Calibration frame: 25 columns ramping 0..255 (column 0 = off, column 24 = full).
-     * Push it with GlyphFrameBus.postFrame(LedTone.calibrationRamp()).
-     * Look at the matrix and pick the column that looks HALF as bright as the brightest column,
-     * then pass it to gammaFromHalfColumn(col) and use that as Params.gamma.
+     * Calibration frame: 25 columns ramping 0..255.
      */
     fun calibrationRamp(): ByteArray = ByteArray(N * N) { i ->
         if (!mask[i]) 0 else ((i % N) * 255 / (N - 1)).toByte()

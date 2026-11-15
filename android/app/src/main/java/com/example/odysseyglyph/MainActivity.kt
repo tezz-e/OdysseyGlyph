@@ -79,40 +79,45 @@ class MainActivity : AppCompatActivity() {
     private var advDuration = 5.0f
     private var advEnhancementMode = 0 // 0 = Auto, 1 = On, 2 = Off
 
-    private val selectMediaLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-        uri?.let {
-            selectedMediaUri = it
-            contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            val mimeType = contentResolver.getType(it) ?: ""
-            when {
-                mimeType.startsWith("image/gif") -> {
-                    currentMediaType = 1
-                    setupGif(it)
-                }
-                mimeType.startsWith("image/") -> {
-                    currentMediaType = 2
-                    setupStaticImage(it)
-                }
-                else -> {
-                    currentMediaType = 0
-                    setupVideo(it)
-                }
+    fun loadMedia(uri: Uri) {
+        VideoProcessor.clearFrameCache()
+        selectedMediaUri = uri
+        try {
+            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        } catch (_: Exception) {}
+        val mimeType = contentResolver.getType(uri) ?: (if (uri.path?.endsWith(".gif") == true) "image/gif" else if (uri.path?.endsWith(".jpg") == true || uri.path?.endsWith(".png") == true) "image/jpeg" else "")
+        when {
+            mimeType.startsWith("image/gif") -> {
+                currentMediaType = 1
+                setupGif(uri)
             }
-            launcherGroup.visibility = View.GONE
-            findViewById<View>(R.id.layoutHeaderTitle)?.visibility = View.GONE
-            toolbar.visibility = View.VISIBLE
-            toolbar.navigationIcon = ContextCompat.getDrawable(this, R.drawable.ic_arrow_back)
-            supportActionBar?.setDisplayHomeAsUpEnabled(true)
-
-            settingsPanel.visibility = View.VISIBLE
-            btnAdvancedToggle.visibility = View.VISIBLE
-            bottomActionBar.visibility = View.VISIBLE
-            btnProcess.visibility = View.VISIBLE
-            btnCancel.visibility = View.GONE
-            progressBar.visibility = View.GONE
-            successActionsContainer.visibility = View.GONE
-            audioCard.visibility = if (currentMediaType == 0) View.VISIBLE else View.GONE
+            mimeType.startsWith("image/") -> {
+                currentMediaType = 2
+                setupStaticImage(uri)
+            }
+            else -> {
+                currentMediaType = 0
+                setupVideo(uri)
+            }
         }
+        launcherGroup.visibility = View.GONE
+        findViewById<View>(R.id.layoutHeaderTitle)?.visibility = View.GONE
+        toolbar.visibility = View.VISIBLE
+        toolbar.navigationIcon = ContextCompat.getDrawable(this, R.drawable.ic_arrow_back)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        settingsPanel.visibility = View.VISIBLE
+        btnAdvancedToggle.visibility = View.VISIBLE
+        bottomActionBar.visibility = View.VISIBLE
+        btnProcess.visibility = View.VISIBLE
+        btnCancel.visibility = View.GONE
+        progressBar.visibility = View.GONE
+        successActionsContainer.visibility = View.GONE
+        audioCard.visibility = if (currentMediaType == 0) View.VISIBLE else View.GONE
+    }
+
+    private val selectMediaLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        uri?.let { loadMedia(it) }
     }
 
 
@@ -159,6 +164,30 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         })
+
+        handleIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        intent ?: return
+        val testPath = intent.getStringExtra("load_test_image")
+        if (testPath != null) {
+            val file = java.io.File(testPath)
+            if (file.exists()) {
+                loadMedia(Uri.fromFile(file))
+            }
+        } else if (intent.data != null) {
+            loadMedia(intent.data!!)
+        }
+        if (intent.getBooleanExtra("open_advanced_settings", false)) {
+            window.decorView.postDelayed({ showAdvancedSettingsBottomSheet() }, 300)
+        }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -498,11 +527,14 @@ class MainActivity : AppCompatActivity() {
         cbInvert.isChecked = advInvert
         sharpenSwitch.isChecked = advSharpen
         contrastSlider.value = advContrast
-        brightnessSlider.value = advBrightness
+        brightnessSlider.valueFrom = 10f
+        brightnessSlider.valueTo = 150f
+        brightnessSlider.value = advBrightness.coerceIn(10f, 150f)
         durationSlider.value = advDuration
 
         contrastLabel.text = String.format("CONTRAST MULTIPLIER: %.1fx", advContrast)
-        brightnessLabel.text = String.format("LED BRIGHTNESS: %.0f%%", advBrightness)
+        val initialTag = if (advBrightness > 100f) " (SUN OVERDRIVE)" else if (advBrightness >= 90f) " (CALIBRATED)" else ""
+        brightnessLabel.text = String.format("LED BRIGHTNESS: %.0f%%%s", advBrightness, initialTag)
         durationLabel.text = String.format("IMAGE DURATION: %.0fs", advDuration)
 
         contrastSlider.addOnChangeListener { _, value, _ ->
@@ -511,7 +543,8 @@ class MainActivity : AppCompatActivity() {
         }
         brightnessSlider.addOnChangeListener { _, value, _ ->
             advBrightness = value
-            brightnessLabel.text = String.format("LED BRIGHTNESS: %.0f%%", value)
+            val tag = if (value > 100f) " (SUN OVERDRIVE)" else if (value >= 90f) " (CALIBRATED)" else ""
+            brightnessLabel.text = String.format("LED BRIGHTNESS: %.0f%%%s", value, tag)
         }
         durationSlider.addOnChangeListener { _, value, _ ->
             advDuration = value
@@ -666,6 +699,7 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun resetToLauncher() {
+        VideoProcessor.clearFrameCache()
         selectedMediaUri = null
         currentMediaType = -1
         

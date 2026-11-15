@@ -35,7 +35,7 @@
 
         <activity
             android:name=".MainActivity"
-            android:exported="false">
+            android:exported="true">
         </activity>
 
         <!-- Slot 1 -->
@@ -102,6 +102,7 @@
             <meta-data android:name="com.nothing.glyph.toy.summary" android:resource="@string/toy_summary_live" />
             <meta-data android:name="com.nothing.glyph.toy.longpress" android:value="0" />
         </service>
+
 
         <service
             android:name=".LiveLyricsService"

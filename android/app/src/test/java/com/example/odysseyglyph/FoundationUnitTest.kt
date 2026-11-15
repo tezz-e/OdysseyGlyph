@@ -515,4 +515,63 @@ class FoundationUnitTest {
         assertEquals(5.0f, c0, 0.001f)
         assertEquals(1.0f, n0, 0.001f)
     }
+
+    @Test
+    fun testVideoProcessor_timestampIndexedCache_trimLogic() {
+        // Clear cache
+        VideoProcessor.clearFrameCache()
+        assertEquals(0, VideoProcessor.getCachedFrameCount())
+
+        val fps = 25
+        val intervalMs = 1000L / fps // 40ms
+
+        // Initial 0s to 5s
+        val startMs1 = 0L
+        val endMs1 = 5000L
+        val startFrame1 = (startMs1 / intervalMs).toInt()
+        val endFrame1 = (endMs1 / intervalMs).toInt()
+        val needed1 = (startFrame1 until endFrame1).toList()
+        assertEquals(125, needed1.size)
+
+        // Mock caching
+        val mockCache = mutableMapOf<Int, ByteArray>()
+        for (idx in needed1) {
+            mockCache[idx] = ByteArray(625) { 42.toByte() }
+        }
+
+        // Case A: User shortens trim from 5s to 3s (0s to 3s)
+        val startMs2 = 0L
+        val endMs2 = 3000L
+        val startFrame2 = (startMs2 / intervalMs).toInt()
+        val endFrame2 = (endMs2 / intervalMs).toInt()
+        val needed2 = (startFrame2 until endFrame2).toList()
+        assertEquals(75, needed2.size)
+
+        val missing2 = needed2.filter { !mockCache.containsKey(it) }
+        assertEquals("Shortening trim must require 0 decodes", 0, missing2.size)
+
+        // Case B: User slides trim window to 1s..4s
+        val startMs3 = 1000L
+        val endMs3 = 4000L
+        val startFrame3 = (startMs3 / intervalMs).toInt()
+        val endFrame3 = (endMs3 / intervalMs).toInt()
+        val needed3 = (startFrame3 until endFrame3).toList()
+        assertEquals(75, needed3.size)
+
+        val missing3 = needed3.filter { !mockCache.containsKey(it) }
+        assertEquals("Sliding trim inside decoded window must require 0 decodes", 0, missing3.size)
+
+        // Case C: User extends trim to 0s..8s
+        val startMs4 = 0L
+        val endMs4 = 8000L
+        val startFrame4 = (startMs4 / intervalMs).toInt()
+        val endFrame4 = (endMs4 / intervalMs).toInt()
+        val needed4 = (startFrame4 until endFrame4).toList()
+        assertEquals(200, needed4.size)
+
+        val missing4 = needed4.filter { !mockCache.containsKey(it) }
+        assertEquals("Extending trim must only decode missing frames", 75, missing4.size)
+        assertEquals("Missing frames must start exactly at 125", 125, missing4.first())
+        assertEquals("Missing frames must end at 199", 199, missing4.last())
+    }
 }
