@@ -284,11 +284,30 @@ object VideoProcessor {
                 val center = (MATRIX_SIZE - 1) / 2f
                 val radiusSq = (MATRIX_SIZE / 2f) * (MATRIX_SIZE / 2f)
 
+                val tone = LedTone.ToneState()
+
                 for ((index, frame) in rawFrames.withIndex()) {
                     if (isCancelled.get()) {
                         mainHandler.post { onComplete(false, "Cancelled by user.") }
                         return@thread
                     }
+
+                    if (enhancementMode != 2) {
+                        val mapped = LedTone.toneMap(frame, tone, gain = if (enhancementMode == 1) 2.6f else 2.2f)
+                        val out = ByteArray(MATRIX_SIZE * MATRIX_SIZE)
+                        for (idx in mapped.indices) {
+                            if (!LedTone.mask[idx]) { out[idx] = 0; continue }
+                            val adj = ((mapped[idx] / 255f - 0.5f) * contrastMulti + 0.5f).coerceIn(0f, 1f)
+                            var v = (adj * 255f * brightnessMulti).toInt()
+                            if (invertColors) v = 255 - v
+                            out[idx] = v.coerceIn(0, 255).toByte()
+                        }
+                        finalFrames.add(out)
+                        GlyphFrameBus.postFrame(out)
+                        mainHandler.post { onProgress(50 + (index.toFloat() / rawFrames.size * 40).toInt()) }
+                        continue
+                    }
+
                     val processedFrame = ByteArray(MATRIX_SIZE * MATRIX_SIZE)
                     
                     // Extract to 2D grid for spatial filtering
@@ -477,153 +496,7 @@ object VideoProcessor {
         }
         
         // --- MODE 0 (AUTO) & MODE 1 (ON): HIGH-DPI SUPER-RESOLUTION & SALIENT FEATURE DOWNSAMPLER ---
-        return downsampleSuperRes(pixels, w, h)
-    }
-    
-    fun downsampleSuperRes(pixels: IntArray, w: Int, h: Int): ByteArray {
-        // 1. Convert to luma
-        val luma = FloatArray(w * h)
-        for (i in 0 until (w * h)) {
-            val px = pixels[i]
-            val r = (px shr 16) and 0xFF
-            val g = (px shr 8) and 0xFF
-            val b = px and 0xFF
-            luma[i] = 0.299f * r + 0.587f * g + 0.114f * b
-        }
-
-        // 2. Bilateral Denoising on source: removes fur micro-texture (hairs) while preserving strong edges
-        val denoised = bilateralFilterFast(luma, w, h, 4, 30f)
-
-        // 3. Macro-structure edge enhancement (enhances face contours, eyes, mouth without high-freq noise)
-        val macroRad = Math.max(3, w / 35)
-        val macroBlur = boxBlurFast(denoised, w, h, macroRad)
-        val edgeEnhanced = FloatArray(w * h)
-        for (i in 0 until (w * h)) {
-            val diff = denoised[i] - macroBlur[i]
-            edgeEnhanced[i] = (denoised[i] + diff * 0.75f).coerceIn(0f, 255f)
-        }
-
-        // 4. Area-weighted downsampling to 25x25 (guarantees smooth, cohesive diode clusters)
-        val scaleX = w.toFloat() / MATRIX_SIZE
-        val scaleY = h.toFloat() / MATRIX_SIZE
-        val out = ByteArray(MATRIX_SIZE * MATRIX_SIZE)
-
-        for (gy in 0 until MATRIX_SIZE) {
-            val sy0 = (gy * scaleY).toInt()
-            val sy1 = Math.min(h, ((gy + 1) * scaleY).toInt())
-            for (gx in 0 until MATRIX_SIZE) {
-                val sx0 = (gx * scaleX).toInt()
-                val sx1 = Math.min(w, ((gx + 1) * scaleX).toInt())
-
-                var sum = 0f
-                var count = 0
-                var minV = 255f
-                var maxV = 0f
-
-                for (y in sy0 until sy1) {
-                    val row = y * w
-                    for (x in sx0 until sx1) {
-                        val v = edgeEnhanced[row + x]
-                        sum += v
-                        count++
-                        if (v < minV) minV = v
-                        if (v > maxV) maxV = v
-                    }
-                }
-                val avg = if (count > 0) (sum / count) else 128f
-
-                // Feature landmark preservation: ONLY for massive contrast steps (>= 90)
-                // (e.g. sharp canine fangs in dark mouth or dark pupil in white sclera)
-                val stepContrast = maxV - minV
-                val finalVal = if (stepContrast > 90f) {
-                    if ((maxV - avg) > (avg - minV) * 1.5f) {
-                        avg * 0.5f + maxV * 0.5f
-                    } else if ((avg - minV) > (maxV - avg) * 1.5f) {
-                        avg * 0.5f + minV * 0.5f
-                    } else {
-                        avg
-                    }
-                } else {
-                    avg
-                }
-                out[gy * MATRIX_SIZE + gx] = finalVal.toInt().coerceIn(0, 255).toByte()
-            }
-        }
-        return out
-    }
-
-    private fun bilateralFilterFast(src: FloatArray, w: Int, h: Int, rad: Int, sigmaR: Float): FloatArray {
-        val dst = FloatArray(w * h)
-        val twoSigmaRSq = 2f * sigmaR * sigmaR
-        val twoSigmaSSq = 2f * rad * rad
-        for (y in 0 until h) {
-            val y0 = Math.max(0, y - rad)
-            val y1 = Math.min(h - 1, y + rad)
-            for (x in 0 until w) {
-                val x0 = Math.max(0, x - rad)
-                val x1 = Math.min(w - 1, x + rad)
-                val centerVal = src[y * w + x]
-                var sum = 0f
-                var wSum = 0f
-                for (ny in y0..y1) {
-                    val dy = ny - y
-                    val nRow = ny * w
-                    for (nx in x0..x1) {
-                        val dx = nx - x
-                        val v = src[nRow + nx]
-                        val dVal = v - centerVal
-                        val weight = kotlin.math.exp(-(dx * dx + dy * dy) / twoSigmaSSq - (dVal * dVal) / twoSigmaRSq)
-                        sum += v * weight
-                        wSum += weight
-                    }
-                }
-                dst[y * w + x] = if (wSum > 0f) (sum / wSum) else centerVal
-            }
-        }
-        return dst
-    }
-
-    private fun boxBlurFast(src: FloatArray, w: Int, h: Int, rad: Int): FloatArray {
-        val temp = FloatArray(w * h)
-        val out = FloatArray(w * h)
-        for (y in 0 until h) {
-            val row = y * w
-            var sum = 0f
-            var count = 0
-            val maxInit = Math.min(w - 1, rad)
-            for (x in 0..maxInit) {
-                sum += src[row + x]
-                count++
-            }
-            for (x in 0 until w) {
-                temp[row + x] = sum / count
-                val addX = x + rad + 1
-                if (addX < w) { sum += src[row + addX]; count++ }
-                val remX = x - rad
-                if (remX >= 0) { sum -= src[row + remX]; count-- }
-            }
-        }
-        for (x in 0 until w) {
-            var sum = 0f
-            var count = 0
-            val maxInit = Math.min(h - 1, rad)
-            for (y in 0..maxInit) {
-                sum += temp[y * w + x]
-                count++
-            }
-            for (y in 0 until h) {
-                out[y * w + x] = sum / count
-                val addY = y + rad + 1
-                if (addY < h) { sum += temp[addY * w + x]; count++ }
-                val remY = y - rad
-                if (remY >= 0) { sum -= temp[remY * w + x]; count-- }
-            }
-        }
-        return out
-    }
-
-    fun downsampleBilateral(pixels: IntArray, w: Int, h: Int): ByteArray {
-        return downsampleSuperRes(pixels, w, h)
+        return LedTone.downsampleArea(pixels, w, h)
     }
 
     private fun convertToGrayscaleByteArray(bitmap: Bitmap): ByteArray {
