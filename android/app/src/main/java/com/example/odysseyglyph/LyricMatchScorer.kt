@@ -28,6 +28,14 @@ data class LyricResolutionResult(
 
 object LyricMatchScorer {
 
+    /**
+     * Resolves the best candidate using user-first seamless matching:
+     * 1. Hard Gate: Disqualifies candidates from unrelated artists (eliminates false token collisions like Emis Killa vs Karan Aujla).
+     * 2. Heavy Lifting Auto-Sync: If candidate matches clean title and artist, auto-syncs immediately without friction.
+     * 3. Same-Song Consensus: Multiple releases/submissions of the same song (e.g. Single vs Album) do NOT compete or cause ambiguity.
+     * 4. Ambiguity Detection: Only flags AMBIGUOUS if there are genuinely distinct, competing songs/versions within close probability.
+     * 5. No Match: If no usable synced lyrics exist on LRCLib, returns NO_MATCH to cleanly run the fallback visualizer.
+     */
     fun scoreCandidates(
         identity: MediaTrackIdentity,
         candidates: List<LrcTrack>
@@ -40,26 +48,41 @@ object LyricMatchScorer {
             scoreSingle(identity, candidate)
         }.sortedByDescending { it.totalScore }
 
-        val eligibleSynced = scored.filter { it.hasSynced }
+        val eligibleSynced = scored.filter { it.hasSynced && it.totalScore >= 45 }
         if (eligibleSynced.isEmpty()) {
             return LyricResolutionResult(LyricConfidenceLevel.NO_MATCH, null, scored)
         }
 
         val top = eligibleSynced.first()
-        val runnerUp = eligibleSynced.getOrNull(1)
 
-        val durationOk = top.durationDeltaSec == null || top.durationDeltaSec <= 15.0
-        val artistOk = top.artistScore >= 20
+        // Find competing candidates that are GENUINELY DIFFERENT songs/versions.
+        // Multiple entries for the same song (album vs single) are treated as consensus, not competition.
+        val distinctRivals = eligibleSynced.drop(1).filter { rival ->
+            !isSameSong(top.candidate, rival.candidate)
+        }
+        val topRival = distinctRivals.firstOrNull()
 
-        val isHighConfidence = when {
-            top.totalScore >= 85 && artistOk && durationOk -> true
-            top.totalScore >= 75 && artistOk && durationOk && (runnerUp == null || (top.totalScore - runnerUp.totalScore) >= 14) -> true
-            else -> false
+        // Close possibility / ambiguity detection:
+        // A rival causes ambiguity only if it is a genuinely different track/version that is within 12 points of the top match,
+        // and neither has a decisive duration match to break the tie.
+        val isCloseTie = if (topRival != null) {
+            val scoreDiff = top.totalScore - topRival.totalScore
+            if (scoreDiff <= 12) {
+                // If top has an exact duration match (<= 4s) and rival does not, top wins decisively
+                val topDurationDecisive = top.durationDeltaSec != null && top.durationDeltaSec <= 4.0
+                val rivalDurationMismatch = topRival.durationDeltaSec == null || topRival.durationDeltaSec > 10.0
+                !(topDurationDecisive && rivalDurationMismatch)
+            } else {
+                false
+            }
+        } else {
+            false
         }
 
         val status = when {
-            isHighConfidence -> LyricConfidenceLevel.HIGH_CONFIDENCE
-            top.totalScore >= 40 -> LyricConfidenceLevel.AMBIGUOUS
+            isCloseTie -> LyricConfidenceLevel.AMBIGUOUS
+            top.totalScore >= 65 -> LyricConfidenceLevel.HIGH_CONFIDENCE
+            top.totalScore >= 45 -> LyricConfidenceLevel.AMBIGUOUS
             else -> LyricConfidenceLevel.NO_MATCH
         }
 
@@ -69,63 +92,89 @@ object LyricMatchScorer {
     private fun scoreSingle(identity: MediaTrackIdentity, candidate: LrcTrack): ScoredCandidate {
         val hasSynced = !candidate.syncedLyrics.isNullOrBlank()
 
-        // 1. Title Similarity (0 to 40 pts)
         val normTrackTitle = MediaTrackIdentity.normalize(identity.title)
         val normCleanTitle = MediaTrackIdentity.normalize(identity.cleanTitle())
+        val candCleanTitle = MediaTrackIdentity.cleanTitle(candidate.trackName)
+        val normCandCleanTitle = MediaTrackIdentity.normalize(candCleanTitle)
         val normCandTitle = MediaTrackIdentity.normalize(candidate.trackName)
 
-        val titleSimExact = similarityRatio(normTrackTitle, normCandTitle)
-        val titleSimClean = similarityRatio(normCleanTitle, normCandTitle)
-        val bestTitleSim = max(titleSimExact, titleSimClean)
-        val titleScore = (bestTitleSim * 40.0).toInt().coerceIn(0, 40)
-
-        // 2. Artist Similarity (0 to 35 pts)
         val normArtist = MediaTrackIdentity.normalize(identity.artist)
         val normPrimaryArtist = MediaTrackIdentity.normalize(identity.primaryArtist())
+        val candPrimaryArtist = MediaTrackIdentity.primaryArtist(candidate.artistName)
+        val normCandPrimary = MediaTrackIdentity.normalize(candPrimaryArtist)
         val normCandArtist = MediaTrackIdentity.normalize(candidate.artistName)
 
-        val artistSimExact = similarityRatio(normArtist, normCandArtist)
-        val artistSimPrimary = similarityRatio(normPrimaryArtist, normCandArtist)
-        val bestArtistSim = max(artistSimExact, artistSimPrimary)
+        // 1. Hard Gate: Artist Correlation
+        // Disqualify unrelated artists immediately (fixes Karan Aujla vs Emis Killa false collision)
+        val artistMatches = normCandArtist == normArtist ||
+                normCandPrimary == normPrimaryArtist ||
+                (normCandArtist.contains(normPrimaryArtist) && normPrimaryArtist.isNotEmpty()) ||
+                (normPrimaryArtist.contains(normCandPrimary) && normCandPrimary.isNotEmpty()) ||
+                similarityRatio(normCandArtist, normArtist) >= 0.55 ||
+                similarityRatio(normCandPrimary, normPrimaryArtist) >= 0.55
 
-        val artistScore = when {
-            normCandArtist == normArtist || normCandArtist == normPrimaryArtist -> 35
-            normCandArtist.contains(normPrimaryArtist) && normPrimaryArtist.isNotEmpty() -> 30
-            normPrimaryArtist.contains(normCandArtist) && normCandArtist.isNotEmpty() -> 25
-            else -> (bestArtistSim * 35.0).toInt().coerceIn(0, 35)
+        if (!artistMatches) {
+            return ScoredCandidate(
+                candidate = candidate,
+                totalScore = 0,
+                titleScore = 0,
+                artistScore = 0,
+                albumScore = 0,
+                durationDeltaSec = null,
+                hasSynced = hasSynced
+            )
         }
 
-        // 3. Album Agreement (0 to 10 pts)
+        // Artist Score (0 to 30)
+        val artistScore = when {
+            normCandArtist == normArtist || normCandPrimary == normPrimaryArtist -> 30
+            normCandArtist.contains(normPrimaryArtist) || normPrimaryArtist.contains(normCandPrimary) -> 26
+            else -> (similarityRatio(normCandPrimary, normPrimaryArtist) * 30.0).toInt().coerceIn(15, 30)
+        }
+
+        // 2. Title Score (0 to 50)
+        val isExactTitle = normCleanTitle == normCandCleanTitle || normTrackTitle == normCandTitle
+        val titleSimClean = similarityRatio(normCleanTitle, normCandCleanTitle)
+        val titleSimRaw = similarityRatio(normTrackTitle, normCandTitle)
+        val bestTitleSim = max(titleSimClean, titleSimRaw)
+
+        val titleScore = when {
+            isExactTitle -> 50
+            normCandCleanTitle.contains(normCleanTitle) || normCleanTitle.contains(normCandCleanTitle) -> 42
+            else -> (bestTitleSim * 50.0).toInt().coerceIn(0, 50)
+        }
+
+        // 3. Duration Score / Confirmation (-30 to +15)
+        var durationDeltaSec: Double? = null
+        var durationMod = 10 // Default neutral bonus when duration is unavailable from player
+        if (identity.durationMs > 0 && candidate.duration > 0) {
+            val trackSec = identity.durationMs / 1000.0
+            val delta = abs(trackSec - candidate.duration)
+            durationDeltaSec = delta
+            durationMod = when {
+                delta <= 4.0 -> 15  // Near exact duration
+                delta <= 10.0 -> 10 // Very close duration
+                delta <= 20.0 -> 0  // Acceptable delta
+                delta <= 35.0 -> -15 // Discrepancy
+                else -> -30         // Major mismatch (e.g. 5m vs 2m)
+            }
+        }
+
+        // 4. Album Score (0 to 5)
         var albumScore = 0
         if (identity.album.isNotBlank() && candidate.albumName.isNotBlank()) {
             val normAlbum = MediaTrackIdentity.normalize(identity.album)
             val normCandAlbum = MediaTrackIdentity.normalize(candidate.albumName)
             if (normAlbum == normCandAlbum) {
-                albumScore = 10
+                albumScore = 5
             } else if (normAlbum.contains(normCandAlbum) || normCandAlbum.contains(normAlbum)) {
-                albumScore = 6
+                albumScore = 3
             }
         }
 
-        // 4. Duration Difference (bonus or penalty)
-        var durationDeltaSec: Double? = null
-        var durationScoreMod = 0
-        if (identity.durationMs > 0 && candidate.duration > 0) {
-            val trackSec = identity.durationMs / 1000.0
-            val delta = abs(trackSec - candidate.duration)
-            durationDeltaSec = delta
-            when {
-                delta <= 3.0 -> durationScoreMod = 15
-                delta <= 7.0 -> durationScoreMod = 10
-                delta <= 14.0 -> durationScoreMod = 0
-                delta <= 25.0 -> durationScoreMod = -15
-                else -> durationScoreMod = -40 // Severe penalty for duration mismatch
-            }
-        }
-
-        var total = titleScore + artistScore + albumScore + durationScoreMod
+        var total = titleScore + artistScore + durationMod + albumScore
         if (!hasSynced) {
-            total = min(total, 35) // Plain lyrics can't exceed ambiguous threshold
+            total = min(total, 30)
         }
         val clampedTotal = total.coerceIn(0, 100)
 
@@ -138,6 +187,20 @@ object LyricMatchScorer {
             durationDeltaSec = durationDeltaSec,
             hasSynced = hasSynced
         )
+    }
+
+    /**
+     * Determines whether two candidates represent the same core song/composition
+     * (e.g. single release vs album release vs remastered release).
+     */
+    fun isSameSong(a: LrcTrack, b: LrcTrack): Boolean {
+        val cleanA = MediaTrackIdentity.normalize(MediaTrackIdentity.cleanTitle(a.trackName))
+        val cleanB = MediaTrackIdentity.normalize(MediaTrackIdentity.cleanTitle(b.trackName))
+        if (cleanA != cleanB) return false
+
+        val artistA = MediaTrackIdentity.normalize(MediaTrackIdentity.primaryArtist(a.artistName))
+        val artistB = MediaTrackIdentity.normalize(MediaTrackIdentity.primaryArtist(b.artistName))
+        return artistA == artistB || artistA.contains(artistB) || artistB.contains(artistA)
     }
 
     /**
