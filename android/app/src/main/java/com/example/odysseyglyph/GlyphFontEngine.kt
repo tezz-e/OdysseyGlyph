@@ -463,25 +463,61 @@ object GlyphFontEngine {
 
     /**
      * Generates a static high-res preview bitmap for UI display.
+     * Renders authentic circular diode LEDs with transparent background
+     * and circular chassis to eliminate square clipping boxes in the UI.
      */
-    fun generatePreviewBitmap(style: Int): Bitmap {
+    fun generatePreviewBitmap(patternStyle: Int): Bitmap {
         // Dummy audio data to simulate activity
         val dummyAudio = floatArrayOf(0.7f, 0.6f, 0.4f, 0.3f, 0.8f, 0.7f, 0.5f, 0.4f, 0.3f, 0.9f, 0.6f, 0.2f, 0.8f)
-        val rawBytes = renderFallbackFrame(dummyAudio, style, 500L) // Fixed time 500ms
-        
-        // Render 25x25 bitmap based on bytes
-        val smallBitmap = Bitmap.createBitmap(25, 25, Bitmap.Config.ARGB_8888)
-        val pixels = IntArray(625)
-        for (i in 0 until 625) {
-            val v = rawBytes[i].toInt() and 0xFF
-            pixels[i] = Color.argb(255, v, v, v)
+        val rawBytes = renderFallbackFrame(dummyAudio, patternStyle, 500L) // Fixed time 500ms
+
+        val size = 200
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+
+        val center = size / 2f
+        val matrixRadius = size * 0.44f
+        val diodeRadius = (size / 25f) * 0.38f
+
+        // Smoked circular glass chassis
+        val chassisPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#08080B")
+            this.style = Paint.Style.FILL
         }
-        smallBitmap.setPixels(pixels, 0, 25, 0, 0, 25, 25)
-        
-        // Scale up to 250x250 without interpolation for crisp pixel art
-        val scaledBitmap = Bitmap.createScaledBitmap(smallBitmap, 250, 250, false)
-        smallBitmap.recycle()
-        return scaledBitmap
+        canvas.drawCircle(center, center, matrixRadius + diodeRadius * 1.5f, chassisPaint)
+
+        val activePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            this.style = Paint.Style.FILL
+        }
+        val inactivePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#1C1C22")
+            this.style = Paint.Style.FILL
+        }
+
+        val step = (matrixRadius * 2f) / 24f
+        val startX = center - matrixRadius
+        val startY = center - matrixRadius
+
+        for (row in 0 until 25) {
+            for (col in 0 until 25) {
+                val idx = row * 25 + col
+                val cx = startX + col * step
+                val cy = startY + row * step
+
+                val distSq = (cx - center) * (cx - center) + (cy - center) * (cy - center)
+                if (distSq <= matrixRadius * matrixRadius) {
+                    val brightness = rawBytes[idx].toInt() and 0xFF
+                    if (brightness > 20) {
+                        activePaint.alpha = brightness
+                        canvas.drawCircle(cx, cy, diodeRadius, activePaint)
+                    } else {
+                        canvas.drawCircle(cx, cy, diodeRadius * 0.7f, inactivePaint)
+                    }
+                }
+            }
+        }
+        return bitmap
     }
 }
 

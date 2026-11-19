@@ -10,11 +10,13 @@
     <LinearLayout
         android:id="@+id/cardContainer"
         android:layout_width="match_parent"
-        android:layout_height="124dp"
+        android:layout_height="wrap_content"
+        android:minHeight="136dp"
         android:orientation="vertical"
         android:gravity="center_horizontal"
         android:background="@drawable/bg_pattern_card"
-        android:padding="8dp">
+        android:padding="10dp"
+        android:paddingBottom="12dp">
 
         <!-- Top Status Row: Badge on left, LED on right -->
         <LinearLayout
@@ -22,7 +24,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="4dp">
+            android:layout_marginBottom="6dp">
 
             <TextView
                 android:id="@+id/tvBadge"
@@ -44,34 +46,37 @@
                 android:background="@drawable/bg_pattern_well" />
         </LinearLayout>
 
-        <!-- 25x25 LED Bezel Well -->
+        <!-- 25x25 LED Bezel Well with Circular Outline Clipping -->
         <FrameLayout
-            android:layout_width="60dp"
-            android:layout_height="60dp"
+            android:layout_width="54dp"
+            android:layout_height="54dp"
             android:background="@drawable/bg_pattern_well"
-            android:layout_marginBottom="6dp">
+            android:outlineProvider="background"
+            android:clipToOutline="true"
+            android:layout_marginBottom="8dp">
 
             <ImageView
                 android:id="@+id/ivPreview"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:layout_gravity="center"
                 android:scaleType="fitCenter" />
         </FrameLayout>
 
-        <!-- Pattern Name -->
+        <!-- Pattern Name with Ample Breathing Room -->
         <TextView
             android:id="@+id/tvName"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center"
             android:text="PATTERN"
             android:fontFamily="@font/font_geist"
             app:fontFamily="@font/font_geist"
             android:textStyle="bold"
-            android:textSize="11sp"
+            android:textSize="10.5sp"
             android:letterSpacing="0.04"
             android:textColor="#C0C0C0"
-            android:singleLine="true"
+            android:maxLines="1"
             android:ellipsize="end" />
 
     </LinearLayout>

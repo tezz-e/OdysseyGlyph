@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Obsidian Dark Base with subtle Red Glow -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#140707" />
+            <corners android:radius="22dp" />
+        </shape>
+    </item>
+    <!-- Luminous Nothing Red Specular Hairline Rim -->
+    <item>
+        <shape android:shape="rectangle">
+            <stroke
+                android:width="1.5dp"
+                android:color="#80EA3323" />
+            <corners android:radius="22dp" />
+        </shape>
+    </item>
+</layer-list>
