@@ -38,7 +38,7 @@
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
-                android:text="PRESET VAULT"
+                android:text="PRESET LIBRARY"
                 android:fontFamily="@font/ndot57"
                 app:fontFamily="@font/ndot57"
                 android:textColor="#FFFFFF"

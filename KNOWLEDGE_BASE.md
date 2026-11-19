@@ -36,9 +36,10 @@ The app began as an experiment to project Christopher Nolan's *Odyssey* trailer 
 - **Role**: Dedicated standalone audio-reactive visualizer.
 - **Distinct Behavior**: Unlike Live Lyrics, this mode **never displays lyrics**. Whatever music or audio is playing, it exclusively renders reactive LED matrix patterns (e.g. Spectrum, Waveform, Beat Pulse, Circular Ripple, Matrix Rain).
 
-### C. Media Import & Presets
+### C. Media Import & Preset Library
 - **Activities & Processors**: `MainActivity.kt` (Card 3), `VideoProcessor.kt`, `GalleryActivity.kt`, `CenteredVideoView.kt`, `CropOverlayView.kt`
 - **Pipeline**: Converts user videos and GIFs into 25×25 monochrome frame animations.
+- **Terminology**: Uses "Presets" and "Preset Library" consistently throughout the app (never "Vault").
 - **Processing**: Box-filter downsampling, calibrated contrast and brightness overdrive (up to 120% Sun Overdrive), image duration sliders, and frame-rate capping (1-30 FPS).
 - **Glyph Toys Slots**: Processed animations can be saved to slots 1–3 (`frames_slot1.bin`, `frames_slot2.bin`, `frames_slot3.bin`) to appear in the Nothing OS Glyph Toys drawer.
 

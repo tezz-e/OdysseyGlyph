@@ -51,7 +51,6 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
     private lateinit var switchFallback: MaterialSwitch
     private lateinit var tvFallbackDesc: TextView
     private lateinit var btnOpenManager: MaterialButton
-    private lateinit var btnAddTile: MaterialButton
     
     private lateinit var optionsContainer: LinearLayout
     
@@ -121,7 +120,6 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         switchFallback = findViewById(R.id.switchFallback)
         tvFallbackDesc = findViewById(R.id.tvFallbackDesc)
         btnOpenManager = findViewById(R.id.btnOpenManager)
-        btnAddTile = findViewById(R.id.btnAddTile)
         
         val btnChooseMatch: TextView? = findViewById(R.id.btnChooseMatch)
         val btnViewSavedLyrics: TextView? = findViewById(R.id.btnViewSavedLyrics)
@@ -146,7 +144,6 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
 
         TouchSpringAnimator.attach(btnGrantPermission)
         TouchSpringAnimator.attach(btnOpenManager)
-        TouchSpringAnimator.attach(btnAddTile)
         TouchSpringAnimator.attach(btnResetSync)
         findViewById<View>(R.id.btnCustomizeFallback)?.let { TouchSpringAnimator.attach(it) }
         
@@ -352,30 +349,6 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         btnOpenManager.setOnClickListener {
             GlyphOSIntegration.openGlyphAppOrToys(this, findViewById(android.R.id.content))
         }
-        
-        btnAddTile.setOnClickListener {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                val statusBarManager = getSystemService(android.app.StatusBarManager::class.java)
-                val componentName = ComponentName(this, LiveLyricsTileService::class.java)
-                statusBarManager?.requestAddTileService(
-                    componentName,
-                    "Live Lyrics",
-                    android.graphics.drawable.Icon.createWithResource(this, R.mipmap.ic_launcher),
-                    mainExecutor,
-                    { result ->
-                        if (result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED || 
-                            result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED) {
-                            prefs.edit().putBoolean("tile_added", true).apply()
-                            findViewById<View>(R.id.layoutAlwaysOnMode).visibility = View.GONE
-                        } else {
-                            Snackbar.make(findViewById(android.R.id.content), "Failed to add tile.", Snackbar.LENGTH_SHORT).applyNothingStyle().show()
-                        }
-                    }
-                )
-            } else {
-                Snackbar.make(findViewById(android.R.id.content), "Pull down your notification shade and edit tiles to add 'Live Lyrics'.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
-            }
-        }
     }
 
     override fun onResume() {
@@ -391,11 +364,6 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         } catch (_: Exception) {}
 
         updateUIState()
-        
-        val isTileAdded = getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE).getBoolean("tile_added", false)
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            findViewById<View>(R.id.layoutAlwaysOnMode).visibility = if (isTileAdded) View.GONE else View.VISIBLE
-        }
         
         if (MusicPlaybackState.hasActiveSession && 
             MusicPlaybackState.trackTitle.isNotEmpty() && 
