@@ -122,13 +122,18 @@ class QuickSignalActivity : AppCompatActivity(), QuickSignalService.StateListene
 
     private fun setupCuratedSymbols() {
         symbolsContainer.removeAllViews()
+        val geist = androidx.core.content.res.ResourcesCompat.getFont(this, R.font.font_geist)
+        val currentText = etSignalText.text?.toString()?.trim() ?: ""
+
         for (sym in curatedSymbols) {
+            val isSelected = sym == currentText
             val tv = TextView(this).apply {
                 text = sym
                 textSize = 17f
-                setTextColor(Color.WHITE)
+                typeface = geist
+                setTextColor(if (isSelected) Color.WHITE else Color.parseColor("#CCCCCC"))
                 gravity = Gravity.CENTER
-                setBackgroundResource(R.drawable.bg_glass_pill)
+                setBackgroundResource(if (isSelected) R.drawable.bg_glass_pill_selected else R.drawable.bg_glass_pill)
                 setPadding(dpToPx(14), dpToPx(8), dpToPx(14), dpToPx(8))
                 val lp = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -143,6 +148,7 @@ class QuickSignalActivity : AppCompatActivity(), QuickSignalService.StateListene
                 etSignalText.setText(sym)
                 etSignalText.setSelection(sym.length)
                 it.vibrateTick()
+                refreshPillSelections()
                 if (!QuickSignalService.isRunning) {
                     updateLocalPreview()
                 }
@@ -153,16 +159,20 @@ class QuickSignalActivity : AppCompatActivity(), QuickSignalService.StateListene
 
     private fun setupPresets() {
         presetsContainer.removeAllViews()
+        val geist = androidx.core.content.res.ResourcesCompat.getFont(this, R.font.font_geist)
+        val currentText = etSignalText.text?.toString()?.trim() ?: ""
         val recents = loadRecentSignals()
         val combined = (recents + defaultPresets).distinct().take(6)
 
         for (preset in combined) {
+            val isSelected = preset.equals(currentText, ignoreCase = true)
             val tv = TextView(this).apply {
                 text = preset
                 textSize = 12f
-                setTextColor(Color.parseColor("#DDDDDD"))
+                typeface = geist
+                setTextColor(if (isSelected) Color.WHITE else Color.parseColor("#CCCCCC"))
                 gravity = Gravity.CENTER
-                setBackgroundResource(R.drawable.bg_glass_pill)
+                setBackgroundResource(if (isSelected) R.drawable.bg_glass_pill_selected else R.drawable.bg_glass_pill)
                 setPadding(dpToPx(14), dpToPx(8), dpToPx(14), dpToPx(8))
                 val lp = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -177,11 +187,43 @@ class QuickSignalActivity : AppCompatActivity(), QuickSignalService.StateListene
                 etSignalText.setText(preset)
                 etSignalText.setSelection(preset.length)
                 it.vibrateTick()
+                refreshPillSelections()
                 if (!QuickSignalService.isRunning) {
                     updateLocalPreview()
                 }
             }
             presetsContainer.addView(tv)
+        }
+    }
+
+    private fun refreshPillSelections() {
+        val currentText = etSignalText.text?.toString()?.trim() ?: ""
+        val geist = androidx.core.content.res.ResourcesCompat.getFont(this, R.font.font_geist)
+
+        for (i in 0 until symbolsContainer.childCount) {
+            val tv = symbolsContainer.getChildAt(i) as? TextView ?: continue
+            tv.typeface = geist
+            val isSelected = tv.text.toString().trim() == currentText
+            if (isSelected) {
+                tv.setBackgroundResource(R.drawable.bg_glass_pill_selected)
+                tv.setTextColor(Color.WHITE)
+            } else {
+                tv.setBackgroundResource(R.drawable.bg_glass_pill)
+                tv.setTextColor(Color.parseColor("#CCCCCC"))
+            }
+        }
+
+        for (i in 0 until presetsContainer.childCount) {
+            val tv = presetsContainer.getChildAt(i) as? TextView ?: continue
+            tv.typeface = geist
+            val isSelected = tv.text.toString().trim().equals(currentText, ignoreCase = true)
+            if (isSelected) {
+                tv.setBackgroundResource(R.drawable.bg_glass_pill_selected)
+                tv.setTextColor(Color.WHITE)
+            } else {
+                tv.setBackgroundResource(R.drawable.bg_glass_pill)
+                tv.setTextColor(Color.parseColor("#CCCCCC"))
+            }
         }
     }
 
@@ -222,6 +264,7 @@ class QuickSignalActivity : AppCompatActivity(), QuickSignalService.StateListene
 
     private fun updateLocalPreview() {
         previewAnimator?.cancel()
+        refreshPillSelections()
         val text = etSignalText.text?.toString()?.trim() ?: ""
         if (text.isEmpty()) {
             matrixMirror.updateFrame(ByteArray(QuickSignalRenderer.TOTAL_PIXELS))
@@ -323,11 +366,15 @@ class QuickSignalActivity : AppCompatActivity(), QuickSignalService.StateListene
 
     override fun onStateChanged(active: Boolean, text: String, remaining: Int) {
         runOnUiThread {
+            val previewCard = findViewById<View>(R.id.previewCard)
             if (active) {
                 previewAnimator?.cancel()
+                previewCard?.setBackgroundResource(R.drawable.bg_glass_card_active)
                 btnToggleSignal.text = "CLEAR SIGNAL"
-                btnToggleSignal.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#EA3323"))
-                btnToggleSignal.setTextColor(Color.WHITE)
+                btnToggleSignal.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#140707"))
+                btnToggleSignal.strokeColor = ColorStateList.valueOf(Color.parseColor("#EA3323"))
+                btnToggleSignal.strokeWidth = dpToPx(1)
+                btnToggleSignal.setTextColor(Color.parseColor("#EA3323"))
 
                 signalStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#EA3323"))
                 tvSignalStatus.text = "SHOWING ON REAR MATRIX"
@@ -341,13 +388,16 @@ class QuickSignalActivity : AppCompatActivity(), QuickSignalService.StateListene
                     tvSignalCountdown.text = "Until cleared"
                 }
             } else {
+                previewCard?.setBackgroundResource(R.drawable.bg_glass_card)
                 btnToggleSignal.text = "SHOW SIGNAL"
-                btnToggleSignal.backgroundTintList = ColorStateList.valueOf(Color.WHITE)
-                btnToggleSignal.setTextColor(Color.BLACK)
+                btnToggleSignal.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#EA3323"))
+                btnToggleSignal.strokeColor = ColorStateList.valueOf(Color.parseColor("#FF6655"))
+                btnToggleSignal.strokeWidth = dpToPx(1)
+                btnToggleSignal.setTextColor(Color.WHITE)
 
                 signalStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#888888"))
                 tvSignalStatus.text = "LIVE 25×25 PREVIEW"
-                tvSignalStatus.setTextColor(Color.parseColor("#888888"))
+                tvSignalStatus.setTextColor(Color.parseColor("#CCCCCC"))
                 tvSignalCountdown.visibility = View.GONE
 
                 updateLocalPreview()
