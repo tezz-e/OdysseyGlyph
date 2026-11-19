@@ -51,7 +51,7 @@
                         android:letterSpacing="0.06"
                         android:clickable="true"
                         android:focusable="true"
-                        android:background="?attr/selectableItemBackgroundBorderless" />
+                        android:background="@null" />
                 </LinearLayout>
 
                 <ImageView
