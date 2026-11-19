@@ -1,9 +1,13 @@
 package com.example.odysseyglyph
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.graphics.Color
 import android.graphics.Matrix
 import android.net.Uri
 import android.os.Bundle
@@ -78,6 +82,9 @@ class MainActivity : AppCompatActivity() {
     private var advBrightness = 100.0f
     private var advDuration = 5.0f
     private var advEnhancementMode = 0 // 0 = Auto, 1 = On, 2 = Off
+
+    private var nothingOverflowMenu: NothingOverflowMenu? = null
+    private var glitchAnimator: ValueAnimator? = null
 
     fun loadMedia(uri: Uri) {
         VideoProcessor.clearFrameCache()
@@ -252,8 +259,6 @@ class MainActivity : AppCompatActivity() {
         btnSelectVideo.applyLiquidGlass(pressedScale = 0.96f)
         btnLaunchVisualizer.applyLiquidGlass(pressedScale = 0.96f)
         btnLaunchLiveLyrics.applyLiquidGlass(pressedScale = 0.96f)
-        findViewById<View>(R.id.btnAddTileMain)?.let { TouchSpringAnimator.attach(it) }
-        findViewById<View>(R.id.btnAddWidgetMain)?.let { TouchSpringAnimator.attach(it) }
         findViewById<View>(R.id.btnVaultMain)?.let { TouchSpringAnimator.attach(it) }
         btnProcess.applyLiquidGlass(pressedScale = 0.96f)
         btnCancel.applyLiquidGlass(pressedScale = 0.96f)
@@ -266,8 +271,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // PHONE CONTROLS section stays permanently visible so users can add both QS Tile and Widget anytime
-        findViewById<View>(R.id.quickAccessSection).visibility = View.VISIBLE
         syncSlotState()
         syncQuickSignalState()
         checkToysManagerVisibility()
@@ -303,9 +306,16 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
+        nothingOverflowMenu?.dismiss()
         if (currentMediaType == 0) {
             videoView.pause()
         }
+    }
+
+    override fun onDestroy() {
+        glitchAnimator?.cancel()
+        nothingOverflowMenu?.dismiss()
+        super.onDestroy()
     }
 
     private fun loadAdvancedSettings() {
@@ -364,40 +374,97 @@ class MainActivity : AppCompatActivity() {
         bottomActionBar = findViewById(R.id.bottomActionBar)
     }
 
+    private fun getOrCreateOverflowMenu(anchor: View): NothingOverflowMenu {
+        return nothingOverflowMenu ?: NothingOverflowMenu(
+            context = this,
+            onTourClick = {
+                startFeatureSpotlightTour()
+            },
+            onTileClick = {
+                requestAddQuickTile()
+            },
+            onWidgetClick = {
+                requestAddHomeWidget()
+            },
+            onGithubClick = {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/tezz-e/OdysseyGlyph"))
+                startActivity(intent)
+            },
+            onAboutClick = {
+                showAppInfoDialog()
+            }
+        ).also { nothingOverflowMenu = it }
+    }
+
+    private fun setupInteractiveLogo() {
+        val tvHeaderTitle = findViewById<TextView>(R.id.tvHeaderTitle) ?: return
+        TouchSpringAnimator.attach(tvHeaderTitle)
+
+        val originalText = "GLYPH ODYSSEY"
+        val matrixChars = charArrayOf('·', ':', '□', '■', '▲', '▼', '◆', '0', '1', 'X', '+', '░', '▒')
+
+        tvHeaderTitle.setOnClickListener { view ->
+            view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+
+            glitchAnimator?.cancel()
+            val totalSteps = 7
+            val random = java.util.Random()
+
+            glitchAnimator = ValueAnimator.ofInt(0, totalSteps).apply {
+                duration = 280L
+                addUpdateListener { va ->
+                    val step = va.animatedValue as Int
+                    if (step >= totalSteps) {
+                        tvHeaderTitle.text = originalText
+                        tvHeaderTitle.setTextColor(Color.WHITE)
+                    } else {
+                        val resolvedCount = (step * originalText.length) / totalSteps
+                        val chars = originalText.toCharArray()
+                        val unresolvedIndices = (0 until originalText.length)
+                            .filter { originalText[it] != ' ' }
+                            .shuffled(random)
+
+                        val toScramble = unresolvedIndices.drop(resolvedCount)
+                        for (idx in toScramble) {
+                            chars[idx] = matrixChars[random.nextInt(matrixChars.size)]
+                        }
+                        tvHeaderTitle.text = String(chars)
+
+                        if (step == 1 || step == 2) {
+                            tvHeaderTitle.setTextColor(Color.parseColor("#EA3323"))
+                        } else {
+                            tvHeaderTitle.setTextColor(Color.WHITE)
+                        }
+                    }
+                }
+                addListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
+                        tvHeaderTitle.text = originalText
+                        tvHeaderTitle.setTextColor(Color.WHITE)
+                    }
+                    override fun onAnimationCancel(animation: Animator) {
+                        tvHeaderTitle.text = originalText
+                        tvHeaderTitle.setTextColor(Color.WHITE)
+                    }
+                })
+                start()
+            }
+        }
+    }
+
     private fun setupListeners() {
+        setupInteractiveLogo()
+
         val btnHeaderMenu = findViewById<ImageView>(R.id.btnHeaderMenu)
         btnHeaderMenu?.let { btn ->
             TouchSpringAnimator.attach(btn)
             btn.setOnClickListener {
-                val popup = androidx.appcompat.widget.PopupMenu(this, btn)
-                popup.menuInflater.inflate(R.menu.menu_main_overflow, popup.menu)
-                popup.setOnMenuItemClickListener { menuItem ->
-                    when (menuItem.itemId) {
-                        R.id.menu_tour -> {
-                            startFeatureSpotlightTour()
-                            true
-                        }
-                        R.id.menu_add_tile -> {
-                            requestAddQuickTile()
-                            true
-                        }
-                        R.id.menu_add_widget -> {
-                            requestAddHomeWidget()
-                            true
-                        }
-                        R.id.menu_github -> {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/tezz-e/OdysseyGlyph"))
-                            startActivity(intent)
-                            true
-                        }
-                        R.id.menu_about -> {
-                            showAppInfoDialog()
-                            true
-                        }
-                        else -> false
-                    }
+                val menu = getOrCreateOverflowMenu(btn)
+                if (menu.isShowing) {
+                    menu.dismiss()
+                } else {
+                    menu.show(btn, focusable = true)
                 }
-                popup.show()
             }
         }
 
@@ -419,16 +486,6 @@ class MainActivity : AppCompatActivity() {
             if (launcherGroup.visibility == View.GONE && !isRendering.get()) {
                 resetToLauncher()
             }
-        }
-
-        val btnAddTileMain = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddTileMain)
-        btnAddTileMain.setOnClickListener {
-            requestAddQuickTile()
-        }
-
-        val btnAddWidgetMain = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddWidgetMain)
-        btnAddWidgetMain.setOnClickListener {
-            requestAddHomeWidget()
         }
 
         val btnVaultMain = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnVaultMain)
@@ -615,8 +672,8 @@ class MainActivity : AppCompatActivity() {
         dialogView.findViewById<TextView>(R.id.tvDialogTitle).text = "ODYSSEY GLYPH"
         dialogView.findViewById<TextView>(R.id.tvDialogMessage).text = 
             "25×25 LED Matrix Audio and Media Console for Nothing OS.\n\n" +
-            "• LIVE LYRICS: Real-time synced lyric projection\n" +
-            "• MUSIC VISUALIZER: Audio-reactive LED patterns\n" +
+            "• LIVE LYRICS: Synced lyrics with an automatic fallback visualizer\n" +
+            "• MUSIC VISUALIZER: Dedicated audio-reactive LED patterns with no lyrics\n" +
             "• MEDIA IMPORT: Video and GIF matrix renderer\n" +
             "• QUICK SIGNAL: Instant rear matrix alerts and presets\n\n" +
             "GitHub: github.com/tezz-e/OdysseyGlyph"
@@ -687,7 +744,7 @@ class MainActivity : AppCompatActivity() {
         val cardVisualizer = findViewById<View>(R.id.cardVisualizer) ?: return
         val cardMediaPipeline = findViewById<View>(R.id.cardMediaPipeline) ?: return
         val cardQuickSignal = findViewById<View>(R.id.cardQuickSignal) ?: return
-        val quickAccessSection = findViewById<View>(R.id.quickAccessSection) ?: return
+        val btnHeaderMenu = findViewById<View>(R.id.btnHeaderMenu) ?: return
         val scrollView = findViewById<ScrollView>(R.id.scrollView)
 
         NothingSpotlightOverlay.attach(this, scrollView)
@@ -695,7 +752,7 @@ class MainActivity : AppCompatActivity() {
                 NothingSpotlightOverlay.Step(
                     targetView = heroLyricsCard,
                     title = "LIVE LYRICS",
-                    description = "Streams synchronized lyrics to the rear 25×25 matrix while music plays on Spotify, YouTube Music, or other players. Turn on the master toggle inside to start tracking playback.",
+                    description = "Streams synchronized lyrics to the rear 25×25 matrix while music plays. It also includes an automatic fallback visualizer for instrumental intros, solos, or songs without lyrics.",
                     cornerRadiusDp = 22f,
                     paddingDp = 4f
                 )
@@ -704,7 +761,7 @@ class MainActivity : AppCompatActivity() {
                 NothingSpotlightOverlay.Step(
                     targetView = cardVisualizer,
                     title = "MUSIC VISUALIZER",
-                    description = "Audio-reactive LED patterns for your music. Tap Patterns to choose a style. The fallback visualizer also plays during instrumental intros and solos while waiting for lyrics to start, or whenever a song has no lyrics available.",
+                    description = "Dedicated visualizer mode for your music. Whatever plays, this mode only projects audio-reactive LED patterns with zero lyrics. Tap Patterns to pick an animation style.",
                     cornerRadiusDp = 22f,
                     paddingDp = 4f
                 )
@@ -729,17 +786,34 @@ class MainActivity : AppCompatActivity() {
             )
             .addStep(
                 NothingSpotlightOverlay.Step(
-                    targetView = quickAccessSection,
-                    title = "PHONE CONTROLS",
-                    description = "Pin the Quick Settings tile to toggle Live Lyrics straight from your notification shade. Drop the widget on your home screen to control the rear matrix with one tap without opening the app.",
-                    cornerRadiusDp = 22f,
-                    paddingDp = 4f
+                    targetView = btnHeaderMenu,
+                    title = "PHONE CONTROLS & MORE",
+                    description = "Access Quick Settings tile setup, home screen widgets, tour replay, and project info anytime from this menu.",
+                    cornerRadiusDp = 12f,
+                    paddingDp = 4f,
+                    extraOffsetYDp = 240f
                 )
             )
+            .setOnStepChanged { stepIndex ->
+                if (stepIndex == 4) {
+                    btnHeaderMenu.postDelayed({
+                        if (!isFinishing && !isDestroyed) {
+                            val menu = getOrCreateOverflowMenu(btnHeaderMenu)
+                            if (!menu.isShowing) {
+                                menu.show(btnHeaderMenu, focusable = false)
+                            }
+                        }
+                    }, 150)
+                } else {
+                    nothingOverflowMenu?.dismiss()
+                }
+            }
             .setOnCompleted {
+                nothingOverflowMenu?.dismiss()
                 prefs.edit().putBoolean("spotlight_tour_done_v1", true).apply()
             }
             .setOnDismissed {
+                nothingOverflowMenu?.dismiss()
                 prefs.edit().putBoolean("spotlight_tour_done_v1", true).apply()
             }
             .start()

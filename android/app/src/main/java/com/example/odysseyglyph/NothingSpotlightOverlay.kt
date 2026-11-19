@@ -37,13 +37,15 @@ class NothingSpotlightOverlay private constructor(
         val title: String,
         val description: String,
         val cornerRadiusDp: Float = 22f,
-        val paddingDp: Float = 6f
+        val paddingDp: Float = 6f,
+        val extraOffsetYDp: Float = 0f
     )
 
     private val steps = mutableListOf<Step>()
     private var currentStepIndex = -1
     private var onCompletedAction: (() -> Unit)? = null
     private var onDismissedAction: (() -> Unit)? = null
+    private var onStepChangedAction: ((Int) -> Unit)? = null
 
     // Canvas Paints
     private val density = resources.displayMetrics.density
@@ -206,6 +208,11 @@ class NothingSpotlightOverlay private constructor(
         return this
     }
 
+    fun setOnStepChanged(action: (Int) -> Unit): NothingSpotlightOverlay {
+        onStepChangedAction = action
+        return this
+    }
+
     fun start() {
         if (steps.isEmpty()) return
         initDots()
@@ -304,6 +311,7 @@ class NothingSpotlightOverlay private constructor(
         val oldIndex = currentStepIndex
         currentStepIndex = newIndex
         startPulseAnimation()
+        onStepChangedAction?.invoke(newIndex)
 
         if (oldIndex == -1) {
             // First time entrance
@@ -404,10 +412,11 @@ class NothingSpotlightOverlay private constructor(
             val placeBelow = targetRect.centerY() <= screenH * 0.52f
             isArrowPointingUp = placeBelow
 
+            val extraOffset = if (currentStepIndex in steps.indices) steps[currentStepIndex].extraOffsetYDp * density else 0f
             val targetY = if (placeBelow) {
-                targetRect.bottom + 12f * density - tooltipCard.top
+                targetRect.bottom + 12f * density + extraOffset - tooltipCard.top
             } else {
-                targetRect.top - tooltipH - 12f * density - tooltipCard.top
+                targetRect.top - tooltipH - 12f * density - extraOffset - tooltipCard.top
             }
 
             if (immediate) {
@@ -437,6 +446,11 @@ class NothingSpotlightOverlay private constructor(
         val arrowHalfW = 9f * density
 
         arrowPath.reset()
+        val hasLargeOffset = (currentStepIndex in steps.indices && steps[currentStepIndex].extraOffsetYDp > 30f)
+        if (hasLargeOffset) {
+            return
+        }
+
         if (isArrowPointingUp) {
             // Tooltip is below cutout: arrow tip points UP to cutout bottom
             val tipY = currentRect.bottom + 2f * density
