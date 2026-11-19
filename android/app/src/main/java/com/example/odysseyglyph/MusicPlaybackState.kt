@@ -51,6 +51,34 @@ object MusicPlaybackState {
         listeners.remove(listener)
     }
     
+    fun clearSession() {
+        val wasActive = hasActiveSession || trackTitle.isNotEmpty() || isPlaying
+        hasActiveSession = false
+        isPlaying = false
+        trackTitle = ""
+        artist = ""
+        album = ""
+        durationMs = 0L
+        packageName = ""
+        mediaId = ""
+        albumArt = null
+        activeSource = ""
+        manualOverrideLyrics = null
+        manualOverrideTrackName = ""
+        position = 0L
+        lastUpdateTime = 0L
+        
+        if (wasActive) {
+            val identity = currentIdentity()
+            val listenersCopy = synchronized(listeners) { listeners.toList() }
+            listenersCopy.forEach {
+                it.onMetadataChanged("", "")
+                it.onTrackIdentityChanged(identity)
+                it.onPlaybackStateChanged(false)
+            }
+        }
+    }
+    
     fun updateMetadata(
         newTitle: String,
         newArtist: String,
@@ -88,17 +116,25 @@ object MusicPlaybackState {
     }
     
     fun updatePlaybackState(state: PlaybackState?) {
-        if (state != null) {
-            val newIsPlaying = state.state == PlaybackState.STATE_PLAYING
-            position = state.position
-            lastUpdateTime = state.lastPositionUpdateTime
-            playbackSpeed = state.playbackSpeed
-            
-            if (isPlaying != newIsPlaying) {
-                isPlaying = newIsPlaying
-                val listenersCopy = synchronized(listeners) { listeners.toList() }
-                listenersCopy.forEach { it.onPlaybackStateChanged(isPlaying) }
+        if (state == null || 
+            state.state == PlaybackState.STATE_NONE || 
+            state.state == PlaybackState.STATE_STOPPED || 
+            state.state == PlaybackState.STATE_ERROR) {
+            if (hasActiveSession || isPlaying || trackTitle.isNotEmpty()) {
+                clearSession()
             }
+            return
+        }
+
+        val newIsPlaying = state.state == PlaybackState.STATE_PLAYING
+        position = state.position
+        lastUpdateTime = state.lastPositionUpdateTime
+        playbackSpeed = state.playbackSpeed
+        
+        if (isPlaying != newIsPlaying) {
+            isPlaying = newIsPlaying
+            val listenersCopy = synchronized(listeners) { listeners.toList() }
+            listenersCopy.forEach { it.onPlaybackStateChanged(isPlaying) }
         }
     }
 }

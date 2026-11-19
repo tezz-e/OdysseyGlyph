@@ -82,6 +82,7 @@ class LiveLyricsToyService : Service(), MusicPlaybackState.StateChangeListener, 
             if (!isEnabled || !MusicPlaybackState.hasActiveSession || !MusicPlaybackState.isPlaying) {
                 if (lastFrameHash != -1) {
                     glyphManager?.turnOff()
+                    GlyphFrameBus.postFrame(ByteArray(625))
                     lastFrameHash = -1
                 }
                 visualizerHelper.stop()
@@ -191,6 +192,7 @@ class LiveLyricsToyService : Service(), MusicPlaybackState.StateChangeListener, 
         prefs.unregisterOnSharedPreferenceChangeListener(this)
         visualizerHelper.stop()
         try { glyphManager?.turnOff() } catch (_: Exception) {}
+        GlyphFrameBus.postFrame(ByteArray(625))
         try { glyphManager?.unInit() } catch (_: Exception) {}
         glyphManager = null
         super.onDestroy()

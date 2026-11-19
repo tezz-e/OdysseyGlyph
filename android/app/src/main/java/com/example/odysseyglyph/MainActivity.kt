@@ -671,7 +671,9 @@ class MainActivity : AppCompatActivity() {
         
         dialogView.findViewById<TextView>(R.id.tvDialogTitle).text = "ODYSSEY GLYPH"
         dialogView.findViewById<TextView>(R.id.tvDialogMessage).text = 
-            "25×25 LED Matrix Audio and Media Console for Nothing OS.\n\n" +
+            "An open-source lyrics engine and custom animation studio for the Nothing 25×25 Glyph Matrix.\n\n" +
+            "ORIGIN STORY:\n" +
+            "It started as a joke: I wanted to watch the Odyssey trailer \"as Nolan intended,\" on the back of my phone, for a meme. Getting one video onto the Glyph Matrix properly took way more fixing and iterating than expected. Somewhere in there I realized the pipeline I'd built didn't care what video it was. So I generalized it.\n\n" +
             "• LIVE LYRICS: Synced lyrics with an automatic fallback visualizer\n" +
             "• MUSIC VISUALIZER: Dedicated audio-reactive LED patterns with no lyrics\n" +
             "• MEDIA IMPORT: Video and GIF matrix renderer\n" +
@@ -680,15 +682,6 @@ class MainActivity : AppCompatActivity() {
             
         dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogAction).setOnClickListener {
             dialog.dismiss()
-        }
-
-        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogSecondary)?.apply {
-            visibility = View.VISIBLE
-            text = "REPLAY FEATURE TOUR"
-            setOnClickListener {
-                dialog.dismiss()
-                startFeatureSpotlightTour()
-            }
         }
         dialog.show()
     }

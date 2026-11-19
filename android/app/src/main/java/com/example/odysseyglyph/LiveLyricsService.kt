@@ -312,6 +312,7 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
                     mainHandler.removeCallbacks(playbackRunnable)
                     visualizerHelper.stop()
                     try { glyphManager?.turnOff() } catch (e: Exception) {}
+                    GlyphFrameBus.postFrame(ByteArray(625))
                     if (!VisualizerService.isRunning) {
                         try { glyphManager?.unInit() } catch (e: Exception) {}
                     }

@@ -187,6 +187,11 @@ class GlyphMatrixMirrorView @JvmOverloads constructor(
         onGlyphFrame(frame)
     }
 
+    fun clearFrame() {
+        java.util.Arrays.fill(currentFrame, 0.toByte())
+        postInvalidateOnAnimation()
+    }
+
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         GlyphFrameBus.subscribe(this)

@@ -63,7 +63,7 @@
                     android:contentDescription="Menu"
                     android:clickable="true"
                     android:focusable="true"
-                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:background="@null"
                     app:tint="#B0B0B0" />
             </LinearLayout>
 

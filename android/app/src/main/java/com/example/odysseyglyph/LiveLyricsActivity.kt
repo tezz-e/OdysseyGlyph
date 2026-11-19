@@ -176,6 +176,8 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
                     startService(startLyrics)
                 }
             } else {
+                liveMatrixMirror.clearFrame()
+                GlyphFrameBus.postFrame(ByteArray(625))
                 val stopLyrics = Intent(this, LiveLyricsService::class.java).apply { action = "STOP_LIVE_LYRICS" }
                 startService(stopLyrics)
             }
@@ -233,22 +235,28 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             savedSyncOffset < 0 -> "${savedSyncOffset}ms (Early)"
             else -> "0ms (Exact)"
         }
+        btnResetSync.visibility = if (savedSyncOffset != 0) View.VISIBLE else View.GONE
         
         btnResetSync.setOnClickListener {
             sliderSync.value = 0f
             tvSyncOffset.text = "0ms (Exact)"
+            btnResetSync.visibility = View.GONE
             prefs.edit().putInt("live_sync_offset", 0).apply()
             it.vibrateTick()
         }
         
-        sliderSync.addOnChangeListener { _, value, _ ->
+        sliderSync.addOnChangeListener { slider, value, fromUser ->
             val offsetMs = value.toInt()
             tvSyncOffset.text = when {
                 offsetMs > 0 -> "+${offsetMs}ms (Delay)"
                 offsetMs < 0 -> "${offsetMs}ms (Early)"
                 else -> "0ms (Exact)"
             }
+            btnResetSync.visibility = if (offsetMs != 0) View.VISIBLE else View.GONE
             prefs.edit().putInt("live_sync_offset", offsetMs).apply()
+            if (fromUser) {
+                slider.vibrateTick()
+            }
         }
         
         val savedFontStyle = prefs.getInt("live_font_style", 0)
@@ -374,6 +382,14 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         super.onResume()
         checkNotificationPermission()
         MusicPlaybackState.addListener(this)
+        
+        // Request active session validation from listener service
+        try {
+            startService(Intent(this, MediaSessionListenerService::class.java).apply {
+                action = "REFRESH_SESSIONS"
+            })
+        } catch (_: Exception) {}
+
         updateUIState()
         
         val isTileAdded = getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE).getBoolean("tile_added", false)
@@ -449,6 +465,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             liveStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#444444"))
             ivAlbumArt.visibility = View.GONE
             btnChooseMatch?.visibility = View.GONE
+            liveMatrixMirror.clearFrame()
             return
         }
 
@@ -460,17 +477,28 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             liveStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#EA3323"))
             ivAlbumArt.visibility = View.GONE
             btnChooseMatch?.visibility = View.GONE
+            liveMatrixMirror.clearFrame()
             return
         }
         
-        if (!MusicPlaybackState.hasActiveSession) {
-            tvMasterState.text = "READY"
-            tvMasterState.setTextColor(Color.parseColor("#EA3323"))
-            tvStatus.text = "Waiting for music"
-            tvTrackInfo.text = "Play a track to begin."
+        if (!MusicPlaybackState.hasActiveSession || !MusicPlaybackState.isPlaying) {
+            val hasSession = MusicPlaybackState.hasActiveSession && MusicPlaybackState.trackTitle.isNotEmpty()
+            tvMasterState.text = if (hasSession) "PAUSED" else "STANDBY"
+            tvMasterState.setTextColor(Color.parseColor("#888888"))
+            tvStatus.text = if (hasSession) "Playback Paused" else "Waiting for music"
+            tvTrackInfo.text = if (hasSession)
+                "${MusicPlaybackState.trackTitle}: ${MusicPlaybackState.artist}"
+            else
+                "Play a track to begin."
             liveStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#888888"))
-            ivAlbumArt.visibility = View.GONE
-            btnChooseMatch?.visibility = View.GONE
+            if (MusicPlaybackState.albumArt != null && hasSession) {
+                ivAlbumArt.setImageBitmap(MusicPlaybackState.albumArt)
+                ivAlbumArt.visibility = View.VISIBLE
+            } else {
+                ivAlbumArt.visibility = View.GONE
+            }
+            btnChooseMatch?.visibility = if (hasSession) View.VISIBLE else View.GONE
+            liveMatrixMirror.clearFrame()
         } else {
             val title = MusicPlaybackState.trackTitle
             val artist = MusicPlaybackState.artist
@@ -489,10 +517,10 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             if (MusicPlaybackState.manualOverrideLyrics != null) {
                 val overrideName = MusicPlaybackState.manualOverrideTrackName.ifEmpty { title }
                 tvStatus.text = "Streaming to rear matrix"
-                tvTrackInfo.text = "$overrideName — $artist\n(Using saved lyrics)"
+                tvTrackInfo.text = "$overrideName: $artist\n(Using saved lyrics)"
             } else if (title.isNotEmpty()) {
                 tvStatus.text = "Streaming to rear matrix"
-                tvTrackInfo.text = "$title — $artist\n(Resolving lyrics...)"
+                tvTrackInfo.text = "$title: $artist\n(Resolving lyrics...)"
             } else {
                 tvStatus.text = "Streaming to rear matrix"
                 tvTrackInfo.text = "Active session connected."
