@@ -30,6 +30,11 @@ object NavigationHelper {
         }
     }
 
+    fun startWithPush(activity: Activity, intent: Intent) {
+        activity.startActivity(intent)
+        activity.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+    }
+
     fun finishWithPop(activity: Activity) {
         activity.finish()
         activity.overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)

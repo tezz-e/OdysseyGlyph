@@ -221,6 +221,26 @@ class MainActivity : AppCompatActivity() {
             card.setOnClickListener { btnLaunchVisualizer.performClick() }
         }
 
+        val cardQuickSignal = findViewById<View>(R.id.cardQuickSignal)
+        val btnLaunchQuickSignal = findViewById<View>(R.id.btnLaunchQuickSignal)
+        val btnClearQuickSignal = findViewById<View>(R.id.btnClearQuickSignalMain)
+
+        val openQuickSignal = {
+            NavigationHelper.startWithPush(this, Intent(this, QuickSignalActivity::class.java))
+        }
+
+        cardQuickSignal?.applyLiquidGlass(pressedScale = 0.98f)
+        cardQuickSignal?.setOnClickListener { openQuickSignal() }
+        btnLaunchQuickSignal?.setOnClickListener { openQuickSignal() }
+
+        btnClearQuickSignal?.setOnClickListener {
+            val stopIntent = Intent(this, QuickSignalService::class.java).apply {
+                action = QuickSignalService.ACTION_STOP_SIGNAL
+            }
+            startService(stopIntent)
+            syncQuickSignalState()
+        }
+
         btnSelectVideo.applyLiquidGlass(pressedScale = 0.96f)
         btnLaunchVisualizer.applyLiquidGlass(pressedScale = 0.96f)
         btnLaunchLiveLyrics.applyLiquidGlass(pressedScale = 0.96f)
@@ -241,9 +261,28 @@ class MainActivity : AppCompatActivity() {
         // PHONE CONTROLS section stays permanently visible so users can add both QS Tile and Widget anytime
         findViewById<View>(R.id.quickAccessSection).visibility = View.VISIBLE
         syncSlotState()
+        syncQuickSignalState()
         checkToysManagerVisibility()
         if (currentMediaType == 0) {
             videoView.start()
+        }
+    }
+
+    private fun syncQuickSignalState() {
+        val tvBadge = findViewById<TextView>(R.id.tvQuickSignalBadge) ?: return
+        val tvSub = findViewById<TextView>(R.id.tvQuickSignalSubtitle) ?: return
+        val btnClear = findViewById<View>(R.id.btnClearQuickSignalMain) ?: return
+
+        if (QuickSignalService.isRunning) {
+            tvBadge.text = "ACTIVE"
+            tvBadge.setTextColor(android.graphics.Color.parseColor("#EA3323"))
+            tvSub.text = "Currently showing \"${QuickSignalService.activeText}\" on rear matrix"
+            btnClear.visibility = View.VISIBLE
+        } else {
+            tvBadge.text = "DIRECT MESSAGE"
+            tvBadge.setTextColor(android.graphics.Color.parseColor("#CCCCCC"))
+            tvSub.text = "Project short messages (WAIT, BRB, symbols) to the rear matrix"
+            btnClear.visibility = View.GONE
         }
     }
 

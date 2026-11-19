@@ -315,6 +315,100 @@
                     </LinearLayout>
                 </LinearLayout>
 
+                <!-- CARD: QUICK SIGNAL -->
+                <LinearLayout
+                    android:id="@+id/cardQuickSignal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_glass_card"
+                    android:padding="16dp"
+                    android:orientation="vertical"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:layout_marginBottom="12dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Quick Signal"
+                            android:fontFamily="@font/font_geist"
+                            app:fontFamily="@font/font_geist"
+                            android:textStyle="bold"
+                            android:textSize="14sp"
+                            android:textColor="#FFFFFF" />
+
+                        <TextView
+                            android:id="@+id/tvQuickSignalBadge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_glass_pill"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="3dp"
+                            android:text="DIRECT MESSAGE"
+                            android:textColor="#CCCCCC"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvQuickSignalSubtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Project short messages (WAIT, BRB, symbols) to the rear matrix"
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
+                        android:textSize="12sp"
+                        android:textColor="#9E9E9E"
+                        android:layout_marginTop="3dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="10dp"
+                        android:gravity="center_vertical">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnLaunchQuickSignal"
+                            android:layout_width="wrap_content"
+                            android:layout_height="40dp"
+                            android:text="OPEN SIGNAL"
+                            android:fontFamily="@font/font_geist"
+                            app:fontFamily="@font/font_geist"
+                            android:textStyle="bold"
+                            android:textSize="12sp"
+                            android:letterSpacing="0.04"
+                            app:cornerRadius="20dp"
+                            app:backgroundTint="#FFFFFF"
+                            android:textColor="#000000" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnClearQuickSignalMain"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="40dp"
+                            android:layout_marginStart="8dp"
+                            android:text="CLEAR"
+                            android:fontFamily="@font/font_geist"
+                            app:fontFamily="@font/font_geist"
+                            android:textStyle="bold"
+                            android:textSize="12sp"
+                            android:letterSpacing="0.04"
+                            app:cornerRadius="20dp"
+                            android:textColor="#EA3323"
+                            app:strokeColor="#EA3323"
+                            android:visibility="gone" />
+                    </LinearLayout>
+                </LinearLayout>
+
                 <!-- CARD 4: PHONE CONTROLS (QS Tile & Widget) -->
                 <LinearLayout
                     android:id="@+id/quickAccessSection"

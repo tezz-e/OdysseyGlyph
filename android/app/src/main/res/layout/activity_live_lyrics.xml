@@ -164,6 +164,47 @@
                             android:layout_marginTop="3dp"
                             android:maxLines="2"
                             android:ellipsize="end" />
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/btnChooseMatch"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/bg_glass_pill"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:fontFamily="@font/font_geist"
+                                android:letterSpacing="0.04"
+                                android:paddingHorizontal="10dp"
+                                android:paddingVertical="4dp"
+                                android:text="MATCH / FIX"
+                                android:textColor="#EA3323"
+                                android:textSize="11sp"
+                                android:textStyle="bold"
+                                android:visibility="gone" />
+
+                            <TextView
+                                android:id="@+id/btnViewSavedLyrics"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:background="@drawable/bg_glass_pill"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:fontFamily="@font/font_geist"
+                                android:letterSpacing="0.04"
+                                android:paddingHorizontal="10dp"
+                                android:paddingVertical="4dp"
+                                android:text="SAVED LYRICS"
+                                android:textColor="#CCCCCC"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
             </FrameLayout>

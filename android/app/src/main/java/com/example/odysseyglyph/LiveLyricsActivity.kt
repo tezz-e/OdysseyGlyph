@@ -123,6 +123,27 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         btnOpenManager = findViewById(R.id.btnOpenManager)
         btnAddTile = findViewById(R.id.btnAddTile)
         
+        val btnChooseMatch: TextView? = findViewById(R.id.btnChooseMatch)
+        val btnViewSavedLyrics: TextView? = findViewById(R.id.btnViewSavedLyrics)
+
+        btnChooseMatch?.setOnClickListener {
+            val pickerIntent = Intent(this, TrackMatchPickerActivity::class.java).apply {
+                putExtra("track_title", MusicPlaybackState.trackTitle)
+                putExtra("artist", MusicPlaybackState.artist)
+                putExtra("album", MusicPlaybackState.album)
+                putExtra("duration_ms", MusicPlaybackState.durationMs)
+                putExtra("package_name", MusicPlaybackState.packageName)
+            }
+            NavigationHelper.startWithPush(this, pickerIntent)
+        }
+
+        btnViewSavedLyrics?.setOnClickListener {
+            NavigationHelper.startWithPush(this, Intent(this, SavedLyricsActivity::class.java))
+        }
+
+        btnChooseMatch?.let { TouchSpringAnimator.attach(it) }
+        btnViewSavedLyrics?.let { TouchSpringAnimator.attach(it) }
+
         TouchSpringAnimator.attach(btnGrantPermission)
         TouchSpringAnimator.attach(btnOpenManager)
         TouchSpringAnimator.attach(btnAddTile)
@@ -423,6 +444,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
 
     private fun updateUIState() {
         val isMasterOn = switchMaster.isChecked
+        val btnChooseMatch: View? = findViewById(R.id.btnChooseMatch)
         if (!isMasterOn) {
             tvMasterState.text = "OFFLINE"
             tvMasterState.setTextColor(Color.parseColor("#888888"))
@@ -430,6 +452,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             tvTrackInfo.text = "Turn on the switch above to start streaming lyrics."
             liveStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#444444"))
             ivAlbumArt.visibility = View.GONE
+            btnChooseMatch?.visibility = View.GONE
             return
         }
 
@@ -440,6 +463,7 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             tvTrackInfo.text = "Enable Notification Access below to read media playback."
             liveStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#EA3323"))
             ivAlbumArt.visibility = View.GONE
+            btnChooseMatch?.visibility = View.GONE
             return
         }
         
@@ -450,12 +474,14 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             tvTrackInfo.text = "Play a track to begin."
             liveStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#888888"))
             ivAlbumArt.visibility = View.GONE
+            btnChooseMatch?.visibility = View.GONE
         } else {
             val title = MusicPlaybackState.trackTitle
             val artist = MusicPlaybackState.artist
             tvMasterState.text = "STREAMING"
             tvMasterState.setTextColor(Color.parseColor("#EA3323"))
             liveStatusDot.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#EA3323"))
+            btnChooseMatch?.visibility = View.VISIBLE
             
             if (MusicPlaybackState.albumArt != null) {
                 ivAlbumArt.setImageBitmap(MusicPlaybackState.albumArt)
@@ -465,11 +491,12 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             }
             
             if (MusicPlaybackState.manualOverrideLyrics != null) {
+                val overrideName = MusicPlaybackState.manualOverrideTrackName.ifEmpty { title }
                 tvStatus.text = "Streaming to rear matrix"
-                tvTrackInfo.text = "$title — $artist"
+                tvTrackInfo.text = "$overrideName — $artist\n(Using saved lyrics)"
             } else if (title.isNotEmpty()) {
                 tvStatus.text = "Streaming to rear matrix"
-                tvTrackInfo.text = "$title — $artist\n(Searching for lyrics...)"
+                tvTrackInfo.text = "$title — $artist\n(Resolving lyrics...)"
             } else {
                 tvStatus.text = "Streaming to rear matrix"
                 tvTrackInfo.text = "Active session connected."
@@ -478,28 +505,74 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
     }
 
     override fun onMetadataChanged(title: String, artist: String) {
+        onTrackIdentityChanged(MusicPlaybackState.currentIdentity())
+    }
+
+    override fun onTrackIdentityChanged(identity: MediaTrackIdentity) {
         mainHandler.post { updateUIState() }
         
-        if (title.isNotEmpty()) {
-            thread {
-                val query = LrcQueryCleaner.clean("$title $artist")
-                val results = LRCLibClient.searchLyrics(query)
-                val syncedResult = results.firstOrNull { it.syncedLyrics != null }
-                if (syncedResult != null) {
-                    val parsed = LrcUtils.parseLrc(syncedResult.syncedLyrics!!)
+        if (identity.title.isNotEmpty()) {
+            val repo = SavedLyricsRepository.getInstance(this)
+            val saved = repo.findMatch(identity)
+            if (saved != null) {
+                val parsed = LrcUtils.parseLrc(saved.syncedLyrics)
+                if (parsed.isNotEmpty()) {
                     MusicPlaybackState.manualOverrideLyrics = parsed
-                    MusicPlaybackState.manualOverrideTrackName = syncedResult.trackName
+                    MusicPlaybackState.manualOverrideTrackName = saved.matchedTrackName
+                    mainHandler.post {
+                        if (isFinishing || isDestroyed) return@post
+                        updateUIState()
+                    }
+                    return
+                }
+            }
+
+            thread {
+                val exact = LRCLibClient.getExactLyrics(
+                    trackName = identity.cleanTitle(),
+                    artistName = identity.primaryArtist(),
+                    albumName = identity.album.ifEmpty { null },
+                    durationSeconds = if (identity.durationMs > 0) (identity.durationMs / 1000).toInt() else null
+                )
+                if (exact != null && !exact.syncedLyrics.isNullOrBlank()) {
+                    val parsed = LrcUtils.parseLrc(exact.syncedLyrics)
+                    if (parsed.isNotEmpty()) {
+                        repo.saveAutoVerifiedMatch(identity, exact, exact.syncedLyrics, 95)
+                        MusicPlaybackState.manualOverrideLyrics = parsed
+                        MusicPlaybackState.manualOverrideTrackName = exact.trackName
+                        mainHandler.post {
+                            if (isFinishing || isDestroyed) return@post
+                            updateUIState()
+                        }
+                        return@thread
+                    }
+                }
+
+                var candidates = LRCLibClient.searchCandidates(identity.cleanTitle(), identity.primaryArtist())
+                if (candidates.isEmpty()) {
+                    candidates = LRCLibClient.searchLyrics("${identity.cleanTitle()} ${identity.primaryArtist()}".trim())
+                }
+                val resolution = LyricMatchScorer.scoreCandidates(identity, candidates)
+                if (resolution.status == LyricConfidenceLevel.HIGH_CONFIDENCE) {
+                    val top = resolution.topMatch!!.candidate
+                    val parsed = LrcUtils.parseLrc(top.syncedLyrics!!)
+                    repo.saveAutoVerifiedMatch(identity, top, top.syncedLyrics, resolution.topMatch.totalScore)
+                    MusicPlaybackState.manualOverrideLyrics = parsed
+                    MusicPlaybackState.manualOverrideTrackName = top.trackName
                     mainHandler.post {
                         if (isFinishing || isDestroyed) return@post
                         updateUIState()
                     }
                 } else {
                     MusicPlaybackState.manualOverrideLyrics = null
-                    mainHandler.post { 
+                    mainHandler.post {
                         if (isFinishing || isDestroyed) return@post
-                        if (MusicPlaybackState.trackTitle == title) {
-                            tvTrackInfo.text = "$title — $artist\n(No synced lyrics found)"
+                        val note = if (resolution.status == LyricConfidenceLevel.AMBIGUOUS) {
+                            "(Ambiguous match — tap Match / Fix to choose)"
+                        } else {
+                            "(No synced lyrics found — tap Match / Fix)"
                         }
+                        tvTrackInfo.text = "${identity.title} — ${identity.artist}\n$note"
                     }
                 }
             }

@@ -47,14 +47,31 @@ class MediaSessionListenerService : NotificationListenerService() {
                 ?: metadata.getString(MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE) 
                 ?: ""
                 
+            val album = metadata.getString(MediaMetadata.METADATA_KEY_ALBUM)
+                ?: metadata.getString(MediaMetadata.METADATA_KEY_DISPLAY_DESCRIPTION)
+                ?: ""
+
+            val durationMs = metadata.getLong(MediaMetadata.METADATA_KEY_DURATION)
+            val mediaId = metadata.getString(MediaMetadata.METADATA_KEY_MEDIA_ID) ?: ""
+            val pkg = activeController?.packageName ?: ""
+
             val art = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART) 
                 ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_ART)
                 
-            Log.d("MusicListener", "Metadata changed: $title - $artist")
+            Log.d("MusicListener", "Metadata changed: $title - $artist [$album, ${durationMs}ms]")
             
             // Only update if we actually got a title, or if we were previously unknown.
             if (title.isNotEmpty() || MusicPlaybackState.trackTitle.isEmpty()) {
-                MusicPlaybackState.updateMetadata(title, artist, activeSource, art)
+                MusicPlaybackState.updateMetadata(
+                    newTitle = title,
+                    newArtist = artist,
+                    newAlbum = album,
+                    newDurationMs = durationMs,
+                    newPackageName = pkg,
+                    newMediaId = mediaId,
+                    source = activeSource,
+                    art = art
+                )
             }
         }
 
