@@ -124,52 +124,58 @@ class GalleryActivity : AppCompatActivity() {
         val ivLargePreview = dialogView.findViewById<android.widget.ImageView>(R.id.ivLargePreview)
         var isPlaying = true
         val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        var animRunnable: Runnable? = null
 
         val binFile = java.io.File(PresetManager.getPresetsDir(this), "${preset.id}.bin")
         if (binFile.exists() && binFile.length() > 637) {
-            try {
-                val bytes = binFile.readBytes()
-                val headerSize = if (preset.type == "LYRIC") 16 else 12
-                val buffer = java.nio.ByteBuffer.wrap(bytes).order(java.nio.ByteOrder.LITTLE_ENDIAN)
-                val numFrames = buffer.getInt()
-                val fps = buffer.getInt().let { if (it <= 0) 12 else it }
-                val frameDelay = 1000L / fps
+            kotlin.concurrent.thread {
+                try {
+                    val bytes = binFile.readBytes()
+                    val headerSize = if (preset.type == "LYRIC") 16 else 12
+                    val buffer = java.nio.ByteBuffer.wrap(bytes).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+                    val numFrames = buffer.getInt()
+                    val fps = buffer.getInt().let { if (it <= 0) 12 else it }
+                    val frameDelay = 1000L / fps
 
-                val frames = mutableListOf<android.graphics.Bitmap>()
-                var offset = headerSize
+                    val framePixelsList = mutableListOf<IntArray>()
+                    var offset = headerSize
 
-                for (i in 0 until numFrames) {
-                    if (offset + 625 > bytes.size) break
-                    val pixels = IntArray(625)
-                    for (p in 0 until 625) {
-                        val bright = bytes[offset + p].toInt() and 0xFF
-                        pixels[p] = android.graphics.Color.argb(255, bright, bright, bright)
-                    }
-                    val bitmap = android.graphics.Bitmap.createBitmap(25, 25, android.graphics.Bitmap.Config.ARGB_8888)
-                    bitmap.setPixels(pixels, 0, 25, 0, 0, 25, 25)
-                    frames.add(bitmap)
-                    offset += 625
-                }
-
-                if (frames.isNotEmpty()) {
-                    var currentFrameIndex = 0
-                    val runnable = object : Runnable {
-                        override fun run() {
-                            if (!isPlaying) return
-                            ivLargePreview.setImageBitmap(frames[currentFrameIndex])
-                            currentFrameIndex = (currentFrameIndex + 1) % frames.size
-                            handler.postDelayed(this, frameDelay)
+                    for (i in 0 until numFrames) {
+                        if (offset + 625 > bytes.size) break
+                        val pixels = IntArray(625)
+                        for (p in 0 until 625) {
+                            val bright = bytes[offset + p].toInt() and 0xFF
+                            pixels[p] = android.graphics.Color.argb(255, bright, bright, bright)
                         }
+                        framePixelsList.add(pixels)
+                        offset += 625
                     }
-                    handler.post(runnable)
+
+                    if (framePixelsList.isNotEmpty() && isPlaying) {
+                        val reusableBitmap = android.graphics.Bitmap.createBitmap(25, 25, android.graphics.Bitmap.Config.ARGB_8888)
+                        var currentFrameIndex = 0
+                        val runnable = object : Runnable {
+                            override fun run() {
+                                if (!isPlaying) return
+                                reusableBitmap.setPixels(framePixelsList[currentFrameIndex], 0, 25, 0, 0, 25, 25)
+                                ivLargePreview.setImageBitmap(reusableBitmap)
+                                currentFrameIndex = (currentFrameIndex + 1) % framePixelsList.size
+                                handler.postDelayed(this, frameDelay)
+                            }
+                        }
+                        animRunnable = runnable
+                        handler.post(runnable)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
         }
 
         dialog.setOnDismissListener {
             isPlaying = false
+            animRunnable?.let { handler.removeCallbacks(it) }
+            handler.removeCallbacksAndMessages(null)
         }
 
         val btnSlot1 = dialogView.findViewById<MaterialButton>(R.id.btnSlot1)

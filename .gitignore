@@ -12,6 +12,7 @@ build/
 # OS files
 .DS_Store
 Thumbs.db
+**/local.properties
 
 # Scratch artifacts
 HEAD_*.kt

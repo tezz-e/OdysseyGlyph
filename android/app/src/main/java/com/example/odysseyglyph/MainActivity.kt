@@ -72,7 +72,8 @@ class MainActivity : AppCompatActivity() {
     private var selectedMediaUri: Uri? = null
     private var currentMediaType = 0 // 0=video, 1=gif, 2=static
     private var videoDurationMs: Long = 0
-    private var isRendering = AtomicBoolean(false)
+    private var isRenderingActive = AtomicBoolean(false)
+    private var isRenderCancelled = AtomicBoolean(false)
 
     // Advanced Settings state
     private var advFps = 12
@@ -160,7 +161,7 @@ class MainActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (launcherGroup.visibility != View.VISIBLE) {
-                    if (isRendering.get()) {
+                    if (isRenderingActive.get()) {
                         cancelProcessing()
                     }
                     resetToLauncher()
@@ -315,6 +316,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         glitchAnimator?.cancel()
         nothingOverflowMenu?.dismiss()
+        videoView.release()
         super.onDestroy()
     }
 
@@ -392,6 +394,10 @@ class MainActivity : AppCompatActivity() {
             },
             onAboutClick = {
                 showAppInfoDialog()
+            },
+            onPrivacyClick = {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/tezz-e/OdysseyGlyph/blob/main/PRIVACY.md"))
+                startActivity(intent)
             }
         ).also { nothingOverflowMenu = it }
     }
@@ -483,7 +489,10 @@ class MainActivity : AppCompatActivity() {
         }
         
         toolbar.setNavigationOnClickListener {
-            if (launcherGroup.visibility == View.GONE && !isRendering.get()) {
+            if (launcherGroup.visibility == View.GONE) {
+                if (isRenderingActive.get()) {
+                    cancelProcessing()
+                }
                 resetToLauncher()
             }
         }
@@ -912,7 +921,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun cancelProcessing() {
-        isRendering.set(true)
+        isRenderCancelled.set(true)
+        isRenderingActive.set(false)
         btnProcess.visibility = View.VISIBLE
         btnCancel.visibility = View.GONE
         progressBar.visibility = View.GONE
@@ -927,7 +937,8 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        isRendering.set(false)
+        isRenderingActive.set(true)
+        isRenderCancelled.set(false)
         btnProcess.visibility = View.GONE
         btnCancel.visibility = View.VISIBLE
         progressBar.visibility = View.VISIBLE
@@ -992,11 +1003,12 @@ class MainActivity : AppCompatActivity() {
             cropRadius = cropOverlay.circleRadius,
             inverseTransform = inverseTransform,
             slotIndex = slot,
-            isCancelled = isRendering,
+            isCancelled = isRenderCancelled,
             onProgress = { prog ->
                 progressBar.setProgress(prog)
             },
             onComplete = { success, error ->
+                isRenderingActive.set(false)
                 btnProcess.visibility = View.VISIBLE
                 btnCancel.visibility = View.GONE
                 progressBar.visibility = View.GONE
@@ -1005,7 +1017,7 @@ class MainActivity : AppCompatActivity() {
                     val msg = if (slot == 4) "SUCCESS! SAVED TO GALLERY." else "SUCCESS! RENDERED TO SLOT $slot."
                     Snackbar.make(findViewById(android.R.id.content), msg, Snackbar.LENGTH_LONG).applyNothingStyle().show()
                     successActionsContainer.visibility = View.VISIBLE
-                    sendBroadcast(Intent("com.example.odysseyglyph.RELOAD_FRAMES"))
+                    sendBroadcast(Intent("com.example.odysseyglyph.RELOAD_FRAMES").setPackage(packageName))
                 } else {
                     if (error != "Cancelled by user.") {
                         Snackbar.make(findViewById(android.R.id.content), "ERROR: $error", Snackbar.LENGTH_LONG).applyNothingStyle().show()

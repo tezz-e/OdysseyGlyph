@@ -175,6 +175,17 @@ class VisualizerService : Service(), SharedPreferences.OnSharedPreferenceChangeL
             sharedPreferences?.let {
                 activeStyle = it.getInt("fallback_style", 2)
                 if (isMicStyle(activeStyle)) {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q && isRunning) {
+                        var types = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                        if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                                types = types or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                            }
+                        }
+                        try {
+                            startForeground(2, createNotification(), types)
+                        } catch (_: Exception) {}
+                    }
                     visualizerHelper.start()
                 } else {
                     visualizerHelper.stop()

@@ -22,7 +22,8 @@ class NothingOverflowMenu(
     private val onTileClick: () -> Unit,
     private val onWidgetClick: () -> Unit,
     private val onGithubClick: () -> Unit,
-    private val onAboutClick: () -> Unit
+    private val onAboutClick: () -> Unit,
+    private val onPrivacyClick: () -> Unit = {}
 ) {
 
     private val popupWindow: PopupWindow
@@ -67,6 +68,11 @@ class NothingOverflowMenu(
         contentView.findViewById<View>(R.id.itemMenuAbout)?.setOnClickListener {
             popupWindow.dismiss()
             onAboutClick()
+        }
+
+        contentView.findViewById<View>(R.id.itemMenuPrivacy)?.setOnClickListener {
+            popupWindow.dismiss()
+            onPrivacyClick()
         }
     }
 

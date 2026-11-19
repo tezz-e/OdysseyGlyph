@@ -343,7 +343,11 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         }
         
         btnGrantPermission.setOnClickListener {
-            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            ProminentDisclosureDialog.showIfRequired(this) {
+                try {
+                    startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                } catch (_: Exception) {}
+            }
         }
         
         btnOpenManager.setOnClickListener {
