@@ -365,6 +365,42 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
+        val btnHeaderMenu = findViewById<ImageView>(R.id.btnHeaderMenu)
+        btnHeaderMenu?.let { btn ->
+            TouchSpringAnimator.attach(btn)
+            btn.setOnClickListener {
+                val popup = androidx.appcompat.widget.PopupMenu(this, btn)
+                popup.menuInflater.inflate(R.menu.menu_main_overflow, popup.menu)
+                popup.setOnMenuItemClickListener { menuItem ->
+                    when (menuItem.itemId) {
+                        R.id.menu_tour -> {
+                            startFeatureSpotlightTour()
+                            true
+                        }
+                        R.id.menu_add_tile -> {
+                            requestAddQuickTile()
+                            true
+                        }
+                        R.id.menu_add_widget -> {
+                            requestAddHomeWidget()
+                            true
+                        }
+                        R.id.menu_github -> {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/tezz-e/OdysseyGlyph"))
+                            startActivity(intent)
+                            true
+                        }
+                        R.id.menu_about -> {
+                            showAppInfoDialog()
+                            true
+                        }
+                        else -> false
+                    }
+                }
+                popup.show()
+            }
+        }
+
         btnSelectVideo.setOnClickListener {
             selectMediaLauncher.launch(arrayOf("video/*", "image/*"))
         }
@@ -387,51 +423,12 @@ class MainActivity : AppCompatActivity() {
 
         val btnAddTileMain = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddTileMain)
         btnAddTileMain.setOnClickListener {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                val statusBarManager = getSystemService(android.app.StatusBarManager::class.java)
-                val componentName = android.content.ComponentName(this, LiveLyricsTileService::class.java)
-                statusBarManager?.requestAddTileService(
-                    componentName,
-                    "Odyssey Glyph",
-                    android.graphics.drawable.Icon.createWithResource(this, R.mipmap.ic_launcher),
-                    mainExecutor,
-                    { result ->
-                        if (result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED || 
-                            result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED) {
-                            prefs.edit().putBoolean("tile_added", true).apply()
-                            val msg = if (result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED)
-                                "Tile added to notification shade."
-                            else
-                                "Tile is already in notification shade."
-                            Snackbar.make(findViewById(android.R.id.content), msg, Snackbar.LENGTH_SHORT).applyNothingStyle().show()
-                        } else {
-                            Snackbar.make(findViewById(android.R.id.content), "Failed to add tile.", Snackbar.LENGTH_SHORT).applyNothingStyle().show()
-                        }
-                    }
-                )
-            } else {
-                Snackbar.make(findViewById(android.R.id.content), "Pull down your notification shade and edit tiles to add 'Odyssey Glyph'.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
-            }
+            requestAddQuickTile()
         }
 
         val btnAddWidgetMain = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddWidgetMain)
         btnAddWidgetMain.setOnClickListener {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                val appWidgetManager = android.appwidget.AppWidgetManager.getInstance(this)
-                val myProvider = android.content.ComponentName(this, OdysseyWidgetProvider::class.java)
-                if (appWidgetManager.isRequestPinAppWidgetSupported) {
-                    val successCallback = android.app.PendingIntent.getBroadcast(
-                        this, 0,
-                        android.content.Intent(this, OdysseyWidgetProvider::class.java).apply { action = OdysseyWidgetProvider.ACTION_UPDATE_WIDGET },
-                        android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
-                    )
-                    appWidgetManager.requestPinAppWidget(myProvider, null, successCallback)
-                } else {
-                    Snackbar.make(findViewById(android.R.id.content), "Your launcher does not support automatic widget pinning. Please add it manually from your launcher's widget menu.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
-                }
-            } else {
-                Snackbar.make(findViewById(android.R.id.content), "Automatic widget pinning requires Android 8.0+. Please add it manually from your launcher's widget menu.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
-            }
+            requestAddHomeWidget()
         }
 
         val btnVaultMain = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnVaultMain)
@@ -617,11 +614,12 @@ class MainActivity : AppCompatActivity() {
         
         dialogView.findViewById<TextView>(R.id.tvDialogTitle).text = "ODYSSEY GLYPH"
         dialogView.findViewById<TextView>(R.id.tvDialogMessage).text = 
-            "Transform your Nothing phone into an interactive canvas.\n\n" +
-            "1. LIVE LYRICS\nStream synchronized song lyrics directly across the rear 25×25 Glyph Matrix in real time.\n\n" +
-            "2. STANDALONE VISUALIZER\nAudio-reactive LED animations that pulse with your music and frequencies.\n\n" +
-            "3. QUICK SIGNAL\nProject instant status words, arrows, and symbols to the rear matrix on demand.\n\n" +
-            "4. MEDIA IMPORT\nCrop and convert custom videos or GIFs into matrix animations."
+            "25×25 LED Matrix Audio and Media Console for Nothing OS.\n\n" +
+            "• LIVE LYRICS: Real-time synced lyric projection\n" +
+            "• MUSIC VISUALIZER: Audio-reactive LED patterns\n" +
+            "• MEDIA IMPORT: Video and GIF matrix renderer\n" +
+            "• QUICK SIGNAL: Instant rear matrix alerts and presets\n\n" +
+            "GitHub: github.com/tezz-e/OdysseyGlyph"
             
         dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogAction).setOnClickListener {
             dialog.dismiss()
@@ -629,6 +627,7 @@ class MainActivity : AppCompatActivity() {
 
         dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogSecondary)?.apply {
             visibility = View.VISIBLE
+            text = "REPLAY FEATURE TOUR"
             setOnClickListener {
                 dialog.dismiss()
                 startFeatureSpotlightTour()
@@ -637,11 +636,58 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    private fun requestAddQuickTile() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            val statusBarManager = getSystemService(android.app.StatusBarManager::class.java)
+            val componentName = android.content.ComponentName(this, LiveLyricsTileService::class.java)
+            statusBarManager?.requestAddTileService(
+                componentName,
+                "Odyssey Glyph",
+                android.graphics.drawable.Icon.createWithResource(this, R.mipmap.ic_launcher),
+                mainExecutor
+            ) { result ->
+                if (result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED || 
+                    result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED) {
+                    prefs.edit().putBoolean("tile_added", true).apply()
+                    val msg = if (result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED)
+                        "Tile added to notification shade."
+                    else
+                        "Tile is already in notification shade."
+                    Snackbar.make(findViewById(android.R.id.content), msg, Snackbar.LENGTH_SHORT).applyNothingStyle().show()
+                } else {
+                    Snackbar.make(findViewById(android.R.id.content), "Failed to add tile.", Snackbar.LENGTH_SHORT).applyNothingStyle().show()
+                }
+            }
+        } else {
+            Snackbar.make(findViewById(android.R.id.content), "Pull down your notification shade and edit tiles to add 'Odyssey Glyph'.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
+        }
+    }
+
+    private fun requestAddHomeWidget() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val appWidgetManager = android.appwidget.AppWidgetManager.getInstance(this)
+            val myProvider = android.content.ComponentName(this, OdysseyWidgetProvider::class.java)
+            if (appWidgetManager.isRequestPinAppWidgetSupported) {
+                val successCallback = android.app.PendingIntent.getBroadcast(
+                    this, 0,
+                    android.content.Intent(this, OdysseyWidgetProvider::class.java).apply { action = OdysseyWidgetProvider.ACTION_UPDATE_WIDGET },
+                    android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+                )
+                appWidgetManager.requestPinAppWidget(myProvider, null, successCallback)
+            } else {
+                Snackbar.make(findViewById(android.R.id.content), "Your launcher does not support automatic widget pinning. Please add it manually from your launcher's widget menu.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
+            }
+        } else {
+            Snackbar.make(findViewById(android.R.id.content), "Automatic widget pinning requires Android 8.0+. Please add it manually from your launcher's widget menu.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
+        }
+    }
+
     fun startFeatureSpotlightTour() {
         val heroLyricsCard = findViewById<View>(R.id.heroLyricsCard) ?: return
         val cardVisualizer = findViewById<View>(R.id.cardVisualizer) ?: return
-        val cardQuickSignal = findViewById<View>(R.id.cardQuickSignal) ?: return
         val cardMediaPipeline = findViewById<View>(R.id.cardMediaPipeline) ?: return
+        val cardQuickSignal = findViewById<View>(R.id.cardQuickSignal) ?: return
+        val quickAccessSection = findViewById<View>(R.id.quickAccessSection) ?: return
         val scrollView = findViewById<ScrollView>(R.id.scrollView)
 
         NothingSpotlightOverlay.attach(this, scrollView)
@@ -649,7 +695,7 @@ class MainActivity : AppCompatActivity() {
                 NothingSpotlightOverlay.Step(
                     targetView = heroLyricsCard,
                     title = "LIVE LYRICS",
-                    description = "Stream synchronized song lyrics directly across the rear 25×25 Glyph Matrix in real time.",
+                    description = "Streams synchronized lyrics to the rear 25×25 matrix while music plays on Spotify, YouTube Music, or other players. Turn on the master toggle inside to start tracking playback.",
                     cornerRadiusDp = 22f,
                     paddingDp = 4f
                 )
@@ -658,7 +704,7 @@ class MainActivity : AppCompatActivity() {
                 NothingSpotlightOverlay.Step(
                     targetView = cardVisualizer,
                     title = "MUSIC VISUALIZER",
-                    description = "Audio-reactive LED animations that pulse with music and mic input. Tap Patterns to pick your visualizer style.",
+                    description = "Audio-reactive LED patterns for your music. Tap Patterns to choose a style. The fallback visualizer also plays during instrumental intros and solos while waiting for lyrics to start, or whenever a song has no lyrics available.",
                     cornerRadiusDp = 22f,
                     paddingDp = 4f
                 )
@@ -667,7 +713,7 @@ class MainActivity : AppCompatActivity() {
                 NothingSpotlightOverlay.Step(
                     targetView = cardMediaPipeline,
                     title = "MEDIA IMPORT",
-                    description = "Convert videos and animated GIFs into crisp rear matrix pixel art animations.",
+                    description = "Convert videos and GIFs into matrix animations. Pick a file from your gallery, align the circular crop area, and render it directly to your phone's Glyph Toys.",
                     cornerRadiusDp = 22f,
                     paddingDp = 4f
                 )
@@ -676,7 +722,16 @@ class MainActivity : AppCompatActivity() {
                 NothingSpotlightOverlay.Step(
                     targetView = cardQuickSignal,
                     title = "QUICK SIGNAL",
-                    description = "Project instant status messages (WAIT, BRB) and symbols (♥, ★, arrows) directly to the rear matrix.",
+                    description = "Flash short messages like WAIT and BRB, or symbols like hearts and arrows, onto the back of your phone. Pick a preset or type custom text with an auto-off timer.",
+                    cornerRadiusDp = 22f,
+                    paddingDp = 4f
+                )
+            )
+            .addStep(
+                NothingSpotlightOverlay.Step(
+                    targetView = quickAccessSection,
+                    title = "PHONE CONTROLS",
+                    description = "Pin the Quick Settings tile to toggle Live Lyrics straight from your notification shade. Drop the widget on your home screen to control the rear matrix with one tap without opening the app.",
                     cornerRadiusDp = 22f,
                     paddingDp = 4f
                 )

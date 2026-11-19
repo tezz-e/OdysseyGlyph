@@ -105,6 +105,7 @@ class NothingSpotlightOverlay private constructor(
     private val tvTitle: TextView
     private val tvDesc: TextView
     private val btnSkip: View
+    private val btnPrev: MaterialButton
     private val btnNext: MaterialButton
     private val llDots: LinearLayout
 
@@ -124,12 +125,20 @@ class NothingSpotlightOverlay private constructor(
         tvTitle = tooltipRoot.findViewById(R.id.tvSpotlightTitle)
         tvDesc = tooltipRoot.findViewById(R.id.tvSpotlightDesc)
         btnSkip = tooltipRoot.findViewById(R.id.btnSpotlightSkip)
+        btnPrev = tooltipRoot.findViewById(R.id.btnSpotlightPrev)
         btnNext = tooltipRoot.findViewById(R.id.btnSpotlightNext)
         llDots = tooltipRoot.findViewById(R.id.llSpotlightDots)
 
         btnSkip.setOnClickListener {
             performSafeHaptic(HapticFeedbackConstants.KEYBOARD_TAP)
             dismiss(completed = false)
+        }
+
+        btnPrev.setOnClickListener {
+            performSafeHaptic(HapticFeedbackConstants.CLOCK_TICK)
+            if (currentStepIndex > 0) {
+                goToStep(currentStepIndex - 1)
+            }
         }
 
         btnNext.setOnClickListener {
@@ -168,10 +177,10 @@ class NothingSpotlightOverlay private constructor(
 
     private fun startPulseAnimation() {
         pulseAnimator?.cancel()
-        pulseAnimator = ValueAnimator.ofFloat(0.30f, 0.85f).apply {
-            duration = 1100
+        pulseAnimator = ValueAnimator.ofFloat(0.35f, 0.85f).apply {
+            duration = 900
             repeatMode = ValueAnimator.REVERSE
-            repeatCount = ValueAnimator.INFINITE
+            repeatCount = 3
             interpolator = DecelerateInterpolator()
             addUpdateListener { va ->
                 val alphaVal = va.animatedValue as Float
@@ -284,24 +293,17 @@ class NothingSpotlightOverlay private constructor(
                 val svHeight = sv.height
                 val targetScrollY = (viewRect.centerY() - svHeight / 2).coerceAtLeast(0)
                 if (Math.abs(sv.scrollY - targetScrollY) > 30) {
-                    sv.smoothScrollTo(0, targetScrollY)
+                    sv.scrollTo(0, targetScrollY)
                 }
             } catch (_: Exception) {}
         }
 
-        val loc = IntArray(2)
-        targetView.getLocationInWindow(loc)
-        val pad = step.paddingDp * density
-        val targetRect = RectF(
-            loc[0] - pad,
-            loc[1] - pad,
-            loc[0] + targetView.width + pad,
-            loc[1] + targetView.height + pad
-        )
+        val targetRect = calculateTargetRect(step)
         val targetRadius = step.cornerRadiusDp * density
 
         val oldIndex = currentStepIndex
         currentStepIndex = newIndex
+        startPulseAnimation()
 
         if (oldIndex == -1) {
             // First time entrance
@@ -351,6 +353,12 @@ class NothingSpotlightOverlay private constructor(
         tvStep.text = "STEP ${index + 1} OF ${steps.size}"
         tvTitle.text = step.title
         tvDesc.text = step.description
+
+        if (index > 0) {
+            btnPrev.visibility = View.VISIBLE
+        } else {
+            btnPrev.visibility = View.GONE
+        }
 
         if (index == steps.size - 1) {
             btnNext.text = "GET STARTED"
@@ -472,6 +480,18 @@ class NothingSpotlightOverlay private constructor(
                 canvas.drawPath(arrowPath, arrowStrokePaint)
             }
         }
+    }
+
+    private fun calculateTargetRect(step: Step): RectF {
+        val loc = IntArray(2)
+        step.targetView.getLocationInWindow(loc)
+        val pad = step.paddingDp * density
+        return RectF(
+            loc[0] - pad,
+            loc[1] - pad,
+            loc[0] + step.targetView.width + pad,
+            loc[1] + step.targetView.height + pad
+        )
     }
 
     fun dismiss(completed: Boolean = true) {

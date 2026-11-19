@@ -112,21 +112,41 @@
                 android:layout_height="1dp"
                 android:layout_weight="1" />
 
+            <!-- Previous Button (visible on step > 0) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSpotlightPrev"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:layout_marginEnd="8dp"
+                android:visibility="gone"
+                android:text="PREV"
+                android:fontFamily="@font/font_geist"
+                app:fontFamily="@font/font_geist"
+                android:textStyle="bold"
+                android:textSize="11.5sp"
+                android:letterSpacing="0.04"
+                android:textColor="#C0C0C0"
+                app:backgroundTint="#14FFFFFF"
+                app:strokeColor="#24FFFFFF"
+                app:strokeWidth="1dp"
+                app:cornerRadius="19dp"
+                android:paddingHorizontal="14dp" />
+
             <!-- Next / Done Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSpotlightNext"
                 android:layout_width="wrap_content"
-                android:layout_height="40dp"
+                android:layout_height="38dp"
                 android:text="NEXT"
                 android:fontFamily="@font/font_geist"
                 app:fontFamily="@font/font_geist"
                 android:textStyle="bold"
-                android:textSize="12sp"
-                android:letterSpacing="0.05"
+                android:textSize="11.5sp"
+                android:letterSpacing="0.04"
                 android:textColor="#FFFFFF"
                 app:backgroundTint="#EA3323"
-                app:cornerRadius="20dp"
-                android:paddingHorizontal="22dp"
+                app:cornerRadius="19dp"
+                android:paddingHorizontal="18dp"
                 app:icon="@drawable/ic_chevron_right"
                 app:iconGravity="textEnd"
                 app:iconSize="14dp"

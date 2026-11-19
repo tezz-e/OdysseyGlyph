@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_tour"
+        android:title="Feature Tour" />
+    <item
+        android:id="@+id/menu_add_tile"
+        android:title="Add Quick Settings Tile" />
+    <item
+        android:id="@+id/menu_add_widget"
+        android:title="Add Home Screen Widget" />
+    <item
+        android:id="@+id/menu_github"
+        android:title="GitHub Project" />
+    <item
+        android:id="@+id/menu_about"
+        android:title="About Odyssey Glyph" />
+</menu>

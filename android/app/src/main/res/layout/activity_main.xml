@@ -29,29 +29,49 @@
                 android:id="@+id/layoutHeaderTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-                <TextView
-                    android:id="@+id/tvHeaderTitle"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="GLYPH ODYSSEY"
-                    android:fontFamily="@font/ndot57"
-                    app:fontFamily="@font/ndot57"
-                    android:textSize="20sp"
-                    android:textColor="#FFFFFF"
-                    android:letterSpacing="0.08" />
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="1dp"
-                    android:text="25×25 LED Matrix Console"
-                    android:fontFamily="@font/font_geist"
-                    app:fontFamily="@font/font_geist"
-                    android:textSize="11sp"
-                    android:textColor="#888888"
-                    android:letterSpacing="0.04" />
+                    <TextView
+                        android:id="@+id/tvHeaderTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="GLYPH ODYSSEY"
+                        android:fontFamily="@font/ndot57"
+                        app:fontFamily="@font/ndot57"
+                        android:textSize="20sp"
+                        android:textColor="#FFFFFF"
+                        android:letterSpacing="0.08" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="1dp"
+                        android:text="25×25 LED Matrix Console"
+                        android:fontFamily="@font/font_geist"
+                        app:fontFamily="@font/font_geist"
+                        android:textSize="11sp"
+                        android:textColor="#888888"
+                        android:letterSpacing="0.04" />
+                </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/btnHeaderMenu"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_more_vert"
+                    android:contentDescription="Menu"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="#B0B0B0" />
             </LinearLayout>
 
             <com.google.android.material.appbar.MaterialToolbar
