@@ -186,11 +186,19 @@ object QuickSignalRenderer {
     }
 
     /**
-     * Renders a stationary or scrolling frame for the text.
-     * For 1-4 chars: stationary large/bold font centered on matrix.
+     * Renders a stationary or scrolling frame for the text using the live lyrics GlyphFontEngine styles:
+     * - PIXEL_TINY ("Pixel")
+     * - SMOOTH ("Smooth")
+     * - BLOCK_BOLD ("Blocky")
+     *
+     * For 1-4 chars: stationary centered font on matrix.
      * For 5-30 chars: horizontal marquee at the specified scroll offset.
      */
-    fun renderFrame(text: String, scrollOffsetX: Float = 0f): ByteArray {
+    fun renderFrame(
+        text: String,
+        style: GlyphFontEngine.FontStyle = GlyphFontEngine.FontStyle.BLOCK_BOLD,
+        scrollOffsetX: Float = 0f
+    ): ByteArray {
         val trimmed = text.trim().take(MAX_CHARS)
         if (trimmed.isEmpty()) return ByteArray(TOTAL_PIXELS)
 
@@ -199,17 +207,20 @@ object QuickSignalRenderer {
         }
 
         return if (trimmed.length <= 4) {
-            val textWidth = GlyphFontEngine.measureTextWidth(trimmed, GlyphFontEngine.FontStyle.BLOCK_BOLD, autoScale = true)
+            val textWidth = GlyphFontEngine.measureTextWidth(trimmed, style, autoScale = true)
             val centeredX = (MATRIX_SIZE - textWidth) / 2f
-            GlyphFontEngine.renderTextFrame(trimmed, GlyphFontEngine.FontStyle.BLOCK_BOLD, centeredX, autoScale = true)
+            GlyphFontEngine.renderTextFrame(trimmed, style, centeredX, autoScale = true)
         } else {
-            GlyphFontEngine.renderTextFrame(trimmed, GlyphFontEngine.FontStyle.PIXEL_TINY, scrollOffsetX, autoScale = false)
+            GlyphFontEngine.renderTextFrame(trimmed, style, scrollOffsetX, autoScale = false)
         }
     }
 
-    fun measureMarqueeWidth(text: String): Float {
+    fun measureMarqueeWidth(
+        text: String,
+        style: GlyphFontEngine.FontStyle = GlyphFontEngine.FontStyle.PIXEL_TINY
+    ): Float {
         val trimmed = text.trim().take(MAX_CHARS)
-        return GlyphFontEngine.measureTextWidth(trimmed, GlyphFontEngine.FontStyle.PIXEL_TINY, autoScale = false)
+        return GlyphFontEngine.measureTextWidth(trimmed, style, autoScale = false)
     }
 
     private fun applyCircularMask(frame: ByteArray): ByteArray {

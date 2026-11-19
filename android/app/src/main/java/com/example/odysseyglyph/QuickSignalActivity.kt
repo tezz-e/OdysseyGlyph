@@ -37,9 +37,11 @@ class QuickSignalActivity : AppCompatActivity(), QuickSignalService.StateListene
     private lateinit var etSignalText: TextInputEditText
     private lateinit var symbolsContainer: LinearLayout
     private lateinit var presetsContainer: LinearLayout
+    private lateinit var fontSegmentedBar: LiquidGlassSegmentedBar
     private lateinit var durationSegmentedBar: LiquidGlassSegmentedBar
     private lateinit var btnToggleSignal: MaterialButton
 
+    private var currentFontStyle: GlyphFontEngine.FontStyle = GlyphFontEngine.FontStyle.BLOCK_BOLD
     private var selectedDurationSec = 15
     private var previewAnimator: ValueAnimator? = null
     private var frameBusSubscription: ((ByteArray) -> Unit)? = null
@@ -62,6 +64,7 @@ class QuickSignalActivity : AppCompatActivity(), QuickSignalService.StateListene
         bindViews()
         setupCuratedSymbols()
         setupPresets()
+        setupFontSelector()
         setupDurationSelector()
 
         // Listen for live matrix frames when signal is actively streaming
@@ -89,6 +92,7 @@ class QuickSignalActivity : AppCompatActivity(), QuickSignalService.StateListene
         etSignalText = findViewById(R.id.etSignalText)
         symbolsContainer = findViewById(R.id.symbolsContainer)
         presetsContainer = findViewById(R.id.presetsContainer)
+        fontSegmentedBar = findViewById(R.id.fontSegmentedBar)
         durationSegmentedBar = findViewById(R.id.durationSegmentedBar)
         btnToggleSignal = findViewById(R.id.btnToggleSignal)
 
@@ -181,6 +185,29 @@ class QuickSignalActivity : AppCompatActivity(), QuickSignalService.StateListene
         }
     }
 
+    private fun setupFontSelector() {
+        val savedStyleInt = prefs.getInt("quick_signal_font_style", 2)
+        currentFontStyle = when (savedStyleInt) {
+            0 -> GlyphFontEngine.FontStyle.PIXEL_TINY
+            1 -> GlyphFontEngine.FontStyle.SMOOTH
+            2 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
+            else -> GlyphFontEngine.FontStyle.BLOCK_BOLD
+        }
+        fontSegmentedBar.setSegments(listOf("Pixel", "Smooth", "Blocky"), initialIndex = savedStyleInt)
+        fontSegmentedBar.onSegmentSelected = { idx, _ ->
+            currentFontStyle = when (idx) {
+                0 -> GlyphFontEngine.FontStyle.PIXEL_TINY
+                1 -> GlyphFontEngine.FontStyle.SMOOTH
+                2 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
+                else -> GlyphFontEngine.FontStyle.BLOCK_BOLD
+            }
+            prefs.edit().putInt("quick_signal_font_style", idx).apply()
+            if (!QuickSignalService.isRunning) {
+                updateLocalPreview()
+            }
+        }
+    }
+
     private fun setupDurationSelector() {
         durationSegmentedBar.setSegments(listOf("15 SEC", "1 MIN", "UNTIL CLEARED"), initialIndex = 0)
         selectedDurationSec = 15
@@ -205,11 +232,11 @@ class QuickSignalActivity : AppCompatActivity(), QuickSignalService.StateListene
         val isStationary = text.length <= 4 || QuickSignalRenderer.isCuratedSymbol(text)
         if (isStationary) {
             tvSignalModeDesc.text = "Stationary 25×25 Display"
-            val frame = QuickSignalRenderer.renderFrame(text)
+            val frame = QuickSignalRenderer.renderFrame(text, currentFontStyle)
             matrixMirror.updateFrame(frame)
         } else {
             tvSignalModeDesc.text = "Marquee Scrolling at ~24 FPS"
-            val textWidth = QuickSignalRenderer.measureMarqueeWidth(text)
+            val textWidth = QuickSignalRenderer.measureMarqueeWidth(text, currentFontStyle)
             val startX = 25f
             val endX = -textWidth - 4f
 
@@ -221,7 +248,7 @@ class QuickSignalActivity : AppCompatActivity(), QuickSignalService.StateListene
                 addUpdateListener { va ->
                     if (!QuickSignalService.isRunning) {
                         val offset = va.animatedValue as Float
-                        val frame = QuickSignalRenderer.renderFrame(text, offset)
+                        val frame = QuickSignalRenderer.renderFrame(text, currentFontStyle, offset)
                         matrixMirror.updateFrame(frame)
                     }
                 }
@@ -243,10 +270,17 @@ class QuickSignalActivity : AppCompatActivity(), QuickSignalService.StateListene
         saveRecentSignal(text)
         setupPresets()
 
+        val fontStyleInt = when (currentFontStyle) {
+            GlyphFontEngine.FontStyle.PIXEL_TINY -> 0
+            GlyphFontEngine.FontStyle.SMOOTH -> 1
+            GlyphFontEngine.FontStyle.BLOCK_BOLD -> 2
+        }
+
         val intent = Intent(this, QuickSignalService::class.java).apply {
             action = QuickSignalService.ACTION_START_SIGNAL
             putExtra(QuickSignalService.EXTRA_TEXT, text)
             putExtra(QuickSignalService.EXTRA_DURATION_SEC, selectedDurationSec)
+            putExtra(QuickSignalService.EXTRA_FONT_STYLE, fontStyleInt)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

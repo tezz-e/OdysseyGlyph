@@ -34,6 +34,7 @@ class QuickSignalService : Service() {
 
         const val EXTRA_TEXT = "extra_signal_text"
         const val EXTRA_DURATION_SEC = "extra_duration_sec"
+        const val EXTRA_FONT_STYLE = "extra_font_style"
 
         var isRunning: Boolean = false
             private set
@@ -75,6 +76,7 @@ class QuickSignalService : Service() {
     private var scrollOffset = 25f
     private var marqueeWidth = 0f
     private var isStationary = true
+    private var fontStyle: GlyphFontEngine.FontStyle = GlyphFontEngine.FontStyle.BLOCK_BOLD
 
     private val frameRunnable = object : Runnable {
         override fun run() {
@@ -82,13 +84,13 @@ class QuickSignalService : Service() {
 
             val frameBytes: ByteArray
             if (isStationary) {
-                frameBytes = QuickSignalRenderer.renderFrame(activeText)
+                frameBytes = QuickSignalRenderer.renderFrame(activeText, fontStyle)
             } else {
                 scrollOffset -= 0.65f // Smooth readable scroll speed
                 if (scrollOffset < -marqueeWidth - 4f) {
                     scrollOffset = 25f // Loop marquee smoothly
                 }
-                frameBytes = QuickSignalRenderer.renderFrame(activeText, scrollOffset)
+                frameBytes = QuickSignalRenderer.renderFrame(activeText, fontStyle, scrollOffset)
             }
 
             GlyphFrameBus.postFrame(frameBytes)
@@ -154,8 +156,9 @@ class QuickSignalService : Service() {
             ACTION_START_SIGNAL -> {
                 val text = intent.getStringExtra(EXTRA_TEXT)?.trim() ?: "WAIT"
                 val duration = intent.getIntExtra(EXTRA_DURATION_SEC, 15)
+                val fontStyleInt = intent.getIntExtra(EXTRA_FONT_STYLE, 2)
 
-                startSignal(text, duration)
+                startSignal(text, duration, fontStyleInt)
             }
             ACTION_STOP_SIGNAL -> {
                 stopSignal()
@@ -164,7 +167,7 @@ class QuickSignalService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun startSignal(text: String, duration: Int) {
+    private fun startSignal(text: String, duration: Int, fontStyleInt: Int = 2) {
         // Suspend any competing background matrix services smoothly
         if (LiveLyricsService.isRunning) {
             wasLyricsActive = true
@@ -184,8 +187,15 @@ class QuickSignalService : Service() {
         remainingSec = if (duration > 0) duration else -1
         isRunning = true
 
+        fontStyle = when (fontStyleInt) {
+            0 -> GlyphFontEngine.FontStyle.PIXEL_TINY
+            1 -> GlyphFontEngine.FontStyle.SMOOTH
+            2 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
+            else -> GlyphFontEngine.FontStyle.BLOCK_BOLD
+        }
+
         isStationary = activeText.length <= 4 || QuickSignalRenderer.isCuratedSymbol(activeText)
-        marqueeWidth = QuickSignalRenderer.measureMarqueeWidth(activeText)
+        marqueeWidth = QuickSignalRenderer.measureMarqueeWidth(activeText, fontStyle)
         scrollOffset = 25f
 
         val notification = buildNotification()
