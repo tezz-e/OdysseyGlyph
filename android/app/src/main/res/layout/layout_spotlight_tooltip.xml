@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/spotlightTooltipRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingHorizontal="20dp">
+
+    <LinearLayout
+        android:id="@+id/tooltipCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_spotlight_tooltip"
+        android:padding="18dp"
+        android:elevation="12dp">
+
+        <!-- Top Header Row: Step Tag + Skip Button -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvSpotlightStep"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="STEP 1 OF 4"
+                android:fontFamily="@font/font_geist"
+                app:fontFamily="@font/font_geist"
+                android:textStyle="bold"
+                android:textSize="11sp"
+                android:letterSpacing="0.08"
+                android:textColor="#EA3323" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/btnSpotlightSkip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SKIP"
+                android:fontFamily="@font/font_geist"
+                app:fontFamily="@font/font_geist"
+                android:textStyle="bold"
+                android:textSize="11.5sp"
+                android:letterSpacing="0.06"
+                android:textColor="#888888"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackgroundBorderless" />
+        </LinearLayout>
+
+        <!-- Tooltip Content Container (for smooth cross-fade animation) -->
+        <LinearLayout
+            android:id="@+id/tooltipContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Title -->
+            <TextView
+                android:id="@+id/tvSpotlightTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="LIVE LYRICS"
+                android:fontFamily="@font/ndot57"
+                app:fontFamily="@font/ndot57"
+                android:textSize="17sp"
+                android:letterSpacing="0.04"
+                android:textColor="#FFFFFF" />
+
+            <!-- Description -->
+            <TextView
+                android:id="@+id/tvSpotlightDesc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="16dp"
+                android:text="Stream real-time synchronized lyrics directly to your rear 25×25 Glyph matrix."
+                android:fontFamily="@font/font_geist"
+                app:fontFamily="@font/font_geist"
+                android:textSize="12.5sp"
+                android:textColor="#B0B0B0"
+                android:lineSpacingExtra="3.5dp" />
+        </LinearLayout>
+
+        <!-- Bottom Controls Row: Dots Indicator + Next/Done Button -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- Dots Indicator Container -->
+            <LinearLayout
+                android:id="@+id/llSpotlightDots"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <!-- Next / Done Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSpotlightNext"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="NEXT"
+                android:fontFamily="@font/font_geist"
+                app:fontFamily="@font/font_geist"
+                android:textStyle="bold"
+                android:textSize="12sp"
+                android:letterSpacing="0.05"
+                android:textColor="#FFFFFF"
+                app:backgroundTint="#EA3323"
+                app:cornerRadius="20dp"
+                android:paddingHorizontal="22dp"
+                app:icon="@drawable/ic_chevron_right"
+                app:iconGravity="textEnd"
+                app:iconSize="14dp"
+                app:iconTint="#FFFFFF" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</FrameLayout>

@@ -368,10 +368,6 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
                 Snackbar.make(findViewById(android.R.id.content), "Pull down your notification shade and edit tiles to add 'Live Lyrics'.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
             }
         }
-        
-        if (prefs.getBoolean("first_run_live_v2", true)) {
-            showOnboardingDialog()
-        }
     }
 
     override fun onResume() {

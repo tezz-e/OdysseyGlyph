@@ -45,4 +45,22 @@
         app:backgroundTint="#FFFFFF"
         app:cornerRadius="20dp" />
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnDialogSecondary"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_marginTop="8dp"
+        android:visibility="gone"
+        android:text="REPLAY FEATURE TOUR"
+        android:fontFamily="@font/font_geist"
+        app:fontFamily="@font/font_geist"
+        android:textStyle="bold"
+        android:textSize="12sp"
+        android:letterSpacing="0.04"
+        android:textColor="#FFFFFF"
+        app:backgroundTint="#1AFFFFFF"
+        app:strokeColor="#33FFFFFF"
+        app:strokeWidth="1dp"
+        app:cornerRadius="20dp" />
+
 </LinearLayout>

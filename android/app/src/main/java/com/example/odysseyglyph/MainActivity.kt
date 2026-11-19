@@ -166,6 +166,14 @@ class MainActivity : AppCompatActivity() {
         })
 
         handleIntent(intent)
+
+        if (!prefs.getBoolean("spotlight_tour_done_v1", false)) {
+            window.decorView.postDelayed({
+                if (!isFinishing && !isDestroyed && launcherGroup.visibility == View.VISIBLE) {
+                    startFeatureSpotlightTour()
+                }
+            }, 500)
+        }
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -358,11 +366,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupListeners() {
         btnSelectVideo.setOnClickListener {
-            if (prefs.getBoolean("first_run_media", true)) {
-                showMediaOnboardingDialog()
-            } else {
-                selectMediaLauncher.launch(arrayOf("video/*", "image/*"))
-            }
+            selectMediaLauncher.launch(arrayOf("video/*", "image/*"))
         }
         
         toolbar.inflateMenu(R.menu.menu_info)
@@ -439,11 +443,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnLaunchVisualizer.setOnClickListener {
-            if (prefs.getBoolean("first_run_visualizer", true)) {
-                showVisualizerOnboardingDialog()
-                return@setOnClickListener
-            }
-            
             val isGranted = androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
             if (!isGranted) {
                 val dialogView = layoutInflater.inflate(R.layout.dialog_nothing_onboarding, null)
@@ -611,45 +610,6 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun showMediaOnboardingDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_nothing_onboarding, null)
-        val dialog = androidx.appcompat.app.AlertDialog.Builder(this).setView(dialogView).create()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        
-        dialogView.findViewById<TextView>(R.id.tvDialogTitle).text = "CUSTOM MEDIA ANIMATIONS"
-        dialogView.findViewById<TextView>(R.id.tvDialogMessage).text = 
-            "Convert your own videos, GIFs, or images into custom LED animations.\n\n" +
-            "1. CHOOSE\nPick any media from your gallery.\n\n" +
-            "2. CROP & TRIM\nPosition the circular crop area and select the exact segment you want to animate.\n\n" +
-            "3. RENDER\nThe app mathematically converts your pixels into Glyph commands and saves them directly to your phone's native Glyph Toys Manager."
-            
-        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogAction).setOnClickListener {
-            prefs.edit().putBoolean("first_run_media", false).apply()
-            dialog.dismiss()
-            selectMediaLauncher.launch(arrayOf("video/*", "image/*"))
-        }
-        dialog.show()
-    }
-
-    private fun showVisualizerOnboardingDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_nothing_onboarding, null)
-        val dialog = androidx.appcompat.app.AlertDialog.Builder(this).setView(dialogView).create()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        
-        dialogView.findViewById<TextView>(R.id.tvDialogTitle).text = "STANDALONE VISUALIZER"
-        dialogView.findViewById<TextView>(R.id.tvDialogMessage).text = 
-            "A high-performance visualizer that reacts to your music in real-time.\n\n" +
-            "• SMART SYNC\nIt automatically pauses itself when your music stops to save battery."
-            
-        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogAction).setOnClickListener {
-            prefs.edit().putBoolean("first_run_visualizer", false).apply()
-            dialog.dismiss()
-            // Immediately open the visualizer selector bottom sheet
-            btnLaunchVisualizer.performClick()
-        }
-        dialog.show()
-    }
-
     private fun showAppInfoDialog() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_nothing_onboarding, null)
         val dialog = androidx.appcompat.app.AlertDialog.Builder(this).setView(dialogView).create()
@@ -658,15 +618,76 @@ class MainActivity : AppCompatActivity() {
         dialogView.findViewById<TextView>(R.id.tvDialogTitle).text = "ODYSSEY GLYPH"
         dialogView.findViewById<TextView>(R.id.tvDialogMessage).text = 
             "Transform your Nothing phone into an interactive canvas.\n\n" +
-            "1. CHOOSE MEDIA\nCrop and render your own videos or images into custom LED animations.\n\n" +
-            "2. LYRIC STUDIO\nMathematically render text and lyric files into scrolling LED banners.\n\n" +
-            "3. STANDALONE VISUALIZER\nA high-performance visualizer that reacts to your music.\n\n" +
-            "4. LIVE LYRICS\nDetects when music starts playing system-wide and projects synced lyrics."
+            "1. LIVE LYRICS\nStream synchronized song lyrics directly across the rear 25×25 Glyph Matrix in real time.\n\n" +
+            "2. STANDALONE VISUALIZER\nAudio-reactive LED animations that pulse with your music and frequencies.\n\n" +
+            "3. QUICK SIGNAL\nProject instant status words, arrows, and symbols to the rear matrix on demand.\n\n" +
+            "4. MEDIA IMPORT\nCrop and convert custom videos or GIFs into matrix animations."
             
         dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogAction).setOnClickListener {
             dialog.dismiss()
         }
+
+        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogSecondary)?.apply {
+            visibility = View.VISIBLE
+            setOnClickListener {
+                dialog.dismiss()
+                startFeatureSpotlightTour()
+            }
+        }
         dialog.show()
+    }
+
+    fun startFeatureSpotlightTour() {
+        val heroLyricsCard = findViewById<View>(R.id.heroLyricsCard) ?: return
+        val cardVisualizer = findViewById<View>(R.id.cardVisualizer) ?: return
+        val cardQuickSignal = findViewById<View>(R.id.cardQuickSignal) ?: return
+        val cardMediaPipeline = findViewById<View>(R.id.cardMediaPipeline) ?: return
+        val scrollView = findViewById<ScrollView>(R.id.scrollView)
+
+        NothingSpotlightOverlay.attach(this, scrollView)
+            .addStep(
+                NothingSpotlightOverlay.Step(
+                    targetView = heroLyricsCard,
+                    title = "LIVE LYRICS",
+                    description = "Stream synchronized song lyrics directly across the rear 25×25 Glyph Matrix in real time.",
+                    cornerRadiusDp = 22f,
+                    paddingDp = 4f
+                )
+            )
+            .addStep(
+                NothingSpotlightOverlay.Step(
+                    targetView = cardVisualizer,
+                    title = "MUSIC VISUALIZER",
+                    description = "Audio-reactive LED animations that pulse with music and mic input. Tap Patterns to pick your visualizer style.",
+                    cornerRadiusDp = 22f,
+                    paddingDp = 4f
+                )
+            )
+            .addStep(
+                NothingSpotlightOverlay.Step(
+                    targetView = cardMediaPipeline,
+                    title = "MEDIA IMPORT",
+                    description = "Convert videos and animated GIFs into crisp rear matrix pixel art animations.",
+                    cornerRadiusDp = 22f,
+                    paddingDp = 4f
+                )
+            )
+            .addStep(
+                NothingSpotlightOverlay.Step(
+                    targetView = cardQuickSignal,
+                    title = "QUICK SIGNAL",
+                    description = "Project instant status messages (WAIT, BRB) and symbols (♥, ★, arrows) directly to the rear matrix.",
+                    cornerRadiusDp = 22f,
+                    paddingDp = 4f
+                )
+            )
+            .setOnCompleted {
+                prefs.edit().putBoolean("spotlight_tour_done_v1", true).apply()
+            }
+            .setOnDismissed {
+                prefs.edit().putBoolean("spotlight_tour_done_v1", true).apply()
+            }
+            .start()
     }
 
     private fun syncSlotState() {
