@@ -396,7 +396,7 @@ class MainActivity : AppCompatActivity() {
                 showAppInfoDialog()
             },
             onPrivacyClick = {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/tezz-e/OdysseyGlyph/blob/main/PRIVACY.md"))
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://odyssey-glyph.vercel.app/privacy"))
                 startActivity(intent)
             }
         ).also { nothingOverflowMenu = it }
