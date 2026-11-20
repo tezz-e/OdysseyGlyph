@@ -672,6 +672,9 @@ export default function Home() {
             <a href={`${GITHUB_URL}/blob/main/LICENSE`} target="_blank" rel="noopener noreferrer" className={styles.footerLink}>
               GNU GPLv3 License
             </a>
+            <a href="/privacy" className={styles.footerLink}>
+              Privacy Policy
+            </a>
           </div>
           <p className={styles.footerDisclaimer}>Not affiliated with Nothing Technology Limited.</p>
           <p className={styles.footerPrivacy}>
