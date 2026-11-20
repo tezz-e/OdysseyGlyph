@@ -10,7 +10,7 @@ This document is the permanent single source of truth for the Glyph Odyssey proj
 - **Application ID**: `com.rickastley.glyphodyssey`
 - **Package / Namespace**: `com.example.odysseyglyph`
 - **GitHub**: `https://github.com/tezz-e/OdysseyGlyph`
-- **Target Hardware**: Nothing Phone (3) / Nothing Phone (2a) developer matrix (25×25 addressable rear monochrome LED array).
+- **Target Hardware**: Nothing Phone (3) (25×25 addressable rear monochrome LED array).
 
 ### The Origin Story
 > "It started as a joke: I wanted to watch the Odyssey trailer 'as Nolan intended,' on the back of my phone, for a meme. Getting one video onto the Glyph Matrix properly took way more fixing and iterating than expected. Somewhere in there I realized the pipeline I'd built didn't care what video it was. So I generalized it."
