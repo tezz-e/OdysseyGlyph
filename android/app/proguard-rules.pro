@@ -45,3 +45,7 @@
 -dontwarn okio.**
 -keepnames class okhttp3.** { *; }
 -keepnames interface okhttp3.** { *; }
+
+# ZoomLayout
+-keep class com.otaliastudios.zoomlayout.** { *; }
+-dontwarn com.otaliastudios.zoomlayout.**

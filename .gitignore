@@ -14,6 +14,10 @@ build/
 Thumbs.db
 **/local.properties
 
+# Release signing keys
+*.jks
+*.keystore
+
 # Scratch artifacts
 HEAD_*.kt
 classes*.jar

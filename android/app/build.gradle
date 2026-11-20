@@ -21,20 +21,21 @@ android {
 
     signingConfigs {
         release {
-            def keystorePath = System.getenv("KEYSTORE_FILE") ?: "release.jks"
+            def keystorePath = System.getenv("KEYSTORE_FILE") ?: (project.findProperty("KEYSTORE_FILE") ?: "release.jks")
             def keystoreFile = file(keystorePath)
             if (keystoreFile.exists()) {
                 storeFile keystoreFile
-                storePassword System.getenv("KEYSTORE_PASSWORD") ?: ""
-                keyAlias System.getenv("KEY_ALIAS") ?: ""
-                keyPassword System.getenv("KEY_PASSWORD") ?: ""
+                storePassword System.getenv("KEYSTORE_PASSWORD") ?: (project.findProperty("KEYSTORE_PASSWORD") ?: "glyphodyssey")
+                keyAlias System.getenv("KEY_ALIAS") ?: (project.findProperty("KEY_ALIAS") ?: "glyphodyssey")
+                keyPassword System.getenv("KEY_PASSWORD") ?: (project.findProperty("KEY_PASSWORD") ?: "glyphodyssey")
             }
         }
     }
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
             if (signingConfigs.release.storeFile != null && signingConfigs.release.storeFile.exists()) {
                 signingConfig signingConfigs.release
             } else {
