@@ -9,9 +9,9 @@ GLYPH ODYSSEY
 video → 25×25 LED matrix  ·  on-device  ·  GNU GPLv3
 ```
 
-An Android app that plays video, photos and live song lyrics on the 25×25 LED matrix of the Nothing Phone (3).
+An Android app that plays video, photos, live song lyrics, quick status signals, and audio visualizers on the 25×25 LED matrix of the Nothing Phone (3).
 
-**[🌐 Visit the Live Website](https://odyssey-glyph.vercel.app/)**  
+**[🌐 Visit the Live Website](https://odyssey-glyph.vercel.app/)** · **[🔒 Privacy Policy](https://odyssey-glyph.vercel.app/privacy)**  
 [![Downloads](https://img.shields.io/github/downloads/tezz-e/OdysseyGlyph/total?style=flat-square&color=blue)](https://github.com/tezz-e/OdysseyGlyph/releases)
 
 This started because I wanted to watch the Odyssey trailer on the back of my Nothing Phone as a bit. I thought it would take a few hours. It took a weekend, three rewrites, and way more thinking about pixel averaging than any reasonable person should do for a joke.
@@ -38,23 +38,29 @@ Somewhere in that process, the pipeline stopped caring what video I gave it. So 
 
 Real footage, cropped with a pinch and a pan, and still readable at 25 pixels wide. The reason is the downsampling method, covered below.
 
-Lyrics scrolling across the matrix. Live Lyrics and Lyric Studio share the same renderer, so they look identical on the phone. More clips of it running on actual hardware are on my Instagram: [@tezze301](https://www.instagram.com/tezze301/), with full recordings in [`docs/`](docs/) and discussion on the [Nothing Community thread](https://nothing.community/d/61270-i-built-an-app-that-converts-any-video-into-a-glyph-matrix-animation).
+Lyrics scrolling across the matrix. Live Lyrics and Quick Signal share the same custom font engine, so typography stays crisp and consistent on physical LEDs. More clips of it running on actual hardware are on my Instagram: [@tezze301](https://www.instagram.com/tezze301/), with full recordings in [`docs/`](docs/) and discussion on the [Nothing Community thread](https://nothing.community/d/61270-i-built-an-app-that-converts-any-video-into-a-glyph-matrix-animation).
 
 ---
 
 ## What it does
 
 **Video → Glyph Matrix**  
-Pick any video, GIF or photo from your gallery. Pinch and pan to crop a region into the 25×25 overlay with live video playback behind the frame. Trim start and end. Hit process. The app extracts frames, runs the pipeline, and plays the result on your matrix. Entirely on-device, works offline, no account needed. Results can be exported and imported as `.odyssey` preset files, with adjustable LED brightness and image duration.
+Pick any video, GIF or photo from your gallery. Pinch and pan to crop a region into the 25×25 overlay with live video playback behind the frame. Trim start and end. Hit process. The app uses a hardware-accelerated MediaCodec pipeline with zero-copy Y-luminance extraction to crunch frames directly into the 25×25 matrix in seconds. Entirely on-device, works offline, no account needed. Results can be exported and imported as `.odyssey` preset files, with adjustable LED brightness and image duration.
 
-**Lyric Studio**  
-Load an LRC lyric file, pick a font mode, and preview frame-by-frame. Sync to audio and export as a Glyph toy. The font engine renders directly to the 25px matrix — getting text to actually read at that resolution across three different typography sizes took more iteration than I'd like to admit.
+**Quick Signal**  
+Broadcast instant status messages and symbols on the rear 25×25 matrix without unlocking your phone or playing audio. Choose from pre-made presets (WAIT, BRB, STOP, TAXI, symbols) or type your own custom text. Switch between three typography styles: Pixel (clean 1-pixel glyphs), Smooth (soft anti-aliased edges), and Blocky (thick high-contrast strokes for direct sunlight).
 
-**Live Lyrics**  
-Detects whatever's playing on your phone — any music app, not just Spotify — via Android's MediaSession. Fetches time-synced lyrics from LRCLib and scrolls them across the matrix in real time. No API key required, works in basically any language. If a song doesn't have lyrics available, it falls back to a built-in audio visualizer so the matrix isn't just sitting there doing nothing. That visualizer ended up being useful enough on its own that you can also run it standalone from the same widget/tile toggle.
+**Live Lyrics & Offline Caching**  
+Detects whatever is playing on your phone (any music app via Android MediaSession), matches the track with smart consensus scoring to prevent mismatches on live or remastered cuts, and streams synchronized lyrics across the matrix in real time. Synced lyrics are cached in a local SQLite database so repeat plays work completely offline with zero network requests. If a song has no lyrics available, it automatically switches to a built-in audio visualizer.
+
+**Standalone Audio Visualizers**  
+Run real-time reactive light shows independently of lyrics: frequency bars bouncing to bass and treble, expanding concentric pulses, or an animated oscilloscope reticle.
 
 **Quick Settings Tile & Home Screen Widget**  
-Live Lyrics and the visualizer originally ran as Glyph Toys inside Nothing's carousel system. Someone pointed out that Glyph Toys have a hard 10-minute timeout — so if you're mid-album, the lights just stop. I hadn't noticed because I'd been using shorter playlists. The fix was to make them proper background services that run independently of the Toy system. You can now toggle them from a Quick Settings tile or a home screen widget, and they'll stay running as long as you want.
+Live Lyrics, Quick Signal, and the visualizers run as independent background services that bypass Nothing's 10-minute toy timeout. Toggle them on the fly from a Quick Settings tile or a home screen widget, and they will stay running as long as you want.
+
+**Hardware Bento Console & Dark Glass UI**  
+A visual design matching Nothing OS principles. Liquid glass segmented controls with tactile spring physics, custom Ndot overflow menu, interactive spotlight tour, and zero external trackers.
 
 **Toy Manager**  
 Browse, preview, and delete your saved animations. Nothing exciting, just necessary.
@@ -67,14 +73,14 @@ If you're looking for a general-purpose Glyph animation tool, you should probabl
 
 Glyph Odyssey is built to solve a narrower set of problems:
 
-**1. The video processing pipeline**  
-Glyph Museum imports GIFs and images. Odyssey is built specifically to crush real-world video footage — faces, cinematic shots, motion — into 25×25 pixels and have it remain legible. Box-filter downsampling, S-curve contrast stretching, unsharp masking, with live video playback running behind your gesture-crop frame.
+**1. The hardware video processing pipeline**  
+Glyph Museum imports GIFs and images. Odyssey is built specifically to crush real-world video footage (faces, cinematic shots, rapid motion) into 25×25 pixels and keep it legible. Instead of decoding to RGB bitmaps and throwing away pixels, Odyssey uses a hardware MediaCodec pipeline that extracts the raw Y-plane luminance channel directly, followed by box-filter downsampling, S-curve contrast stretching, and unsharp masking.
 
-**2. Live lyrics**  
-Other apps do audio-reactive light shows (EQ bars bouncing to the beat). Odyssey does *Live Lyrics* — it reads MediaSession metadata from whatever music app you're using, fetches time-synced lyrics from LRCLib, and scrolls the actual text across the matrix in real time.
+**2. Live lyrics with consensus matching**  
+Other apps do audio-reactive light shows (EQ bars bouncing to the beat). Odyssey does *Live Lyrics*: it reads MediaSession metadata from whatever music app you're using, fetches time-synced lyrics from LRCLib, scores candidate tracks for consensus, caches them offline in SQLite, and scrolls the actual text across the matrix in real time.
 
-**3. Lyric studio**  
-An LRC file-based authoring tool with a custom Ndot57 font engine. Dynamic per-word hyphenation and chunking to render legible text on a 25-pixel-wide constraint.
+**3. Quick Signal & Standalone Visualizers**  
+Direct rear-matrix messaging with custom 25×25 typography engines, plus frequency and pulse visualizers that run without timeouts as background services.
 
 ---
 
@@ -97,6 +103,18 @@ LRC files mark the start of each lyric line. They say nothing about individual w
 
 **Why live lyrics drift if you don't do something about it**  
 Spotify and YouTube Music fire a PlaybackState callback when something changes — play, pause, skip. They don't broadcast continuous position. So if you extrapolate position from the last known state, you slowly fall behind mid-song. Fix: poll `MediaController` every 500ms for a fresh position read. Boring solution, lyrics stay locked.
+
+**Extracting luminance straight from hardware video buffers (MediaCodec YUV)**  
+The original video pipeline used Android's `MediaMetadataRetriever` to extract frames as full-resolution ARGB bitmaps, then iterated through RGB channels to calculate perceived brightness. Decoding a 1080p frame just to throw away 99.9% of the pixels burned CPU, created garbage collection pauses, and took 20+ seconds for a 5-second clip. In v2.1, the pipeline runs on `MediaCodec` and requests `COLOR_FormatYUV420Flexible`. In YUV color formats, the Y channel is already the raw monochrome luminance (grayscale). The decoder maps the Y-plane byte buffer directly into scratch memory and averages rows with parallel bitwise downsampling. Color conversion and bitmap allocations drop to zero, and a 10-second clip finishes processing in under two seconds.
+
+**Why typography is hard on 25 pixels and how Quick Signal handles it**  
+Rendering text on a 25×25 grid means each letter has about 5 to 7 pixels of height. Standard Android fonts look like blurry mush when downscaled to that size because anti-aliasing bleeds across adjacent physical LEDs. Quick Signal reuses the `GlyphFontEngine` built for Live Lyrics, but adds three distinct rendering modes. Pixel mode snaps strictly to integer LED coordinates for maximum sharpness. Smooth mode uses fractional horizontal offsets with linear interpolation for fluid marquee scrolling. Blocky mode doubles stroke weights so short words like WAIT or BRB punch through bright daylight. For symbols (reticles, arrows, icons), we skipped vector rasterization entirely and drew dedicated 25×25 bitmasks by hand.
+
+**Consensus matching and offline lyric caching**  
+Early versions of Live Lyrics queried LRCLib with whatever title and artist string MediaSession gave us. If you played a live album, deluxe edition, or remaster, the extra title tags (like '[Live at Wembley - 2011 Remaster]') caused exact lookups to fail or return the wrong studio cut with drifting timestamps. The new matcher normalizes strings, strips parenthetical noise, queries candidate variants, and runs a scoring matrix across title similarity, artist match, and song duration tolerance (within 2 seconds). If there is a high-confidence consensus, it locks instantly. If two distinct versions clash, it prompts with a track picker instead of guessing. Once lyrics are fetched, the parsed lines are stored in a local SQLite database, so the next time that song plays, it loads instantly offline without hitting the network.
+
+**Cutting the binary size in half (5.66 MB to 2.94 MB)**  
+The v2.0 release APK was over 5.6 MB. An inspection of the APK bundle showed that over 2 MB came from an unused Japanese font (`dotgothic16.ttf`) that was left over from an early typography experiment, plus unminified SDK classes. For v2.1, we purged the unused font assets, enabled R8 code shrinking and resource shrinking, and wrote ProGuard keep rules for ZoomLayout and the Nothing SDK reflection hooks. The release APK dropped from 5.66 MB to 2.94 MB (and the AAB to 2.95 MB), cutting download size by 48% with zero impact on functionality.
 
 **The crash that wasn't a graphics bug**  
 Rendering a still photo crashed the app instantly, while video worked fine. Obvious suspect: something about images. A 48MP photo blowing up memory, a hardware-backed bitmap that couldn't be sampled, the decoder itself. I spent a while changing downsamplers and decoder settings, none of which did anything. The actual cause was a few lines away from the button: photos have no duration, so the trim `RangeSlider` is disabled for them, which empties its `values` list, and the Render handler then read `values[1]` and threw an `IndexOutOfBoundsException` on the main thread before touching a single pixel. One bounds check fixed it. I only found it once I got the real stack trace instead of guessing.
@@ -167,7 +185,7 @@ ADB bypasses Play Protect entirely because it's a direct developer channel — y
 Every release is built transparently by [GitHub Actions](https://github.com/tezz-e/OdysseyGlyph/actions) from the open-source code in this repo — not on a personal machine. Build logs are public. The same workflow submits the APK to the VirusTotal API and publishes the report with the release automatically, along with the SHA-256 hash, so the scan result isn't something I get to hand-pick.
 
 **Notification access is a scary permission**  
-Fair. Live Lyrics needs it to read track metadata — title, artist, playback position. That's it. Nothing is logged, stored, or transmitted except the LRCLib lyrics fetch which only sends song title and artist. If you'd rather not grant it, skip Live Lyrics — everything else works without it.
+Fair. Live Lyrics needs it to read track metadata (title, artist, playback position). That's it. Nothing is logged, stored, or transmitted except the LRCLib lyrics fetch which only sends song title and artist. If you'd rather not grant it, skip Live Lyrics (everything else works without it). Full details are in our [Privacy Policy](https://odyssey-glyph.vercel.app/privacy).
 
 ---
 
