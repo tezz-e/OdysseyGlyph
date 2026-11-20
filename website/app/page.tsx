@@ -68,7 +68,7 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ ...springDefault, delay: shouldReduceMotion ? 0 : 0.5 }}
             >
-              An open-source lyrics engine and custom animation studio for the Nothing Glyph Matrix.
+              An open-source lyrics engine, hardware video processor, and quick signal studio for the Nothing Phone (3) Glyph Matrix.
             </motion.p>
 
             <motion.div
@@ -142,54 +142,93 @@ export default function Home() {
       {/* ── FEATURES ───────────────────────────────────────────────── */}
       <section id="features" className={styles.features}>
 
-        {/* Lyric Studio */}
+        {/* 1: Hardware Video Pipeline */}
         <div className={styles.featureCard}>
           <div className={styles.featureContent}>
             <motion.h2 className={styles.featureTitle}
               initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: "-100px" }} transition={springDefault}>
-              LYRIC STUDIO
+              HARDWARE VIDEO PIPELINE
             </motion.h2>
             <motion.p className={styles.featureDesc}
               initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: "-100px" }} transition={{ ...springDefault, delay: 0.1 }}>
-              Compose frame-by-frame Glyph animations synced to LRC lyric files. A custom Ndot57
-              font engine renders text at 25×25 resolution — preview playback live and export
-              as a <code className={styles.inlineCode}>.bin</code> frame sequence ready to play on hardware.
+              Pick any video, GIF, or photo from your gallery. Pinch and pan to crop a region into the 25×25
+              overlay with live video playback behind the frame. A streaming MediaCodec pipeline runs on Qualcomm&apos;s
+              hardware video processing unit, extracting raw monochrome luminance straight from YUV byte buffers.
+              Processing times dropped from 35 seconds to under 2 seconds with zero Bitmap allocations.
             </motion.p>
           </div>
           <motion.div className={styles.visualPlaceholder}
             initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true, margin: "-100px" }} transition={springBouncy}>
-            <div className={styles.glyphGrid}>
-              {Array.from({ length: 25 }).map((_, i) => (
-                <motion.div key={i}
-                  className={`${styles.glyphDot} ${i % 3 === 0 ? styles.active : ""}`}
-                  animate={shouldReduceMotion ? {} : { opacity: [0.3, 1, 0.3] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: i * 0.1 }}
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem", alignItems: "center", width: "80%" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem", color: "var(--accent)", letterSpacing: "2px" }}>[ QUALCOMM VPU PIPELINE ]</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "0.75rem" }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: "2.8rem", color: "var(--foreground)", fontWeight: "bold" }}>1.8s</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.9rem", color: "var(--muted-foreground)", textDecoration: "line-through" }}>35.2s</span>
+              </div>
+              <div style={{ width: "100%", height: "4px", background: "#222", borderRadius: "2px", overflow: "hidden" }}>
+                <motion.div
+                  style={{ height: "100%", background: "var(--accent)" }}
+                  animate={shouldReduceMotion ? { width: "100%" } : { width: ["0%", "100%"] }}
+                  transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
                 />
-              ))}
+              </div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.65rem", color: "var(--muted-foreground)", letterSpacing: "1px" }}>ZERO-COPY YUV LUMINANCE · 15 FPS</div>
             </div>
           </motion.div>
         </div>
 
-        {/* Live Lyrics */}
+        {/* 2: Quick Signal */}
         <div className={`${styles.featureCard} ${styles.reverse}`}>
           <div className={styles.featureContent}>
             <motion.h2 className={styles.featureTitle}
               initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: "-100px" }} transition={springDefault}>
-              LIVE LYRICS
+              QUICK SIGNAL
             </motion.h2>
             <motion.p className={styles.featureDesc}
               initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: "-100px" }} transition={{ ...springDefault, delay: 0.1 }}>
-              A background service that detects whatever is currently playing system-wide — any music
-              app — via Android&apos;s MediaSession, fetches time-synced lyrics from LRCLib, and scrolls
-              them live across the Glyph Matrix. No API key, no accounts, no setup. If a song has no
-              lyrics, it falls back to a built-in visualizer so the matrix isn&apos;t just sitting there
-              dark. That visualizer turned out useful enough that you can also run it standalone from
-              the same widget toggle.
+              Broadcast instant status messages and symbols on the rear 25×25 matrix without unlocking your
+              phone or playing audio. Pick from pre-made presets (WAIT, BRB, STOP, TAXI) or type custom text.
+              Choose between Pixel, Smooth, and Blocky font rendering modes to punch through bright daylight
+              or scroll cleanly across the LEDs.
+            </motion.p>
+          </div>
+          <motion.div className={styles.visualPlaceholder}
+            initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, margin: "-100px" }} transition={springBouncy}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", alignItems: "center" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem", color: "var(--accent)", letterSpacing: "2px" }}>[ REAR MATRIX SIGNAL ]</div>
+              <motion.div
+                style={{ fontFamily: "var(--font-mono)", fontSize: "2.4rem", color: "var(--foreground)", padding: "0.6rem 1.8rem", border: "1px solid var(--border)", borderRadius: "12px", background: "#0a0a0a", letterSpacing: "4px" }}
+                animate={shouldReduceMotion ? {} : { opacity: [0.7, 1, 0.7], borderColor: ["var(--border)", "var(--accent)", "var(--border)"] }}
+                transition={{ duration: 2, repeat: Infinity }}>
+                WAIT
+              </motion.div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem", color: "var(--muted-foreground)", letterSpacing: "1px" }}>PIXEL · SMOOTH · BLOCKY</div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* 3: Live Lyrics */}
+        <div className={styles.featureCard}>
+          <div className={styles.featureContent}>
+            <motion.h2 className={styles.featureTitle}
+              initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-100px" }} transition={springDefault}>
+              LIVE LYRICS
+            </motion.h2>
+            <motion.p className={styles.featureDesc}
+              initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-100px" }} transition={{ ...springDefault, delay: 0.1 }}>
+              A background service that detects whatever is currently playing system-wide (Spotify, YouTube Music,
+              Apple Music, local players) via Android&apos;s MediaSession, fetches time-synced lyrics from LRCLib, and
+              scrolls them live across the Glyph Matrix. Features smart consensus scoring to prevent mismatches on live
+              or remastered cuts, and caches fetched lyrics in a local SQLite database so repeat plays work completely
+              offline with zero network requests. If a song has no lyrics, it automatically falls back to an audio visualizer.
             </motion.p>
           </div>
           <motion.div className={styles.visualPlaceholder}
@@ -204,7 +243,7 @@ export default function Home() {
           </motion.div>
         </div>
 
-        {/* Widget & QS Tile */}
+        {/* 4: Widget, QS Tile & Visualizers */}
         <div className={`${styles.featureCard} ${styles.reverse}`}>
           <div className={styles.featureContent}>
             <motion.h2 className={styles.featureTitle}
@@ -215,11 +254,10 @@ export default function Home() {
             <motion.p className={styles.featureDesc}
               initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: "-100px" }} transition={{ ...springDefault, delay: 0.1 }}>
-              Live Lyrics and the Visualizer started out as standard Glyph Toys inside Nothing&apos;s
-              carousel — which works, but Glyph Toys have a hard 10-minute timeout. Someone pointed
-              that out in a review after using it for a full album. The fix was running them as true
-              background services instead, toggleable from a home screen widget or Quick Settings tile
-              without ever opening the app. They stay on as long as you want.
+              Live Lyrics, Quick Signal, and the standalone visualizers run as independent background services
+              that bypass Nothing&apos;s 10-minute toy timeout. Toggle them on the fly from a home screen widget
+              or Quick Settings tile without ever opening the app, running real-time frequency bars, expanding
+              concentric pulses, or animated reticles as long as you want.
             </motion.p>
           </div>
           <motion.div className={styles.visualPlaceholder}
@@ -239,6 +277,7 @@ export default function Home() {
           </motion.div>
         </div>
 
+        {/* 5: Toy Manager */}
         <div className={styles.featureCard}>
           <div className={styles.featureContent}>
             <motion.h2 className={styles.featureTitle}
@@ -250,7 +289,7 @@ export default function Home() {
               initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: "-100px" }} transition={{ ...springDefault, delay: 0.1 }}>
               Save, preview, and manage your processed animations as Glyph Toys. Browse your preset
-              library, swap between them on the fly, and delete what you don&apos;t need — all without
+              library, swap between them on the fly, and delete what you don&apos;t need, all without
               touching Nothing&apos;s GlyphMatrixEditor.
             </motion.p>
           </div>
@@ -280,7 +319,7 @@ export default function Home() {
         <div className={styles.sectionSublabel}>[ VIDEO PIPELINE ]</div>
         <div className={styles.howGrid}>
 
-          {/* 1 — Box-filter downsampling */}
+          {/* 1: Box-filter downsampling */}
           <motion.div className={styles.howCard}
             initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }} transition={springDefault}>
@@ -314,7 +353,7 @@ export default function Home() {
             </p>
           </motion.div>
 
-          {/* 2 — Adaptive S-curve */}
+          {/* 2: Adaptive S-curve */}
           <motion.div className={styles.howCard}
             initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }} transition={{ ...springDefault, delay: 0.1 }}>
@@ -340,7 +379,7 @@ export default function Home() {
             </p>
           </motion.div>
 
-          {/* 3 — Gesture → pixel mapping */}
+          {/* 3: Gesture -> pixel mapping */}
           <motion.div className={styles.howCard}
             initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }} transition={{ ...springDefault, delay: 0.2 }}>
@@ -371,29 +410,26 @@ export default function Home() {
             </p>
           </motion.div>
 
-          {/* 4 — Live Lyrics without an API */}
+          {/* 4: Hardware-Accelerated Decoding */}
           <motion.div className={styles.howCard}
             initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }} transition={{ ...springDefault, delay: 0.3 }}>
             <div className={styles.howVisual}>
-              <div className={styles.flowDiagram}>
-                {(["Music App", "MediaSession", "LRCLib", "Glyph Matrix"] as const).map((node, i, arr) => (
-                  <div key={node}>
-                    <div className={`${styles.flowNode} ${i === arr.length - 1 ? styles.flowNodeAccent : ""}`}>
-                      {node}
-                    </div>
-                    {i < arr.length - 1 && <div className={styles.flowArrow}>↓</div>}
-                  </div>
-                ))}
+              <div className={styles.beforeAfter} style={{ alignItems: "center" }}>
+                <div className={styles.baPanel} style={{ alignItems: "center" }}>
+                  <div className={styles.baPanelLabel}>RETRIEVER</div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: "1.1rem", color: "var(--muted-foreground)" }}>~35s</div>
+                </div>
+                <div className={styles.baArrow}>→</div>
+                <div className={styles.baPanel} style={{ alignItems: "center" }}>
+                  <div className={styles.baPanelLabel}>MEDIACODEC</div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: "1.1rem", color: "var(--accent)", fontWeight: "bold" }}>&lt; 2s</div>
+                </div>
               </div>
             </div>
-            <h3 className={styles.howTitle}>Live Lyrics Without an API</h3>
+            <h3 className={styles.howTitle}>Hardware-Accelerated Decoding</h3>
             <p className={styles.howBody}>
-              There is no public Android API to ask &quot;what song is playing right now.&quot; Android&apos;s{" "}
-              <code className={styles.inlineCode}>NotificationListenerService</code> combined with{" "}
-              <code className={styles.inlineCode}>MediaSession</code> lets the app read current track metadata
-              system-wide — from any music player. That metadata is passed to LRCLib to fetch time-synced
-              lyrics, which are then rendered as scrolling text on the matrix.
+              Early versions used Android&apos;s MediaMetadataRetriever, which throttled CPU and took 35 seconds for a 9-second clip. Ripping it out for a streaming MediaCodec pipeline on Qualcomm&apos;s hardware VPU with zero-copy Y-plane luminance extraction cut processing time to under 2 seconds with zero Bitmap allocations.
             </p>
           </motion.div>
 
