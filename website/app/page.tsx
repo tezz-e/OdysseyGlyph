@@ -263,16 +263,121 @@ export default function Home() {
           <motion.div className={styles.visualPlaceholder}
             initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true, margin: "-100px" }} transition={springBouncy}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", alignItems: "center" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem", color: "var(--muted-foreground)", letterSpacing: "2px" }}>QUICK SETTINGS</div>
-              <motion.div
-                style={{ width: "72px", height: "72px", borderRadius: "18px", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "1.5rem" }}
-                whileTap={shouldReduceMotion ? {} : { scale: 0.92 }}
-                animate={shouldReduceMotion ? {} : { borderColor: ["var(--border)", "var(--foreground)", "var(--border)"] }}
-                transition={{ duration: 2, repeat: Infinity }}>
-                ◈
-              </motion.div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.55rem", color: "var(--accent)", letterSpacing: "1px" }}>GLYPH ODYSSEY</div>
+            <div style={{
+              width: "86%",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.85rem",
+              padding: "1.25rem",
+              background: "#0c0c0c",
+              border: "1px solid #222",
+              borderRadius: "22px",
+              boxShadow: "0 16px 36px rgba(0,0,0,0.6)"
+            }}>
+              {/* Header row: Status & Nothing OS label */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 6px var(--accent)" }} />
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem", color: "var(--foreground)", letterSpacing: "1.5px" }}>SERVICE RUNNING</span>
+                </div>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.55rem", color: "var(--muted-foreground)", letterSpacing: "1px" }}>NO TIMEOUT</span>
+              </div>
+
+              {/* Quick Settings Dual Tile row */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                
+                {/* Tile 1: Live Lyrics (Active / Stark white) */}
+                <motion.div
+                  style={{
+                    background: "#ffffff",
+                    color: "#000000",
+                    borderRadius: "16px",
+                    padding: "0.9rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    minHeight: "96px",
+                    cursor: "pointer"
+                  }}
+                  whileHover={shouldReduceMotion ? {} : { scale: 1.02 }}
+                  whileTap={shouldReduceMotion ? {} : { scale: 0.96 }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ width: "30px", height: "30px", borderRadius: "50%", background: "#000000", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.9rem" }}>
+                      ◈
+                    </div>
+                    <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--accent)" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontFamily: "var(--font-sans)", fontWeight: "bold", fontSize: "0.8rem", letterSpacing: "-0.2px" }}>Live Lyrics</div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.55rem", opacity: 0.65 }}>SYNCED · 25×25</div>
+                  </div>
+                </motion.div>
+
+                {/* Tile 2: Visualizer (Dark pill) */}
+                <motion.div
+                  style={{
+                    background: "#161616",
+                    color: "#ffffff",
+                    border: "1px solid #2a2a2a",
+                    borderRadius: "16px",
+                    padding: "0.9rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    minHeight: "96px",
+                    cursor: "pointer"
+                  }}
+                  whileHover={shouldReduceMotion ? {} : { scale: 1.02 }}
+                  whileTap={shouldReduceMotion ? {} : { scale: 0.96 }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ width: "30px", height: "30px", borderRadius: "50%", background: "#252525", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.85rem" }}>
+                      ≋
+                    </div>
+                    <div style={{ display: "flex", gap: "2px", alignItems: "flex-end", height: "12px" }}>
+                      {[0.5, 1, 0.4, 0.85].map((h, i) => (
+                        <motion.div
+                          key={i}
+                          style={{ width: "2.5px", background: "var(--foreground)", borderRadius: "1px" }}
+                          animate={shouldReduceMotion ? { height: "7px" } : { height: ["3px", `${h * 12}px`, "3px"] }}
+                          transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15 }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontFamily: "var(--font-sans)", fontWeight: "bold", fontSize: "0.8rem", letterSpacing: "-0.2px" }}>Visualizer</div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.55rem", color: "var(--muted-foreground)" }}>STANDBY</div>
+                  </div>
+                </motion.div>
+
+              </div>
+
+              {/* Bottom Home Screen Widget Bar */}
+              <div style={{
+                background: "#141414",
+                border: "1px solid #242424",
+                borderRadius: "14px",
+                padding: "0.65rem 0.85rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
+                  <div style={{ width: "26px", height: "26px", borderRadius: "7px", background: "#202020", border: "1px solid #333", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: "0.6rem", color: "var(--accent)" }}>
+                    25²
+                  </div>
+                  <div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem", color: "var(--foreground)", letterSpacing: "1px" }}>GLYPH ODYSSEY WIDGET</div>
+                    <div style={{ fontFamily: "var(--font-sans)", fontSize: "0.6rem", color: "var(--muted-foreground)" }}>Never Gonna Give You Up · Rick Astley</div>
+                  </div>
+                </div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.55rem", padding: "0.2rem 0.45rem", borderRadius: "4px", background: "rgba(235,0,41,0.15)", color: "var(--accent)", border: "1px solid rgba(235,0,41,0.3)" }}>
+                  ON
+                </div>
+              </div>
+
             </div>
           </motion.div>
         </div>
