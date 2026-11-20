@@ -1,8 +1,8 @@
 .main {
   min-height: 100vh;
-  background-color: #000000;
-  color: #e5e5e5;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--background, #000000);
+  color: var(--foreground, #ffffff);
+  font-family: var(--font-sans);
   padding-bottom: 5rem;
 }
 
@@ -62,12 +62,13 @@
   font-family: var(--font-mono, monospace);
   font-size: 0.7rem;
   letter-spacing: 0.12em;
-  color: #ea3323;
+  color: var(--accent, #ea3323);
   margin-bottom: 0.75rem;
   text-transform: uppercase;
 }
 
 .title {
+  font-family: var(--font-mono, monospace);
   font-size: 2.5rem;
   font-weight: 700;
   letter-spacing: -0.04em;
@@ -87,22 +88,35 @@
 }
 
 .lead {
+  font-family: var(--font-sans);
   font-size: 1.15rem;
   line-height: 1.7;
   color: #cccccc;
+  margin-bottom: 1rem;
+}
+
+.section p {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--muted-foreground, #a3a3a3);
+  margin-bottom: 0.75rem;
 }
 
 .h2 {
+  font-family: var(--font-mono, monospace);
   font-size: 1.35rem;
-  font-weight: 600;
+  font-weight: 700;
+  text-transform: uppercase;
   letter-spacing: -0.02em;
   color: #ffffff;
-  margin: 2rem 0 1rem;
-  border-left: 2px solid #ea3323;
+  margin: 2.5rem 0 1.25rem;
+  border-left: 2px solid var(--accent, #ea3323);
   padding-left: 0.75rem;
 }
 
 .h3 {
+  font-family: var(--font-sans);
   font-size: 1.05rem;
   font-weight: 600;
   color: #ffffff;
@@ -118,10 +132,11 @@
 }
 
 .card p {
+  font-family: var(--font-sans);
   margin: 0.4rem 0;
   font-size: 0.95rem;
   line-height: 1.6;
-  color: #bbbbbb;
+  color: var(--muted-foreground, #a3a3a3);
 }
 
 .list {
@@ -130,13 +145,14 @@
 }
 
 .list li {
+  font-family: var(--font-sans);
   margin-bottom: 0.5rem;
   line-height: 1.6;
-  color: #bbbbbb;
+  color: var(--muted-foreground, #a3a3a3);
 }
 
 .link {
-  color: #ea3323;
+  color: var(--accent, #ea3323);
   text-decoration: none;
   font-weight: 500;
   transition: opacity 0.15s ease;
