@@ -2,7 +2,7 @@
 
 **Last Updated:** November 20, 2026
 
-**Glyph Odyssey** is an open-source companion application designed for the Nothing Phone (2a) to project synced lyrics, audio visualizers, and custom animations onto the rear Glyph LED matrix.
+**Glyph Odyssey** is an open-source companion application designed for the Nothing Phone (3) to project synced lyrics, audio visualizers, and custom animations onto the rear Glyph LED matrix.
 
 We value your privacy. This policy outlines how permissions and data are handled by the application.
 

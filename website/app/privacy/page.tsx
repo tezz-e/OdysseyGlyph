@@ -27,7 +27,7 @@ export default function PrivacyPage() {
 
         <section className={styles.section}>
           <p className={styles.lead}>
-            <strong>Glyph Odyssey</strong> is an open-source companion application designed for the Nothing Phone (2a) to project synced lyrics, audio visualizers, and custom animations onto the rear Glyph LED matrix.
+            <strong>Glyph Odyssey</strong> is an open-source companion application designed for the Nothing Phone (3) to project synced lyrics, audio visualizers, and custom animations onto the rear Glyph LED matrix.
           </p>
           <p>
             We believe in total user privacy. All media processing, conversion, and matrix rendering occur <strong>100% locally on your device</strong>.
