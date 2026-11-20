@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="240dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_nothing_menu"
+    android:padding="6dp"
+    android:elevation="14dp">
+
+    <!-- Item 1: Feature Tour -->
+    <LinearLayout
+        android:id="@+id/itemMenuTour"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="12dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@drawable/ic_tour"
+            app:tint="#EA3323"
+            android:contentDescription="Tour" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:text="Feature Tour"
+            android:fontFamily="@font/font_geist"
+            app:fontFamily="@font/font_geist"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:letterSpacing="0.02"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
+
+    <!-- Item 2: Add QS Tile -->
+    <LinearLayout
+        android:id="@+id/itemMenuTile"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="12dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@drawable/ic_tile"
+            app:tint="#FFFFFF"
+            android:contentDescription="Tile" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:text="Add Quick Settings Tile"
+            android:fontFamily="@font/font_geist"
+            app:fontFamily="@font/font_geist"
+            android:textSize="13sp"
+            android:letterSpacing="0.02"
+            android:textColor="#E0E0E0" />
+    </LinearLayout>
+
+    <!-- Item 3: Add Home Widget -->
+    <LinearLayout
+        android:id="@+id/itemMenuWidget"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="12dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@drawable/ic_widget"
+            app:tint="#FFFFFF"
+            android:contentDescription="Widget" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:text="Add Home Widget"
+            android:fontFamily="@font/font_geist"
+            app:fontFamily="@font/font_geist"
+            android:textSize="13sp"
+            android:letterSpacing="0.02"
+            android:textColor="#E0E0E0" />
+    </LinearLayout>
+
+    <!-- Subtle divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginHorizontal="10dp"
+        android:layout_marginVertical="3dp"
+        android:background="#1FFFFFFF" />
+
+    <!-- Item 4: GitHub Project -->
+    <LinearLayout
+        android:id="@+id/itemMenuGithub"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="12dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@drawable/ic_code"
+            app:tint="#B0B0B0"
+            android:contentDescription="GitHub" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:text="GitHub Project"
+            android:fontFamily="@font/font_geist"
+            app:fontFamily="@font/font_geist"
+            android:textSize="13sp"
+            android:letterSpacing="0.02"
+            android:textColor="#CCCCCC" />
+    </LinearLayout>
+
+    <!-- Item 5: About Odyssey Glyph -->
+    <LinearLayout
+        android:id="@+id/itemMenuAbout"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="12dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@drawable/ic_info"
+            app:tint="#B0B0B0"
+            android:contentDescription="About" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:text="About Odyssey Glyph"
+            android:fontFamily="@font/font_geist"
+            app:fontFamily="@font/font_geist"
+            android:textSize="13sp"
+            android:letterSpacing="0.02"
+            android:textColor="#CCCCCC" />
+    </LinearLayout>
+
+    <!-- Item 6: Privacy Policy -->
+    <LinearLayout
+        android:id="@+id/itemMenuPrivacy"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="12dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@drawable/ic_info"
+            app:tint="#B0B0B0"
+            android:contentDescription="Privacy Policy" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:text="Privacy Policy"
+            android:fontFamily="@font/font_geist"
+            app:fontFamily="@font/font_geist"
+            android:textSize="13sp"
+            android:letterSpacing="0.02"
+            android:textColor="#CCCCCC" />
+    </LinearLayout>
+
+</LinearLayout>

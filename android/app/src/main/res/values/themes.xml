@@ -3,6 +3,7 @@
     <style name="Theme.OdysseyGlyph" parent="Theme.Material3.Dark.NoActionBar">
         <!-- Core Colors -->
         <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorOnPrimary">@color/colorOnPrimary</item>
         <item name="colorSecondary">@color/colorSecondary</item>
         <item name="colorTertiary">@color/colorSurfaceVariant</item>
         <item name="colorSurface">@color/colorSurface</item>
@@ -11,10 +12,11 @@
         <item name="colorOnSurface">@color/colorOnSurface</item>
         <item name="colorOnSurfaceVariant">@color/colorOnSurfaceVariant</item>
         <item name="colorError">@color/colorError</item>
+        <item name="colorOnError">@color/colorOnError</item>
         
         <!-- M3 Container Colors (Overrides Default Purple) -->
         <item name="colorPrimaryContainer">@color/colorPrimary</item>
-        <item name="colorOnPrimaryContainer">@color/colorBackground</item>
+        <item name="colorOnPrimaryContainer">#FFFFFF</item>
         <item name="colorSecondaryContainer">@color/colorSurfaceVariant</item>
         <item name="colorOnSecondaryContainer">@color/colorOnSurface</item>
         <item name="colorTertiaryContainer">@color/colorSurfaceVariant</item>
@@ -29,10 +31,36 @@
         <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.Odyssey.Sharp</item>
         <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.Odyssey.Sharp</item>
         
-        <!-- Default Font (Inter/sans-serif) -->
-        <item name="android:fontFamily">sans-serif</item>
+        <!-- Default Font (Geist for Nothing OS 5.0 Lucent Design Theme) -->
+        <item name="android:fontFamily">@font/font_geist</item>
+        <item name="fontFamily">@font/font_geist</item>
         
+        <!-- Spatial Menu Transitions (Apple/Nothing directional push & pop) -->
+        <item name="android:windowAnimationStyle">@style/Animation.Odyssey.Activity</item>
+
         <item name="materialSwitchStyle">@style/Widget.Odyssey.MaterialSwitch</item>
+        <item name="bottomSheetDialogTheme">@style/Theme.Odyssey.BottomSheetDialog</item>
+        <item name="sliderStyle">@style/Widget.Odyssey.Slider</item>
+    </style>
+
+    <style name="Theme.Odyssey.BottomSheetDialog" parent="Theme.Material3.Dark.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/Widget.Odyssey.BottomSheet</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+
+    <style name="Widget.Odyssey.BottomSheet" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="backgroundTint">@android:color/transparent</item>
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:elevation">0dp</item>
+    </style>
+
+    <style name="Animation.Odyssey.Activity" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/slide_in_right</item>
+        <item name="android:activityOpenExitAnimation">@anim/slide_out_left</item>
+        <item name="android:activityCloseEnterAnimation">@anim/slide_in_left</item>
+        <item name="android:activityCloseExitAnimation">@anim/slide_out_right</item>
     </style>
     
     <style name="Widget.Odyssey.MaterialSwitch" parent="Widget.Material3.CompoundButton.MaterialSwitch">
@@ -48,13 +76,39 @@
     
     <style name="TextAppearance.Odyssey.CollapsedTitle" parent="TextAppearance.Material3.TitleLarge">
         <item name="android:fontFamily">@font/ndot57</item>
+        <item name="fontFamily">@font/ndot57</item>
         <item name="android:textSize">28sp</item>
         <item name="android:letterSpacing">0.1</item>
     </style>
 
     <style name="TextAppearance.Odyssey.ExpandedTitle" parent="TextAppearance.Material3.DisplayMedium">
         <item name="android:fontFamily">@font/ndot57</item>
+        <item name="fontFamily">@font/ndot57</item>
         <item name="android:textSize">36sp</item>
         <item name="android:letterSpacing">0.1</item>
+    </style>
+
+    <style name="Widget.Odyssey.Slider" parent="Widget.Material3.Slider">
+        <item name="thumbColor">#EA3323</item>
+        <item name="trackColorActive">#EA3323</item>
+        <item name="trackColorInactive">#202024</item>
+        <item name="haloColor">@android:color/transparent</item>
+        <item name="thumbElevation">0dp</item>
+        <item name="tickVisible">false</item>
+        <item name="labelStyle">@style/Widget.Odyssey.SliderTooltip</item>
+    </style>
+
+    <style name="Widget.Odyssey.SliderTooltip" parent="Widget.Material3.Tooltip">
+        <item name="android:textAppearance">@style/TextAppearance.Odyssey.SliderTooltip</item>
+        <item name="backgroundTint">#EA3323</item>
+    </style>
+
+    <style name="TextAppearance.Odyssey.SliderTooltip" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:fontFamily">@font/font_geist</item>
+        <item name="fontFamily">@font/font_geist</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:letterSpacing">0.04</item>
     </style>
 </resources>

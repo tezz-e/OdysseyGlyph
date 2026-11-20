@@ -2,11 +2,12 @@ package com.example.odysseyglyph
 
 import android.graphics.Color
 import android.view.LayoutInflater
+import android.view.ViewGroup
 import android.widget.TextView
 import com.google.android.material.snackbar.Snackbar
 
 fun Snackbar.applyNothingStyle(): Snackbar {
-    val layout = this.view as Snackbar.SnackbarLayout
+    val layout = this.view as? ViewGroup ?: return this
     val defaultText = layout.findViewById<TextView>(com.google.android.material.R.id.snackbar_text)?.text?.toString() ?: ""
     
     // Clear default styling and views
@@ -16,7 +17,7 @@ fun Snackbar.applyNothingStyle(): Snackbar {
     layout.elevation = 0f
     
     // Apply layout margins directly to the Snackbar container to avoid clipping
-    val params = layout.layoutParams as? android.view.ViewGroup.MarginLayoutParams
+    val params = layout.layoutParams as? ViewGroup.MarginLayoutParams
     if (params != null) {
         val marginPx = (16 * layout.context.resources.displayMetrics.density).toInt()
         val marginBottomPx = (32 * layout.context.resources.displayMetrics.density).toInt()

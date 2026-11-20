@@ -4,35 +4,81 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:gravity="center"
-    android:layout_margin="8dp">
+    android:gravity="center_horizontal"
+    android:padding="4dp">
 
-    <com.google.android.material.card.MaterialCardView
+    <LinearLayout
         android:id="@+id/cardContainer"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        app:cardCornerRadius="16dp"
-        app:cardBackgroundColor="@android:color/transparent"
-        app:strokeColor="?attr/colorOutline"
-        app:strokeWidth="1dp"
-        android:layout_marginBottom="8dp">
-
-        <ImageView
-            android:id="@+id/ivPreview"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="fitCenter"
-            android:padding="8dp" />
-
-    </com.google.android.material.card.MaterialCardView>
-
-    <TextView
-        android:id="@+id/tvName"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Name"
-        android:fontFamily="@font/jetbrains_mono"
-        android:textSize="12sp"
-        android:textColor="?attr/colorOnSurfaceVariant" />
+        android:minHeight="136dp"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:background="@drawable/bg_pattern_card"
+        android:padding="10dp"
+        android:paddingBottom="12dp">
+
+        <!-- Top Status Row: Badge on left, LED on right -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="6dp">
+
+            <TextView
+                android:id="@+id/tvBadge"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="AUDIO"
+                android:fontFamily="@font/font_geist"
+                app:fontFamily="@font/font_geist"
+                android:textStyle="bold"
+                android:textSize="9sp"
+                android:letterSpacing="0.06"
+                android:textColor="#EA3323" />
+
+            <View
+                android:id="@+id/viewLedIndicator"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:background="@drawable/bg_pattern_well" />
+        </LinearLayout>
+
+        <!-- 25x25 LED Bezel Well with Circular Outline Clipping -->
+        <FrameLayout
+            android:layout_width="54dp"
+            android:layout_height="54dp"
+            android:background="@drawable/bg_pattern_well"
+            android:outlineProvider="background"
+            android:clipToOutline="true"
+            android:layout_marginBottom="8dp">
+
+            <ImageView
+                android:id="@+id/ivPreview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:scaleType="fitCenter" />
+        </FrameLayout>
+
+        <!-- Pattern Name with Ample Breathing Room -->
+        <TextView
+            android:id="@+id/tvName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="PATTERN"
+            android:fontFamily="@font/font_geist"
+            app:fontFamily="@font/font_geist"
+            android:textStyle="bold"
+            android:textSize="10.5sp"
+            android:letterSpacing="0.04"
+            android:textColor="#C0C0C0"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+    </LinearLayout>
 
 </LinearLayout>

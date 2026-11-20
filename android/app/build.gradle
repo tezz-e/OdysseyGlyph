@@ -5,29 +5,43 @@ plugins {
 
 android {
     namespace 'com.example.odysseyglyph'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.rickastley.glyphodyssey"
         minSdk 33
-        targetSdk 34
-        versionCode 3
-        versionName "2.0.0"
+        targetSdk 35
+        versionCode 4
+        versionName "2.1.0"
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
     }
 
     signingConfigs {
         release {
-            storeFile file(System.getenv("KEYSTORE_FILE") ?: "release.jks")
-            storePassword System.getenv("KEYSTORE_PASSWORD") ?: ""
-            keyAlias System.getenv("KEY_ALIAS") ?: ""
-            keyPassword System.getenv("KEY_PASSWORD") ?: ""
+            def keystorePath = System.getenv("KEYSTORE_FILE") ?: (project.findProperty("KEYSTORE_FILE") ?: "release.jks")
+            def keystoreFile = file(keystorePath)
+            if (keystoreFile.exists()) {
+                storeFile keystoreFile
+                storePassword System.getenv("KEYSTORE_PASSWORD") ?: (project.findProperty("KEYSTORE_PASSWORD") ?: "glyphodyssey")
+                keyAlias System.getenv("KEY_ALIAS") ?: (project.findProperty("KEY_ALIAS") ?: "glyphodyssey")
+                keyPassword System.getenv("KEY_PASSWORD") ?: (project.findProperty("KEY_PASSWORD") ?: "glyphodyssey")
+            }
         }
     }
 
     buildTypes {
         release {
-            minifyEnabled false
-            signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+            if (signingConfigs.release.storeFile != null && signingConfigs.release.storeFile.exists()) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 
@@ -52,4 +66,7 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'com.otaliastudios:zoomlayout:1.9.0'
+    implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0'
+
+    testImplementation 'junit:junit:4.13.2'
 }

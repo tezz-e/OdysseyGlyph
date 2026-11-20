@@ -1,14 +1,20 @@
 package com.example.odysseyglyph
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.graphics.Color
 import android.graphics.Matrix
 import android.net.Uri
 import android.os.Bundle
+import android.view.MenuItem
 import android.view.View
 import android.widget.*
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AlertDialog
@@ -59,7 +65,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnOpenManager: MaterialButton
     private lateinit var btnOpenGallerySuccess: MaterialButton
 
-    private lateinit var btnLaunchLyricStudio: MaterialButton
     private lateinit var btnLaunchVisualizer: MaterialButton
     private lateinit var btnLaunchLiveLyrics: MaterialButton
     private lateinit var bottomActionBar: LinearLayout
@@ -67,8 +72,8 @@ class MainActivity : AppCompatActivity() {
     private var selectedMediaUri: Uri? = null
     private var currentMediaType = 0 // 0=video, 1=gif, 2=static
     private var videoDurationMs: Long = 0
-    private var isRendering = AtomicBoolean(false)
-    private var systemBarsBottom = 0
+    private var isRenderingActive = AtomicBoolean(false)
+    private var isRenderCancelled = AtomicBoolean(false)
 
     // Advanced Settings state
     private var advFps = 12
@@ -77,38 +82,57 @@ class MainActivity : AppCompatActivity() {
     private var advContrast = 1.0f
     private var advBrightness = 100.0f
     private var advDuration = 5.0f
+    private var advEnhancementMode = 0 // 0 = Auto, 1 = On, 2 = Off
+
+    private var nothingOverflowMenu: NothingOverflowMenu? = null
+    private var glitchAnimator: ValueAnimator? = null
+
+    fun loadMedia(uri: Uri) {
+        VideoProcessor.clearFrameCache()
+        selectedMediaUri = uri
+        try {
+            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        } catch (_: Exception) {}
+        val mimeType = contentResolver.getType(uri) ?: (if (uri.path?.endsWith(".gif") == true) "image/gif" else if (uri.path?.endsWith(".jpg") == true || uri.path?.endsWith(".png") == true) "image/jpeg" else "")
+        when {
+            mimeType.startsWith("image/gif") -> {
+                currentMediaType = 1
+                setupGif(uri)
+            }
+            mimeType.startsWith("image/") -> {
+                currentMediaType = 2
+                setupStaticImage(uri)
+            }
+            else -> {
+                currentMediaType = 0
+                setupVideo(uri)
+            }
+        }
+        launcherGroup.visibility = View.GONE
+        findViewById<View>(R.id.layoutHeaderTitle)?.visibility = View.GONE
+        toolbar.visibility = View.VISIBLE
+        toolbar.navigationIcon = ContextCompat.getDrawable(this, R.drawable.ic_arrow_back)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        settingsPanel.visibility = View.VISIBLE
+        btnAdvancedToggle.visibility = View.VISIBLE
+        bottomActionBar.visibility = View.VISIBLE
+        btnProcess.visibility = View.VISIBLE
+        btnCancel.visibility = View.GONE
+        progressBar.visibility = View.GONE
+        successActionsContainer.visibility = View.GONE
+        audioCard.visibility = if (currentMediaType == 0) View.VISIBLE else View.GONE
+    }
 
     private val selectMediaLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-        uri?.let {
-            selectedMediaUri = it
-            contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            val mimeType = contentResolver.getType(it) ?: ""
-            when {
-                mimeType.startsWith("image/gif") -> {
-                    currentMediaType = 1
-                    setupGif(it)
-                }
-                mimeType.startsWith("image/") -> {
-                    currentMediaType = 2
-                    setupStaticImage(it)
-                }
-                else -> {
-                    currentMediaType = 0
-                    setupVideo(it)
-                }
-            }
-            settingsPanel.visibility = View.VISIBLE
-            btnAdvancedToggle.visibility = View.VISIBLE
-            bottomActionBar.visibility = View.VISIBLE
-            audioCard.visibility = if (currentMediaType == 0) View.VISIBLE else View.GONE
-        }
+        uri?.let { loadMedia(it) }
     }
 
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsUtil.setupEdgeToEdge(this)
         setContentView(R.layout.activity_main)
         
         prefs = getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE)
@@ -119,19 +143,10 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.setDisplayShowTitleEnabled(false)
         
         val scrollView = findViewById<ScrollView>(R.id.scrollView)
-        ViewCompat.setOnApplyWindowInsetsListener(scrollView) { _, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            systemBarsBottom = systemBars.bottom
-            updateScrollViewPadding()
-            insets
-        }
-        
-        ViewCompat.setOnApplyWindowInsetsListener(bottomActionBar) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            val basePadding = resources.getDimensionPixelSize(R.dimen.spacing_medium)
-            v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, basePadding + systemBars.bottom)
-            insets
-        }
+        val appBar = findViewById<com.google.android.material.appbar.AppBarLayout>(R.id.appBarLayout)
+        WindowInsetsUtil.applySystemBarsPadding(appBar, applyTop = true, applyBottom = false)
+        WindowInsetsUtil.applySystemBarsPadding(scrollView, applyBottom = true, overlayView = bottomActionBar)
+        WindowInsetsUtil.applySystemBarsPadding(bottomActionBar, applyBottom = true)
         
         bottomActionBar.addOnLayoutChangeListener { _, _, top, _, bottom, _, oldTop, _, oldBottom ->
             if ((bottom - top) != (oldBottom - oldTop)) {
@@ -140,36 +155,146 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupListeners()
+        setupBentoConsole()
         syncSlotState()
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (launcherGroup.visibility != View.VISIBLE) {
+                    if (isRenderingActive.get()) {
+                        cancelProcessing()
+                    }
+                    resetToLauncher()
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                    isEnabled = true
+                }
+            }
+        })
+
+        handleIntent(intent)
+
+        if (!prefs.getBoolean("spotlight_tour_done_v1", false)) {
+            window.decorView.postDelayed({
+                if (!isFinishing && !isDestroyed && launcherGroup.visibility == View.VISIBLE) {
+                    startFeatureSpotlightTour()
+                }
+            }, 500)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        intent ?: return
+        val testPath = intent.getStringExtra("load_test_image")
+        if (testPath != null) {
+            val file = java.io.File(testPath)
+            if (file.exists()) {
+                loadMedia(Uri.fromFile(file))
+            }
+        } else if (intent.data != null) {
+            loadMedia(intent.data!!)
+        }
+        if (intent.getBooleanExtra("open_advanced_settings", false)) {
+            window.decorView.postDelayed({ showAdvancedSettingsBottomSheet() }, 300)
+        }
+        if (intent.getBooleanExtra("auto_process", false)) {
+            window.decorView.postDelayed({
+                findViewById<android.widget.Button>(R.id.btnProcess)?.performClick()
+            }, 1200)
+        }
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) {
+            onBackPressedDispatcher.onBackPressed()
+            return true
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
+    private fun setupBentoConsole() {
+        val heroCard = findViewById<FrameLayout>(R.id.heroLyricsCard)
+        heroCard?.let {
+            it.foreground = null
+            it.applyLiquidGlass(pressedScale = 0.98f)
+            it.setOnClickListener { btnLaunchLiveLyrics.performClick() }
+        }
+
+        findViewById<View>(R.id.cardMediaPipeline)?.let { card ->
+            card.applyLiquidGlass(pressedScale = 0.98f)
+            card.setOnClickListener { btnSelectVideo.performClick() }
+        }
+
+        findViewById<View>(R.id.cardVisualizer)?.let { card ->
+            card.applyLiquidGlass(pressedScale = 0.98f)
+            card.setOnClickListener { btnLaunchVisualizer.performClick() }
+        }
+
+        val cardQuickSignal = findViewById<View>(R.id.cardQuickSignal)
+        val btnLaunchQuickSignal = findViewById<View>(R.id.btnLaunchQuickSignal)
+        val btnClearQuickSignal = findViewById<View>(R.id.btnClearQuickSignalMain)
+
+        val openQuickSignal = {
+            NavigationHelper.startWithPush(this, Intent(this, QuickSignalActivity::class.java))
+        }
+
+        cardQuickSignal?.applyLiquidGlass(pressedScale = 0.98f)
+        cardQuickSignal?.setOnClickListener { openQuickSignal() }
+        btnLaunchQuickSignal?.setOnClickListener { openQuickSignal() }
+
+        btnClearQuickSignal?.setOnClickListener {
+            val stopIntent = Intent(this, QuickSignalService::class.java).apply {
+                action = QuickSignalService.ACTION_STOP_SIGNAL
+            }
+            startService(stopIntent)
+            syncQuickSignalState()
+        }
+
+        btnSelectVideo.applyLiquidGlass(pressedScale = 0.96f)
+        btnLaunchVisualizer.applyLiquidGlass(pressedScale = 0.96f)
+        btnLaunchLiveLyrics.applyLiquidGlass(pressedScale = 0.96f)
+        findViewById<View>(R.id.btnVaultMain)?.let { TouchSpringAnimator.attach(it) }
+        btnProcess.applyLiquidGlass(pressedScale = 0.96f)
+        btnCancel.applyLiquidGlass(pressedScale = 0.96f)
     }
 
     private fun updateScrollViewPadding() {
         val scrollView = findViewById<ScrollView>(R.id.scrollView)
-        val paddingBottom = if (bottomActionBar.visibility == View.VISIBLE && bottomActionBar.height > 0) {
-            bottomActionBar.height
-        } else {
-            systemBarsBottom
-        }
-        scrollView.setPadding(scrollView.paddingLeft, scrollView.paddingTop, scrollView.paddingRight, paddingBottom)
+        scrollView.requestApplyInsets()
     }
 
     override fun onResume() {
         super.onResume()
-        val isTileAdded = prefs.getBoolean("tile_added", false)
-        val appWidgetManager = android.appwidget.AppWidgetManager.getInstance(this)
-        val widgetProvider = android.content.ComponentName(this, OdysseyWidgetProvider::class.java)
-        val isWidgetAdded = appWidgetManager.getAppWidgetIds(widgetProvider).isNotEmpty()
-        
-        val quickAccessSection = findViewById<View>(R.id.quickAccessSection)
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            quickAccessSection.visibility = if (isTileAdded || isWidgetAdded) View.GONE else View.VISIBLE
-        } else {
-            quickAccessSection.visibility = if (isWidgetAdded) View.GONE else View.VISIBLE
-        }
         syncSlotState()
+        syncQuickSignalState()
         checkToysManagerVisibility()
         if (currentMediaType == 0) {
             videoView.start()
+        }
+    }
+
+    private fun syncQuickSignalState() {
+        val tvBadge = findViewById<TextView>(R.id.tvQuickSignalBadge) ?: return
+        val tvSub = findViewById<TextView>(R.id.tvQuickSignalSubtitle) ?: return
+        val btnClear = findViewById<View>(R.id.btnClearQuickSignalMain) ?: return
+
+        if (QuickSignalService.isRunning) {
+            tvBadge.text = "ACTIVE"
+            tvBadge.setTextColor(android.graphics.Color.parseColor("#EA3323"))
+            tvSub.text = "Currently showing \"${QuickSignalService.activeText}\" on rear matrix"
+            btnClear.visibility = View.VISIBLE
+        } else {
+            tvBadge.text = "DIRECT MESSAGE"
+            tvBadge.setTextColor(android.graphics.Color.parseColor("#CCCCCC"))
+            tvSub.text = "Project short messages (WAIT, BRB, symbols) to the rear matrix"
+            btnClear.visibility = View.GONE
         }
     }
 
@@ -182,9 +307,17 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
+        nothingOverflowMenu?.dismiss()
         if (currentMediaType == 0) {
             videoView.pause()
         }
+    }
+
+    override fun onDestroy() {
+        glitchAnimator?.cancel()
+        nothingOverflowMenu?.dismiss()
+        videoView.release()
+        super.onDestroy()
     }
 
     private fun loadAdvancedSettings() {
@@ -194,6 +327,7 @@ class MainActivity : AppCompatActivity() {
         advContrast = prefs.getFloat("adv_contrast", 1.0f)
         advBrightness = prefs.getFloat("adv_brightness", 100.0f)
         advDuration = prefs.getFloat("adv_duration", 5.0f)
+        advEnhancementMode = prefs.getInt("adv_enhancement_mode", 0)
     }
 
     private fun saveAdvancedSettings() {
@@ -204,12 +338,12 @@ class MainActivity : AppCompatActivity() {
             .putFloat("adv_contrast", advContrast)
             .putFloat("adv_brightness", advBrightness)
             .putFloat("adv_duration", advDuration)
+            .putInt("adv_enhancement_mode", advEnhancementMode)
             .apply()
     }
 
     private fun bindViews() {
         btnSelectVideo = findViewById(R.id.btnSelectVideo)
-        btnLaunchLyricStudio = findViewById(R.id.btnLaunchLyricStudio)
         btnLaunchVisualizer = findViewById(R.id.btnLaunchVisualizer)
         btnLaunchLiveLyrics = findViewById(R.id.btnLaunchLiveLyrics)
         toolbar = findViewById(R.id.toolbar)
@@ -242,13 +376,106 @@ class MainActivity : AppCompatActivity() {
         bottomActionBar = findViewById(R.id.bottomActionBar)
     }
 
-    private fun setupListeners() {
-        btnSelectVideo.setOnClickListener {
-            if (prefs.getBoolean("first_run_media", true)) {
-                showMediaOnboardingDialog()
-            } else {
-                selectMediaLauncher.launch(arrayOf("video/*", "image/*"))
+    private fun getOrCreateOverflowMenu(anchor: View): NothingOverflowMenu {
+        return nothingOverflowMenu ?: NothingOverflowMenu(
+            context = this,
+            onTourClick = {
+                startFeatureSpotlightTour()
+            },
+            onTileClick = {
+                requestAddQuickTile()
+            },
+            onWidgetClick = {
+                requestAddHomeWidget()
+            },
+            onGithubClick = {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/tezz-e/OdysseyGlyph"))
+                startActivity(intent)
+            },
+            onAboutClick = {
+                showAppInfoDialog()
+            },
+            onPrivacyClick = {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://odyssey-glyph.vercel.app/privacy"))
+                startActivity(intent)
             }
+        ).also { nothingOverflowMenu = it }
+    }
+
+    private fun setupInteractiveLogo() {
+        val tvHeaderTitle = findViewById<TextView>(R.id.tvHeaderTitle) ?: return
+        TouchSpringAnimator.attach(tvHeaderTitle)
+
+        val originalText = "GLYPH ODYSSEY"
+        val matrixChars = charArrayOf('·', ':', '□', '■', '▲', '▼', '◆', '0', '1', 'X', '+', '░', '▒')
+
+        tvHeaderTitle.setOnClickListener { view ->
+            view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+
+            glitchAnimator?.cancel()
+            val totalSteps = 7
+            val random = java.util.Random()
+
+            glitchAnimator = ValueAnimator.ofInt(0, totalSteps).apply {
+                duration = 280L
+                addUpdateListener { va ->
+                    val step = va.animatedValue as Int
+                    if (step >= totalSteps) {
+                        tvHeaderTitle.text = originalText
+                        tvHeaderTitle.setTextColor(Color.WHITE)
+                    } else {
+                        val resolvedCount = (step * originalText.length) / totalSteps
+                        val chars = originalText.toCharArray()
+                        val unresolvedIndices = (0 until originalText.length)
+                            .filter { originalText[it] != ' ' }
+                            .shuffled(random)
+
+                        val toScramble = unresolvedIndices.drop(resolvedCount)
+                        for (idx in toScramble) {
+                            chars[idx] = matrixChars[random.nextInt(matrixChars.size)]
+                        }
+                        tvHeaderTitle.text = String(chars)
+
+                        if (step == 1 || step == 2) {
+                            tvHeaderTitle.setTextColor(Color.parseColor("#EA3323"))
+                        } else {
+                            tvHeaderTitle.setTextColor(Color.WHITE)
+                        }
+                    }
+                }
+                addListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
+                        tvHeaderTitle.text = originalText
+                        tvHeaderTitle.setTextColor(Color.WHITE)
+                    }
+                    override fun onAnimationCancel(animation: Animator) {
+                        tvHeaderTitle.text = originalText
+                        tvHeaderTitle.setTextColor(Color.WHITE)
+                    }
+                })
+                start()
+            }
+        }
+    }
+
+    private fun setupListeners() {
+        setupInteractiveLogo()
+
+        val btnHeaderMenu = findViewById<ImageView>(R.id.btnHeaderMenu)
+        btnHeaderMenu?.let { btn ->
+            TouchSpringAnimator.attach(btn)
+            btn.setOnClickListener {
+                val menu = getOrCreateOverflowMenu(btn)
+                if (menu.isShowing) {
+                    menu.dismiss()
+                } else {
+                    menu.show(btn, focusable = true)
+                }
+            }
+        }
+
+        btnSelectVideo.setOnClickListener {
+            selectMediaLauncher.launch(arrayOf("video/*", "image/*"))
         }
         
         toolbar.inflateMenu(R.menu.menu_info)
@@ -262,66 +489,23 @@ class MainActivity : AppCompatActivity() {
         }
         
         toolbar.setNavigationOnClickListener {
-            if (launcherGroup.visibility == View.GONE && !isRendering.get()) {
+            if (launcherGroup.visibility == View.GONE) {
+                if (isRenderingActive.get()) {
+                    cancelProcessing()
+                }
                 resetToLauncher()
             }
         }
 
-        btnLaunchLyricStudio.setOnClickListener {
-            startActivity(Intent(this, LyricStudioActivity::class.java))
-        }
-
-        val btnAddTileMain = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddTileMain)
-        btnAddTileMain.setOnClickListener {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                val statusBarManager = getSystemService(android.app.StatusBarManager::class.java)
-                val componentName = android.content.ComponentName(this, LiveLyricsTileService::class.java)
-                statusBarManager?.requestAddTileService(
-                    componentName,
-                    "Odyssey Glyph",
-                    android.graphics.drawable.Icon.createWithResource(this, R.mipmap.ic_launcher),
-                    mainExecutor,
-                    { result ->
-                        if (result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED || 
-                            result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED) {
-                            prefs.edit().putBoolean("tile_added", true).apply()
-                            findViewById<View>(R.id.quickAccessSection).visibility = View.GONE
-                        } else {
-                            Snackbar.make(findViewById(android.R.id.content), "Failed to add tile.", Snackbar.LENGTH_SHORT).applyNothingStyle().show()
-                        }
-                    }
-                )
-            } else {
-                Snackbar.make(findViewById(android.R.id.content), "Pull down your notification shade and edit tiles to add 'Odyssey Glyph'.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
-            }
-        }
-
-        val btnAddWidgetMain = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddWidgetMain)
-        btnAddWidgetMain.setOnClickListener {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                val appWidgetManager = android.appwidget.AppWidgetManager.getInstance(this)
-                val myProvider = android.content.ComponentName(this, OdysseyWidgetProvider::class.java)
-                if (appWidgetManager.isRequestPinAppWidgetSupported) {
-                    val successCallback = android.app.PendingIntent.getBroadcast(
-                        this, 0,
-                        android.content.Intent(this, OdysseyWidgetProvider::class.java).apply { action = OdysseyWidgetProvider.ACTION_UPDATE_WIDGET },
-                        android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
-                    )
-                    appWidgetManager.requestPinAppWidget(myProvider, null, successCallback)
-                } else {
-                    Snackbar.make(findViewById(android.R.id.content), "Your launcher does not support automatic widget pinning. Please add it manually from your launcher's widget menu.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
-                }
-            } else {
-                Snackbar.make(findViewById(android.R.id.content), "Automatic widget pinning requires Android 8.0+. Please add it manually from your launcher's widget menu.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
+        val btnVaultMain = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnVaultMain)
+        btnVaultMain?.let {
+            TouchSpringAnimator.attach(it)
+            it.setOnClickListener {
+                startActivity(Intent(this, GalleryActivity::class.java))
             }
         }
 
         btnLaunchVisualizer.setOnClickListener {
-            if (prefs.getBoolean("first_run_visualizer", true)) {
-                showVisualizerOnboardingDialog()
-                return@setOnClickListener
-            }
-            
             val isGranted = androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
             if (!isGranted) {
                 val dialogView = layoutInflater.inflate(R.layout.dialog_nothing_onboarding, null)
@@ -385,21 +569,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnLaunchLiveLyrics.setOnClickListener {
-            val isGranted = androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
-            if (!isGranted) {
-                val dialogView = layoutInflater.inflate(R.layout.dialog_nothing_onboarding, null)
-                val dialog = androidx.appcompat.app.AlertDialog.Builder(this).setView(dialogView).create()
-                dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-                dialogView.findViewById<android.widget.TextView>(R.id.tvDialogTitle).text = "PERMISSION REQUIRED"
-                dialogView.findViewById<android.widget.TextView>(R.id.tvDialogMessage).text = "Live Lyrics needs permission to detect what music is playing so it can sync lyrics to your glyphs.\n\nPlease enable Odyssey Glyph in the next screen."
-                dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogAction).apply {
-                    text = "GRANT PERMISSION"
-                    setOnClickListener {
-                        dialog.dismiss()
-                        startActivity(android.content.Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
-                    }
-                }
-                dialog.show()
+            if (ProminentDisclosureDialog.showIfRequired(this, onAccepted = {
+                startActivity(Intent(this, LiveLyricsActivity::class.java))
+            })) {
                 return@setOnClickListener
             }
             startActivity(Intent(this, LiveLyricsActivity::class.java))
@@ -422,13 +594,7 @@ class MainActivity : AppCompatActivity() {
 
 
         btnOpenManager.setOnClickListener {
-            try {
-                val intent = Intent()
-                intent.component = ComponentName("com.nothing.thirdparty", "com.nothing.thirdparty.matrix.toys.manager.ToysManagerActivity")
-                startActivity(intent)
-            } catch (e: Exception) {
-                Snackbar.make(findViewById(android.R.id.content), "Toys Manager not found on this device.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
-            }
+            GlyphOSIntegration.openGlyphAppOrToys(this, findViewById(android.R.id.content))
         }
 
         btnOpenGallerySuccess.setOnClickListener {
@@ -467,11 +633,14 @@ class MainActivity : AppCompatActivity() {
         cbInvert.isChecked = advInvert
         sharpenSwitch.isChecked = advSharpen
         contrastSlider.value = advContrast
-        brightnessSlider.value = advBrightness
+        brightnessSlider.valueFrom = 10f
+        brightnessSlider.valueTo = 150f
+        brightnessSlider.value = advBrightness.coerceIn(10f, 150f)
         durationSlider.value = advDuration
 
         contrastLabel.text = String.format("CONTRAST MULTIPLIER: %.1fx", advContrast)
-        brightnessLabel.text = String.format("LED BRIGHTNESS: %.0f%%", advBrightness)
+        val initialTag = if (advBrightness > 100f) " (SUN OVERDRIVE)" else if (advBrightness >= 90f) " (CALIBRATED)" else ""
+        brightnessLabel.text = String.format("LED BRIGHTNESS: %.0f%%%s", advBrightness, initialTag)
         durationLabel.text = String.format("IMAGE DURATION: %.0fs", advDuration)
 
         contrastSlider.addOnChangeListener { _, value, _ ->
@@ -480,7 +649,8 @@ class MainActivity : AppCompatActivity() {
         }
         brightnessSlider.addOnChangeListener { _, value, _ ->
             advBrightness = value
-            brightnessLabel.text = String.format("LED BRIGHTNESS: %.0f%%", value)
+            val tag = if (value > 100f) " (SUN OVERDRIVE)" else if (value >= 90f) " (CALIBRATED)" else ""
+            brightnessLabel.text = String.format("LED BRIGHTNESS: %.0f%%%s", value, tag)
         }
         durationSlider.addOnChangeListener { _, value, _ ->
             advDuration = value
@@ -488,6 +658,11 @@ class MainActivity : AppCompatActivity() {
         }
         cbInvert.setOnCheckedChangeListener { _, isChecked -> advInvert = isChecked }
         sharpenSwitch.setOnCheckedChangeListener { _, isChecked -> advSharpen = isChecked }
+        val toggleEnhancement = view.findViewById<LiquidGlassSegmentedBar>(R.id.toggleEnhancement)
+        toggleEnhancement?.setSegments(listOf("Auto", "On", "Off"), initialIndex = advEnhancementMode)
+        toggleEnhancement?.onSegmentSelected = { index, _ ->
+            advEnhancementMode = index
+        }
 
         dialog.setOnDismissListener {
             val parsedFps = etFps.text.toString().toIntOrNull() ?: 12
@@ -498,45 +673,6 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun showMediaOnboardingDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_nothing_onboarding, null)
-        val dialog = androidx.appcompat.app.AlertDialog.Builder(this).setView(dialogView).create()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        
-        dialogView.findViewById<TextView>(R.id.tvDialogTitle).text = "CUSTOM MEDIA ANIMATIONS"
-        dialogView.findViewById<TextView>(R.id.tvDialogMessage).text = 
-            "Convert your own videos, GIFs, or images into custom LED animations.\n\n" +
-            "1. CHOOSE\nPick any media from your gallery.\n\n" +
-            "2. CROP & TRIM\nPosition the circular crop area and select the exact segment you want to animate.\n\n" +
-            "3. RENDER\nThe app mathematically converts your pixels into Glyph commands and saves them directly to your phone's native Glyph Toys Manager."
-            
-        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogAction).setOnClickListener {
-            prefs.edit().putBoolean("first_run_media", false).apply()
-            dialog.dismiss()
-            selectMediaLauncher.launch(arrayOf("video/*", "image/*"))
-        }
-        dialog.show()
-    }
-
-    private fun showVisualizerOnboardingDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_nothing_onboarding, null)
-        val dialog = androidx.appcompat.app.AlertDialog.Builder(this).setView(dialogView).create()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        
-        dialogView.findViewById<TextView>(R.id.tvDialogTitle).text = "STANDALONE VISUALIZER"
-        dialogView.findViewById<TextView>(R.id.tvDialogMessage).text = 
-            "A high-performance visualizer that reacts to your music in real-time.\n\n" +
-            "• SMART SYNC\nIt automatically pauses itself when your music stops to save battery."
-            
-        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogAction).setOnClickListener {
-            prefs.edit().putBoolean("first_run_visualizer", false).apply()
-            dialog.dismiss()
-            // Immediately open the visualizer selector bottom sheet
-            btnLaunchVisualizer.performClick()
-        }
-        dialog.show()
-    }
-
     private fun showAppInfoDialog() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_nothing_onboarding, null)
         val dialog = androidx.appcompat.app.AlertDialog.Builder(this).setView(dialogView).create()
@@ -544,16 +680,145 @@ class MainActivity : AppCompatActivity() {
         
         dialogView.findViewById<TextView>(R.id.tvDialogTitle).text = "ODYSSEY GLYPH"
         dialogView.findViewById<TextView>(R.id.tvDialogMessage).text = 
-            "Transform your Nothing phone into an interactive canvas.\n\n" +
-            "1. CHOOSE MEDIA\nCrop and render your own videos or images into custom LED animations.\n\n" +
-            "2. LYRIC STUDIO\nMathematically render text and lyric files into scrolling LED banners.\n\n" +
-            "3. STANDALONE VISUALIZER\nA high-performance visualizer that reacts to your music.\n\n" +
-            "4. LIVE LYRICS\nDetects when music starts playing system-wide and projects synced lyrics."
+            "An open-source lyrics engine and custom animation studio for the Nothing 25×25 Glyph Matrix.\n\n" +
+            "ORIGIN STORY:\n" +
+            "It started as a joke: I wanted to watch the Odyssey trailer \"as Nolan intended,\" on the back of my phone, for a meme. Getting one video onto the Glyph Matrix properly took way more fixing and iterating than expected. Somewhere in there I realized the pipeline I'd built didn't care what video it was. So I generalized it.\n\n" +
+            "• LIVE LYRICS: Synced lyrics with an automatic fallback visualizer\n" +
+            "• MUSIC VISUALIZER: Dedicated audio-reactive LED patterns with no lyrics\n" +
+            "• MEDIA IMPORT: Video and GIF matrix renderer\n" +
+            "• QUICK SIGNAL: Instant rear matrix alerts and presets\n\n" +
+            "GitHub: github.com/tezz-e/OdysseyGlyph"
             
         dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogAction).setOnClickListener {
             dialog.dismiss()
         }
         dialog.show()
+    }
+
+    private fun requestAddQuickTile() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            val statusBarManager = getSystemService(android.app.StatusBarManager::class.java)
+            val componentName = android.content.ComponentName(this, LiveLyricsTileService::class.java)
+            statusBarManager?.requestAddTileService(
+                componentName,
+                "Odyssey Glyph",
+                android.graphics.drawable.Icon.createWithResource(this, R.mipmap.ic_launcher),
+                mainExecutor
+            ) { result ->
+                if (result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED || 
+                    result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED) {
+                    prefs.edit().putBoolean("tile_added", true).apply()
+                    val msg = if (result == android.app.StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED)
+                        "Tile added to notification shade."
+                    else
+                        "Tile is already in notification shade."
+                    Snackbar.make(findViewById(android.R.id.content), msg, Snackbar.LENGTH_SHORT).applyNothingStyle().show()
+                } else {
+                    Snackbar.make(findViewById(android.R.id.content), "Failed to add tile.", Snackbar.LENGTH_SHORT).applyNothingStyle().show()
+                }
+            }
+        } else {
+            Snackbar.make(findViewById(android.R.id.content), "Pull down your notification shade and edit tiles to add 'Odyssey Glyph'.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
+        }
+    }
+
+    private fun requestAddHomeWidget() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val appWidgetManager = android.appwidget.AppWidgetManager.getInstance(this)
+            val myProvider = android.content.ComponentName(this, OdysseyWidgetProvider::class.java)
+            if (appWidgetManager.isRequestPinAppWidgetSupported) {
+                val successCallback = android.app.PendingIntent.getBroadcast(
+                    this, 0,
+                    android.content.Intent(this, OdysseyWidgetProvider::class.java).apply { action = OdysseyWidgetProvider.ACTION_UPDATE_WIDGET },
+                    android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+                )
+                appWidgetManager.requestPinAppWidget(myProvider, null, successCallback)
+            } else {
+                Snackbar.make(findViewById(android.R.id.content), "Your launcher does not support automatic widget pinning. Please add it manually from your launcher's widget menu.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
+            }
+        } else {
+            Snackbar.make(findViewById(android.R.id.content), "Automatic widget pinning requires Android 8.0+. Please add it manually from your launcher's widget menu.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
+        }
+    }
+
+    fun startFeatureSpotlightTour() {
+        val heroLyricsCard = findViewById<View>(R.id.heroLyricsCard) ?: return
+        val cardVisualizer = findViewById<View>(R.id.cardVisualizer) ?: return
+        val cardMediaPipeline = findViewById<View>(R.id.cardMediaPipeline) ?: return
+        val cardQuickSignal = findViewById<View>(R.id.cardQuickSignal) ?: return
+        val btnHeaderMenu = findViewById<View>(R.id.btnHeaderMenu) ?: return
+        val scrollView = findViewById<ScrollView>(R.id.scrollView)
+
+        NothingSpotlightOverlay.attach(this, scrollView)
+            .addStep(
+                NothingSpotlightOverlay.Step(
+                    targetView = heroLyricsCard,
+                    title = "LIVE LYRICS",
+                    description = "Streams synchronized lyrics to the rear 25×25 matrix while music plays. It also includes an automatic fallback visualizer for instrumental intros, solos, or songs without lyrics.",
+                    cornerRadiusDp = 22f,
+                    paddingDp = 4f
+                )
+            )
+            .addStep(
+                NothingSpotlightOverlay.Step(
+                    targetView = cardVisualizer,
+                    title = "MUSIC VISUALIZER",
+                    description = "Dedicated visualizer mode for your music. Whatever plays, this mode only projects audio-reactive LED patterns with zero lyrics. Tap Patterns to pick an animation style.",
+                    cornerRadiusDp = 22f,
+                    paddingDp = 4f
+                )
+            )
+            .addStep(
+                NothingSpotlightOverlay.Step(
+                    targetView = cardMediaPipeline,
+                    title = "MEDIA IMPORT",
+                    description = "Convert videos and GIFs into matrix animations. Pick a file from your gallery, align the circular crop area, and render it directly to your phone's Glyph Toys.",
+                    cornerRadiusDp = 22f,
+                    paddingDp = 4f
+                )
+            )
+            .addStep(
+                NothingSpotlightOverlay.Step(
+                    targetView = cardQuickSignal,
+                    title = "QUICK SIGNAL",
+                    description = "Flash short messages like WAIT and BRB, or symbols like hearts and arrows, onto the back of your phone. Pick a preset or type custom text with an auto-off timer.",
+                    cornerRadiusDp = 22f,
+                    paddingDp = 4f
+                )
+            )
+            .addStep(
+                NothingSpotlightOverlay.Step(
+                    targetView = btnHeaderMenu,
+                    title = "PHONE CONTROLS & MORE",
+                    description = "Access Quick Settings tile setup, home screen widgets, tour replay, and project info anytime from this menu.",
+                    cornerRadiusDp = 12f,
+                    paddingDp = 4f,
+                    extraOffsetYDp = 240f
+                )
+            )
+            .setOnStepChanged { stepIndex ->
+                if (stepIndex == 4) {
+                    btnHeaderMenu.postDelayed({
+                        if (!isFinishing && !isDestroyed) {
+                            val menu = getOrCreateOverflowMenu(btnHeaderMenu)
+                            if (!menu.isShowing) {
+                                menu.show(btnHeaderMenu, focusable = false)
+                            }
+                        }
+                    }, 150)
+                } else {
+                    nothingOverflowMenu?.dismiss()
+                }
+            }
+            .setOnCompleted {
+                nothingOverflowMenu?.dismiss()
+                prefs.edit().putBoolean("spotlight_tour_done_v1", true).apply()
+            }
+            .setOnDismissed {
+                nothingOverflowMenu?.dismiss()
+                prefs.edit().putBoolean("spotlight_tour_done_v1", true).apply()
+            }
+            .start()
     }
 
     private fun syncSlotState() {
@@ -630,12 +895,15 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun resetToLauncher() {
+        VideoProcessor.clearFrameCache()
         selectedMediaUri = null
         currentMediaType = -1
         
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
         supportActionBar?.setDisplayShowHomeEnabled(false)
         
+        findViewById<View>(R.id.layoutHeaderTitle)?.visibility = View.VISIBLE
+        toolbar.visibility = View.GONE
         launcherGroup.visibility = View.VISIBLE
         settingsPanel.visibility = View.GONE
         trimmerCard.visibility = View.GONE
@@ -653,7 +921,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun cancelProcessing() {
-        isRendering.set(true)
+        isRenderCancelled.set(true)
+        isRenderingActive.set(false)
         btnProcess.visibility = View.VISIBLE
         btnCancel.visibility = View.GONE
         progressBar.visibility = View.GONE
@@ -668,7 +937,8 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        isRendering.set(false)
+        isRenderingActive.set(true)
+        isRenderCancelled.set(false)
         btnProcess.visibility = View.GONE
         btnCancel.visibility = View.VISIBLE
         progressBar.visibility = View.VISIBLE
@@ -727,16 +997,18 @@ class MainActivity : AppCompatActivity() {
             brightnessMulti = brightnessMulti,
             imageDurationSec = imageDurationSec,
             sharpen = sharpen,
+            enhancementMode = advEnhancementMode,
             cropCx = cropOverlay.circleX,
             cropCy = cropOverlay.circleY,
             cropRadius = cropOverlay.circleRadius,
             inverseTransform = inverseTransform,
             slotIndex = slot,
-            isCancelled = isRendering,
+            isCancelled = isRenderCancelled,
             onProgress = { prog ->
                 progressBar.setProgress(prog)
             },
             onComplete = { success, error ->
+                isRenderingActive.set(false)
                 btnProcess.visibility = View.VISIBLE
                 btnCancel.visibility = View.GONE
                 progressBar.visibility = View.GONE
@@ -745,7 +1017,7 @@ class MainActivity : AppCompatActivity() {
                     val msg = if (slot == 4) "SUCCESS! SAVED TO GALLERY." else "SUCCESS! RENDERED TO SLOT $slot."
                     Snackbar.make(findViewById(android.R.id.content), msg, Snackbar.LENGTH_LONG).applyNothingStyle().show()
                     successActionsContainer.visibility = View.VISIBLE
-                    sendBroadcast(Intent("com.example.odysseyglyph.RELOAD_FRAMES"))
+                    sendBroadcast(Intent("com.example.odysseyglyph.RELOAD_FRAMES").setPackage(packageName))
                 } else {
                     if (error != "Cancelled by user.") {
                         Snackbar.make(findViewById(android.R.id.content), "ERROR: $error", Snackbar.LENGTH_LONG).applyNothingStyle().show()

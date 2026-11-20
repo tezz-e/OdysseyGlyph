@@ -26,7 +26,11 @@ class CenteredImageView @JvmOverloads constructor(
     fun setImageURIWithAnim(uri: Uri) {
         try {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                val source = ImageDecoder.createSource(context.contentResolver, uri)
+                val source = if (uri.scheme == "file" && uri.path != null) {
+                    ImageDecoder.createSource(java.io.File(uri.path!!))
+                } else {
+                    ImageDecoder.createSource(context.contentResolver, uri)
+                }
                 val drawable = ImageDecoder.decodeDrawable(source) { decoder, info, _ ->
                     // Prevent GPU texture size limit crashes or OutOfMemoryErrors on 50MP images
                     var sampleSize = 1

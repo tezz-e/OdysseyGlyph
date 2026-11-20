@@ -36,9 +36,10 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
     private var pendingStopRunnable: Runnable? = null
     private var currentParsedLyrics: List<Pair<Long, String>> = emptyList()
     private var currentTrackId = ""
-    private var fontStyle = GlyphFontEngine.FontStyle.SMOOTH
+    private var fontStyle = GlyphFontEngine.FontStyle.PIXEL_TINY
     
     private lateinit var prefs: SharedPreferences
+    private lateinit var repo: SavedLyricsRepository
     private var fallbackEnabled = true
     private var fallbackStyle = 1
 
@@ -64,13 +65,14 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
             fallbackStyle = p.getInt("fallback_style", 1)
             val fontStyleInt = p.getInt("live_font_style", 0)
             fontStyle = when (fontStyleInt) {
-                1 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
-                2 -> GlyphFontEngine.FontStyle.PIXEL_TINY
-                else -> GlyphFontEngine.FontStyle.SMOOTH
+                0 -> GlyphFontEngine.FontStyle.PIXEL_TINY
+                1 -> GlyphFontEngine.FontStyle.SMOOTH
+                2 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
+                else -> GlyphFontEngine.FontStyle.PIXEL_TINY
             }
             
             if (MusicPlaybackState.hasActiveSession) {
-                onMetadataChanged(MusicPlaybackState.trackTitle, MusicPlaybackState.artist)
+                onTrackIdentityChanged(MusicPlaybackState.currentIdentity())
             }
             
             if (p.getBoolean("live_lyrics_enabled", false)) {
@@ -126,6 +128,7 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
                     val currentHash = frameBytes.contentHashCode()
                     if (currentHash != lastFrameHash) {
                         lastFrameHash = currentHash
+                        GlyphFrameBus.postFrame(frameBytes)
                         try { glyphManager?.setMatrixFrame(toIntArray(frameBytes)) } catch (e: Exception) {}
                     }
                     mainHandler.postDelayed(this, 16L)
@@ -134,6 +137,7 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
                         try { 
                             glyphManager?.turnOff() 
                             lastFrameHash = -1
+                            GlyphFrameBus.clear()
                         } catch (e: Exception) {
                             try { glyphManager?.setMatrixFrame(IntArray(33) { 0 }) } catch (e2: Exception) {}
                         }
@@ -167,6 +171,7 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
                     val currentHash = frameBytes.contentHashCode()
                     if (currentHash != lastFrameHash) {
                         lastFrameHash = currentHash
+                        GlyphFrameBus.postFrame(frameBytes)
                         try { glyphManager?.setMatrixFrame(toIntArray(frameBytes)) } catch (e: Exception) {}
                     }
                 } else {
@@ -174,6 +179,7 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
                         try { 
                             glyphManager?.turnOff() 
                             lastFrameHash = -1
+                            GlyphFrameBus.clear()
                         } catch (e: Exception) {
                             try { glyphManager?.setMatrixFrame(IntArray(33) { 0 }) } catch (e2: Exception) {}
                         }
@@ -189,6 +195,7 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
                 val currentHash = frameBytes.contentHashCode()
                 if (currentHash != lastFrameHash) {
                     lastFrameHash = currentHash
+                    GlyphFrameBus.postFrame(frameBytes)
                     try { glyphManager?.setMatrixFrame(toIntArray(frameBytes)) } catch (e: Exception) {}
                 }
             }
@@ -209,6 +216,7 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
         super.onCreate()
         
         prefs = getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE)
+        repo = SavedLyricsRepository.getInstance(this)
         fallbackEnabled = prefs.getBoolean("fallback_enabled", true)
         fallbackStyle = prefs.getInt("fallback_style", 1)
 
@@ -224,6 +232,15 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         when (key) {
+            "live_font_style" -> {
+                val fontStyleInt = sharedPreferences?.getInt("live_font_style", 0) ?: 0
+                fontStyle = when (fontStyleInt) {
+                    0 -> GlyphFontEngine.FontStyle.PIXEL_TINY
+                    1 -> GlyphFontEngine.FontStyle.SMOOTH
+                    2 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
+                    else -> GlyphFontEngine.FontStyle.PIXEL_TINY
+                }
+            }
             "fallback_style" -> {
                 fallbackStyle = sharedPreferences?.getInt("fallback_style", 1) ?: 1
             }
@@ -270,7 +287,7 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
                     
                     if (MusicPlaybackState.hasActiveSession) {
                         currentTrackId = ""
-                        onMetadataChanged(MusicPlaybackState.trackTitle, MusicPlaybackState.artist)
+                        onTrackIdentityChanged(MusicPlaybackState.currentIdentity())
                     }
                     
                     // Force a fresh hardware bind — onServiceConnected will start the playback loop
@@ -282,6 +299,12 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
                     LiveLyricsTileService.requestTileUpdate(this)
                     OdysseyWidgetProvider.updateAllWidgets(this)
                 }
+                "REFRESH_MATCH" -> {
+                    if (MusicPlaybackState.hasActiveSession) {
+                        currentTrackId = ""
+                        onTrackIdentityChanged(MusicPlaybackState.currentIdentity())
+                    }
+                }
                 "STOP_LIVE_LYRICS" -> {
                     getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE).edit().putBoolean("live_lyrics_enabled", false).apply()
                     isRunning = false
@@ -289,6 +312,7 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
                     mainHandler.removeCallbacks(playbackRunnable)
                     visualizerHelper.stop()
                     try { glyphManager?.turnOff() } catch (e: Exception) {}
+                    GlyphFrameBus.postFrame(ByteArray(625))
                     if (!VisualizerService.isRunning) {
                         try { glyphManager?.unInit() } catch (e: Exception) {}
                     }
@@ -302,6 +326,15 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
                     }
                     pendingStopRunnable = stopRunnable
                     mainHandler.postDelayed(stopRunnable, 600)
+                }
+                "UPDATE_STYLE" -> {
+                    val fontStyleInt = intent.getIntExtra("font_style", getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE).getInt("live_font_style", 0))
+                    fontStyle = when (fontStyleInt) {
+                        0 -> GlyphFontEngine.FontStyle.PIXEL_TINY
+                        1 -> GlyphFontEngine.FontStyle.SMOOTH
+                        2 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
+                        else -> GlyphFontEngine.FontStyle.PIXEL_TINY
+                    }
                 }
             }
         }
@@ -326,7 +359,7 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
         } catch (e: Exception) {}
         
         if (!VisualizerService.isRunning) {
-            glyphManager?.unInit()
+            try { glyphManager?.unInit() } catch (_: Exception) {}
         }
         glyphManager = null
         super.onDestroy()
@@ -347,33 +380,60 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
         } catch (e: Exception) {}
     }
 
-    private fun updateNotification(trackName: String, hasLyrics: Boolean) {
+    private fun updateNotification(
+        title: String,
+        text: String,
+        openPicker: Boolean = false
+    ) {
         if (!isRunning) return
-        val title = if (trackName.isNotEmpty()) "Live Lyrics: $trackName" else "Live Lyrics Active"
-        val text = if (trackName.isNotEmpty()) {
-            if (hasLyrics) "Syncing lyrics to Glyph matrix." else "No lyrics found. Running fallback visualizer."
-        } else {
-            "Waiting for music..."
-        }
-        val notification = buildNotification(title, text)
+        val notification = buildNotification(title, text, openPicker)
         val manager = getSystemService(NotificationManager::class.java)
         manager?.notify(NOTIFICATION_ID, notification)
     }
 
-    private fun buildNotification(title: String = "Live Lyrics Active", text: String = "Glyph matrix is rendering lyrics indefinitely."): Notification {
-        val notificationIntent = Intent(this, LiveLyricsActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+    private fun buildNotification(
+        title: String = "Live Lyrics Active",
+        text: String = "Glyph matrix is rendering lyrics indefinitely.",
+        openPicker: Boolean = false
+    ): Notification {
+        val targetIntent = if (openPicker) {
+            Intent(this, TrackMatchPickerActivity::class.java).apply {
+                putExtra("track_title", MusicPlaybackState.trackTitle)
+                putExtra("artist", MusicPlaybackState.artist)
+                putExtra("album", MusicPlaybackState.album)
+                putExtra("duration_ms", MusicPlaybackState.durationMs)
+                putExtra("package_name", MusicPlaybackState.packageName)
+            }
+        } else {
+            Intent(this, LiveLyricsActivity::class.java)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            targetIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(text)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(pendingIntent)
             .setOnlyAlertOnce(true)
-            .build()
+
+        if (openPicker) {
+            val pickerAction = NotificationCompat.Action.Builder(
+                R.drawable.ic_lyrics,
+                "Choose Match",
+                pendingIntent
+            ).build()
+            builder.addAction(pickerAction)
+        }
+
+        return builder.build()
     }
 
     private fun createNotificationChannel() {
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(
                 CHANNEL_ID,
@@ -386,35 +446,101 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
     }
 
     override fun onMetadataChanged(title: String, artist: String) {
-        val trackId = "$title-$artist"
-        if (currentTrackId != trackId && title.isNotEmpty()) {
-            currentTrackId = trackId
+        onTrackIdentityChanged(MusicPlaybackState.currentIdentity())
+    }
+
+    override fun onTrackIdentityChanged(identity: MediaTrackIdentity) {
+        if (identity.isEmpty()) {
+            currentTrackId = ""
             currentParsedLyrics = emptyList()
-            
-            updateNotification(title, false) // Initial state while searching
-            
-            thread {
-                val query = LrcQueryCleaner.clean("$title $artist")
-                val results = LRCLibClient.searchLyrics(query)
-                val syncedMatch = results.firstOrNull { it.syncedLyrics != null }
-                if (syncedMatch != null) {
-                    val parsed = LrcUtils.parseLrc(syncedMatch.syncedLyrics!!)
+            updateNotification("Live Lyrics Active", "Waiting for music...", openPicker = false)
+            return
+        }
+
+        val trackId = "${identity.title}-${identity.artist}"
+        if (currentTrackId == trackId && currentParsedLyrics.isNotEmpty()) {
+            return
+        }
+        currentTrackId = trackId
+
+        // Priority 1: User manual override for this session
+        val overrideLyrics = MusicPlaybackState.manualOverrideLyrics
+        if (overrideLyrics != null && overrideLyrics.isNotEmpty()) {
+            currentParsedLyrics = overrideLyrics
+            val overrideName = MusicPlaybackState.manualOverrideTrackName.ifEmpty { identity.title }
+            updateNotification("$overrideName — ${identity.artist}", "Using your saved lyrics", openPicker = false)
+            return
+        }
+
+        // Priority 2: Persistent Saved Lyrics / My Matches (User-selected or verified)
+        val saved = repo.findMatch(identity)
+        if (saved != null) {
+            val parsed = LrcUtils.parseLrc(saved.syncedLyrics)
+            if (parsed.isNotEmpty()) {
+                currentParsedLyrics = parsed
+                val statusText = if (saved.isUserChoice) "Using your saved lyrics" else "Lyrics syncing to Glyph"
+                updateNotification("${identity.title} — ${identity.artist}", statusText, openPicker = false)
+                return
+            }
+        }
+
+        // Priority 3: Online Resolver with Strict Confidence Ranking
+        currentParsedLyrics = emptyList() // Keep fallback visualizer active while resolving
+        updateNotification("${identity.title} — ${identity.artist}", "Resolving lyrics...", openPicker = false)
+
+        thread {
+            // Step 3a: Exact get lookup
+            val exact = LRCLibClient.getExactLyrics(
+                trackName = identity.cleanTitle(),
+                artistName = identity.primaryArtist(),
+                albumName = identity.album.ifEmpty { null },
+                durationSeconds = if (identity.durationMs > 0) (identity.durationMs / 1000).toInt() else null
+            )
+
+            if (exact != null && !exact.syncedLyrics.isNullOrBlank()) {
+                val parsed = LrcUtils.parseLrc(exact.syncedLyrics)
+                if (parsed.isNotEmpty()) {
+                    repo.saveAutoVerifiedMatch(identity, exact, exact.syncedLyrics, 95)
                     mainHandler.post {
                         if (currentTrackId == trackId) {
                             currentParsedLyrics = parsed
-                            updateNotification(title, true)
+                            updateNotification("${identity.title} — ${identity.artist}", "Lyrics syncing to Glyph", openPicker = false)
                         }
                     }
-                } else {
-                    mainHandler.post {
-                        if (currentTrackId == trackId) {
-                            updateNotification(title, false)
-                        }
+                    return@thread
+                }
+            }
+
+            // Step 3b: Candidate search & scoring
+            var candidates = LRCLibClient.searchCandidates(identity.cleanTitle(), identity.primaryArtist())
+            if (candidates.isEmpty()) {
+                candidates = LRCLibClient.searchLyrics("${identity.cleanTitle()} ${identity.primaryArtist()}".trim())
+            }
+
+            val resolution = LyricMatchScorer.scoreCandidates(identity, candidates)
+
+            mainHandler.post {
+                if (currentTrackId != trackId) return@post
+                when (resolution.status) {
+                    LyricConfidenceLevel.HIGH_CONFIDENCE -> {
+                        val top = resolution.topMatch!!.candidate
+                        val parsed = LrcUtils.parseLrc(top.syncedLyrics!!)
+                        currentParsedLyrics = parsed
+                        repo.saveAutoVerifiedMatch(identity, top, top.syncedLyrics, resolution.topMatch.totalScore)
+                        updateNotification("${identity.title} — ${identity.artist}", "Lyrics syncing to Glyph", openPicker = false)
+                    }
+                    LyricConfidenceLevel.AMBIGUOUS -> {
+                        // High-value rule: Never show wrong lyrics. Fallback stays active.
+                        currentParsedLyrics = emptyList()
+                        updateNotification("Lyrics need confirmation", "Tap to choose correct match for ${identity.title}", openPicker = true)
+                    }
+                    LyricConfidenceLevel.NO_MATCH -> {
+                        // Fallback stays active
+                        currentParsedLyrics = emptyList()
+                        updateNotification("No synced lyrics found", "Tap to choose lyrics or import .lrc", openPicker = true)
                     }
                 }
             }
-        } else if (title.isEmpty()) {
-            updateNotification("", false)
         }
     }
 

@@ -15,11 +15,99 @@ import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
 object VideoProcessor {
     const val MATRIX_SIZE = 25
+
+    data class ExtractedFrameCache(
+        val mediaUri: Uri,
+        val mediaType: Int,
+        val targetFps: Int,
+        val videoCx: Float,
+        val videoCy: Float,
+        val videoRadius: Float,
+        val enhancementMode: Int,
+        val framesByIndex: MutableMap<Int, ByteArray> = ConcurrentHashMap()
+    )
+
+    @Volatile
+    private var frameCache: ExtractedFrameCache? = null
+
+    fun clearFrameCache() {
+        frameCache = null
+    }
+
+    fun getCachedFrameCount(): Int = frameCache?.framesByIndex?.size ?: 0
+
+    data class AdaptiveRange(
+        val effectiveMin: Float,
+        val effectiveMax: Float,
+        val effectiveRange: Float,
+        val adaptiveGain: Float,
+        val gammaLift: Float = 1.0f
+    )
+
+    /**
+     * Automatically analyzes the luminance distribution within the active circular aperture.
+     * For high-contrast media (e.g. camera close-ups), adaptiveGain is 0.0 and min/max are preserved untouched.
+     * For low-contrast or low-res media (e.g. faces or compressed images with narrow dynamic range),
+     * adaptiveGain smoothly scales up to expand the subject's midtones across the full LED range.
+     */
+    fun calculateAdaptiveRange(
+        frameMin: Float,
+        frameMax: Float,
+        activeLuma: List<Float>,
+        spreadThreshold: Float = 150f,
+        mode: Int = 0 // 0 = Auto, 1 = On, 2 = Off
+    ): AdaptiveRange {
+        if (mode == 2 || activeLuma.isEmpty() || frameMax <= frameMin) {
+            val safeRange = (frameMax - frameMin).coerceAtLeast(1f)
+            return AdaptiveRange(frameMin, frameMax, safeRange, 0f, 1.0f)
+        }
+
+        val sorted = activeLuma.sorted()
+        // Robust 3rd and 97th percentiles
+        val p3 = sorted[(sorted.size * 0.03f).toInt().coerceIn(0, sorted.size - 1)]
+        val p97 = sorted[(sorted.size * 0.97f).toInt().coerceIn(0, sorted.size - 1)]
+
+        if (mode == 1) {
+            // Force ON: maximize dynamic range stretch and perceptual shadow lift
+            val effectiveMin = frameMin * 0.25f + p3 * 0.75f
+            val effectiveMax = frameMax * 0.25f + p97 * 0.75f
+            val effectiveRange = (effectiveMax - effectiveMin).coerceAtLeast(1f)
+            return AdaptiveRange(effectiveMin, effectiveMax, effectiveRange, 1.0f, 0.80f)
+        }
+
+        // Mode 0: AUTO
+        val dynamicSpread = p97 - p3
+        val adaptiveGain = if (dynamicSpread < spreadThreshold) {
+            ((spreadThreshold - dynamicSpread) / spreadThreshold).coerceIn(0f, 1f)
+        } else {
+            0f
+        }
+
+        val effectiveMin = frameMin * (1f - adaptiveGain * 0.70f) + p3 * (adaptiveGain * 0.70f)
+        val effectiveMax = frameMax * (1f - adaptiveGain * 0.70f) + p97 * (adaptiveGain * 0.70f)
+        val effectiveRange = (effectiveMax - effectiveMin).coerceAtLeast(1f)
+        val gamma = 1.0f - (adaptiveGain * 0.20f) // Smooth lift from 1.0 down to 0.82
+
+        return AdaptiveRange(effectiveMin, effectiveMax, effectiveRange, adaptiveGain, gamma)
+    }
+
+    /**
+     * Computes energy-preserving 3x3 Laplacian sharpening weights.
+     * When adaptiveGain is 0.0 (standard camera shots), returns standard weights (center=5.0, neighbor=1.0).
+     * For low-contrast subjects (adaptiveGain > 0.0), edge contrast is smoothly enhanced.
+     * Always satisfies center - 4 * neighbor == 1.0 (mean-preserving).
+     */
+    fun calculateSharpeningWeights(adaptiveGain: Float): Pair<Float, Float> {
+        val center = 5f + (adaptiveGain.coerceIn(0f, 1f) * 1.5f)
+        val neighbor = (center - 1f) / 4f
+        return Pair(center, neighbor)
+    }
 
     fun processMedia(
         context: Context, 
@@ -35,6 +123,7 @@ object VideoProcessor {
         brightnessMulti: Float = 1.0f,
         imageDurationSec: Int = 5,
         sharpen: Boolean = true,
+        enhancementMode: Int = 0,
         cropCx: Float,
         cropCy: Float,
         cropRadius: Float,
@@ -57,140 +146,234 @@ object VideoProcessor {
 
                 val rawFrames = mutableListOf<ByteArray>()
 
+                val cached = frameCache
+                val canReuseCache = cached != null &&
+                    cached.mediaUri == mediaUri &&
+                    cached.mediaType == mediaType &&
+                    cached.targetFps == targetFps &&
+                    Math.abs(cached.videoCx - videoCx) < 0.5f &&
+                    Math.abs(cached.videoCy - videoCy) < 0.5f &&
+                    Math.abs(cached.videoRadius - videoRadius) < 0.5f &&
+                    cached.enhancementMode == enhancementMode
+
+                val currentCache = if (canReuseCache) {
+                    cached!!
+                } else {
+                    ExtractedFrameCache(
+                        mediaUri = mediaUri,
+                        mediaType = mediaType,
+                        targetFps = targetFps,
+                        videoCx = videoCx,
+                        videoCy = videoCy,
+                        videoRadius = videoRadius,
+                        enhancementMode = enhancementMode
+                    ).also { frameCache = it }
+                }
+
                 if (mediaType == 0) {
                     // --- VIDEO ---
                     val retriever = MediaMetadataRetriever()
                     try {
                         retriever.setDataSource(context, mediaUri)
-                        
+                    
                         val durationStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
                         val durationMs = durationStr?.toLongOrNull() ?: run {
                             mainHandler.post { onComplete(false, "Could not determine video duration.") }
                             return@thread
                         }
-                        
+                    
                         val validEndMs = if (endTimeMs <= 0 || endTimeMs > durationMs) durationMs else endTimeMs
                         val validStartMs = if (startTimeMs < 0 || startTimeMs >= validEndMs) 0L else startTimeMs
-                        
+                    
                         val processDurationMs = validEndMs - validStartMs
                         if (processDurationMs <= 0) {
                             mainHandler.post { onComplete(false, "Trimmed duration is zero.") }
                             return@thread
                         }
-                        
+                    
                         val intervalMs = 1000L / targetFps
-                        val totalFrames = (processDurationMs / intervalMs).toInt()
+                        val startFrame = (validStartMs / intervalMs).toInt()
+                        val endFrame = (validEndMs / intervalMs).toInt().coerceAtLeast(startFrame + 1)
+                        val totalFrames = endFrame - startFrame
                         if (totalFrames == 0) {
                             mainHandler.post { onComplete(false, "Video is too short for the selected FPS.") }
                             return@thread
                         }
 
-                        for (i in 0 until totalFrames) {
-                            if (isCancelled.get()) {
-                                mainHandler.post { onComplete(false, "Cancelled by user.") }
-                                return@thread
+                        val neededIndices = (startFrame until endFrame).toList()
+                        val missingIndices = neededIndices.filter { !currentCache.framesByIndex.containsKey(it) }
+
+                        if (missingIndices.isEmpty()) {
+                            mainHandler.post { onProgress(85) }
+                        } else {
+                            // Hardware-Accelerated decoding on Qualcomm VPU via MediaCodec + MediaExtractor
+                            val hardwareSuccess = try {
+                                HardwareVideoDecoder.decodeVideoFrames(
+                                    context = context,
+                                    mediaUri = mediaUri,
+                                    startTimeMs = validStartMs,
+                                    endTimeMs = validEndMs,
+                                    targetFps = targetFps,
+                                    neededIndices = neededIndices,
+                                    framesByIndex = currentCache.framesByIndex,
+                                    videoCx = videoCx,
+                                    videoCy = videoCy,
+                                    videoRadius = videoRadius,
+                                    enhancementMode = enhancementMode,
+                                    isCancelled = isCancelled,
+                                    onProgress = { prog -> mainHandler.post { onProgress(prog) } }
+                                )
+                            } catch (e: Throwable) {
+                                false
                             }
-                            val timeUs = (validStartMs + i * intervalMs) * 1000
-                            val bitmap = retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST)
-                            if (bitmap != null) {
-                                val frame = extractAndDownsampleFrame(bitmap, videoCx, videoCy, videoRadius)
-                                if (frame != null) rawFrames.add(frame)
-                                bitmap.recycle()
+
+                            // Fallback to MediaMetadataRetriever if any frames are still missing
+                            val stillMissing = neededIndices.filter { !currentCache.framesByIndex.containsKey(it) }
+                            if (!hardwareSuccess || stillMissing.isNotEmpty()) {
+                                val alreadyCached = neededIndices.size - stillMissing.size
+                                for ((doneCount, frameIdx) in stillMissing.withIndex()) {
+                                    if (isCancelled.get()) {
+                                        mainHandler.post { onComplete(false, "Cancelled by user.") }
+                                        return@thread
+                                    }
+                                    val timeUs = frameIdx * intervalMs * 1000L
+                                    val bitmap = retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST)
+                                    if (bitmap != null) {
+                                        val frame = extractAndDownsampleFrame(bitmap, videoCx, videoCy, videoRadius, enhancementMode)
+                                        if (frame != null) {
+                                            currentCache.framesByIndex[frameIdx] = frame
+                                        }
+                                        bitmap.recycle()
+                                    }
+                                    val prog = ((alreadyCached + doneCount).toFloat() / neededIndices.size * 85).toInt().coerceIn(0, 85)
+                                    mainHandler.post { onProgress(prog) }
+                                }
                             }
-                            val prog = (i.toFloat() / totalFrames * 50).toInt()
-                            mainHandler.post { onProgress(prog) }
+                            mainHandler.post { onProgress(85) }
+                        }
+
+                        for (frameIdx in neededIndices) {
+                            val f = currentCache.framesByIndex[frameIdx]
+                            if (f != null) rawFrames.add(f)
                         }
                     } finally {
                         retriever.release()
                     }
                 } else if (mediaType == 1) {
                     // --- GIF ---
+                    val intervalMs = 1000L / targetFps
                     val stream = context.contentResolver.openInputStream(mediaUri)
                     val movie = android.graphics.Movie.decodeStream(stream)
                     stream?.close()
-                    
+                
                     if (movie == null) {
                         mainHandler.post { onComplete(false, "Could not decode GIF.") }
                         return@thread
                     }
-                    
+                
                     val durationMs = movie.duration().toLong().coerceAtLeast(1L)
                     val validEndMs = if (endTimeMs <= 0 || endTimeMs > durationMs) durationMs else endTimeMs
                     val validStartMs = if (startTimeMs < 0 || startTimeMs >= validEndMs) 0L else startTimeMs
                     val processDurationMs = validEndMs - validStartMs
-                    
-                    val intervalMs = 1000L / targetFps
-                    val totalFrames = (processDurationMs / intervalMs).toInt().coerceAtLeast(1)
-                    
-                    val bitmap = Bitmap.createBitmap(movie.width().coerceAtLeast(1), movie.height().coerceAtLeast(1), Bitmap.Config.ARGB_8888)
-                    val canvas = Canvas(bitmap)
-                    
-                    for (i in 0 until totalFrames) {
-                        if (isCancelled.get()) {
-                            mainHandler.post { onComplete(false, "Cancelled by user.") }
-                            return@thread
+                
+                    val startFrame = (validStartMs / intervalMs).toInt()
+                    val endFrame = (validEndMs / intervalMs).toInt().coerceAtLeast(startFrame + 1)
+                    val neededIndices = (startFrame until endFrame).toList()
+                    val missingIndices = neededIndices.filter { !currentCache.framesByIndex.containsKey(it) }
+
+                    if (missingIndices.isEmpty()) {
+                        mainHandler.post { onProgress(85) }
+                    } else {
+                        val bitmap = Bitmap.createBitmap(movie.width().coerceAtLeast(1), movie.height().coerceAtLeast(1), Bitmap.Config.ARGB_8888)
+                        val canvas = Canvas(bitmap)
+                        val alreadyCached = neededIndices.size - missingIndices.size
+
+                        for ((doneCount, frameIdx) in missingIndices.withIndex()) {
+                            if (isCancelled.get()) {
+                                bitmap.recycle()
+                                mainHandler.post { onComplete(false, "Cancelled by user.") }
+                                return@thread
+                            }
+                            val timeMs = frameIdx * intervalMs
+                            movie.setTime(timeMs.toInt())
+                        
+                            canvas.drawColor(android.graphics.Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR)
+                            movie.draw(canvas, 0f, 0f)
+                        
+                            val frame = extractAndDownsampleFrame(bitmap, videoCx, videoCy, videoRadius, enhancementMode)
+                            if (frame != null) {
+                                currentCache.framesByIndex[frameIdx] = frame
+                            }
+                        
+                            val prog = ((alreadyCached + doneCount).toFloat() / neededIndices.size * 85).toInt().coerceIn(0, 85)
+                            mainHandler.post { onProgress(prog) }
                         }
-                        val timeMs = validStartMs + i * intervalMs
-                        movie.setTime(timeMs.toInt())
-                        
-                        canvas.drawColor(android.graphics.Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR)
-                        movie.draw(canvas, 0f, 0f)
-                        
-                        val frame = extractAndDownsampleFrame(bitmap, videoCx, videoCy, videoRadius)
-                        if (frame != null) rawFrames.add(frame)
-                        
-                        val prog = (i.toFloat() / totalFrames * 50).toInt()
-                        mainHandler.post { onProgress(prog) }
+                        bitmap.recycle()
+                        mainHandler.post { onProgress(85) }
                     }
-                    bitmap.recycle()
+
+                    for (frameIdx in neededIndices) {
+                        val f = currentCache.framesByIndex[frameIdx]
+                        if (f != null) rawFrames.add(f)
+                    }
                 } else {
                     // --- STATIC IMAGE ---
-                    // Safely get bounds first without loading the image to prevent OOM
-                    var stream = context.contentResolver.openInputStream(mediaUri)
-                    val boundsOptions = BitmapFactory.Options().apply {
-                        inJustDecodeBounds = true
+                    val cachedStaticFrame = currentCache.framesByIndex[0]
+                    val frame = if (cachedStaticFrame != null) {
+                        cachedStaticFrame
+                    } else {
+                        var stream = context.contentResolver.openInputStream(mediaUri)
+                        val boundsOptions = BitmapFactory.Options().apply {
+                            inJustDecodeBounds = true
+                        }
+                        BitmapFactory.decodeStream(stream, null, boundsOptions)
+                        stream?.close()
+                    
+                        val fullWidth = boundsOptions.outWidth
+                        val fullHeight = boundsOptions.outHeight
+                    
+                        if (fullWidth <= 0 || fullHeight <= 0) {
+                            mainHandler.post { onComplete(false, "Could not determine image dimensions.") }
+                            return@thread
+                        }
+                    
+                        // Calculate a safe sample size so the bitmap is around 1000px max (uses <4MB RAM)
+                        var sampleSize = 1
+                        while (fullWidth / sampleSize > 1500 || fullHeight / sampleSize > 1500) {
+                            sampleSize *= 2
+                        }
+                    
+                        stream = context.contentResolver.openInputStream(mediaUri)
+                        val options = BitmapFactory.Options().apply {
+                            inSampleSize = sampleSize
+                            inPreferredConfig = Bitmap.Config.ARGB_8888
+                            inMutable = true
+                        }
+                        val fullBitmap = BitmapFactory.decodeStream(stream, null, options)
+                        stream?.close()
+                    
+                        if (fullBitmap == null) {
+                            mainHandler.post { onComplete(false, "Could not decode image.") }
+                            return@thread
+                        }
+                    
+                        // The coordinate mapping (inverseTransform) assumes the FULL ORIGINAL width/height.
+                        // Because we downsampled the bitmap to save RAM, we must scale our crop circle coordinates to match the new size!
+                        val scaleX = fullBitmap.width.toFloat() / fullWidth.toFloat()
+                        val scaleY = fullBitmap.height.toFloat() / fullHeight.toFloat()
+                    
+                        val scaledCx = videoCx * scaleX
+                        val scaledCy = videoCy * scaleY
+                        val scaledRadius = videoRadius * Math.max(scaleX, scaleY)
+                    
+                        val extracted = extractAndDownsampleFrame(fullBitmap, scaledCx, scaledCy, scaledRadius, enhancementMode)
+                        fullBitmap.recycle()
+                        if (extracted != null) {
+                            currentCache.framesByIndex[0] = extracted
+                        }
+                        extracted
                     }
-                    BitmapFactory.decodeStream(stream, null, boundsOptions)
-                    stream?.close()
-                    
-                    val fullWidth = boundsOptions.outWidth
-                    val fullHeight = boundsOptions.outHeight
-                    
-                    if (fullWidth <= 0 || fullHeight <= 0) {
-                        mainHandler.post { onComplete(false, "Could not determine image dimensions.") }
-                        return@thread
-                    }
-                    
-                    // Calculate a safe sample size so the bitmap is around 1000px max (uses <4MB RAM)
-                    var sampleSize = 1
-                    while (fullWidth / sampleSize > 1500 || fullHeight / sampleSize > 1500) {
-                        sampleSize *= 2
-                    }
-                    
-                    stream = context.contentResolver.openInputStream(mediaUri)
-                    val options = BitmapFactory.Options().apply {
-                        inSampleSize = sampleSize
-                        inPreferredConfig = Bitmap.Config.ARGB_8888
-                        inMutable = true
-                    }
-                    val fullBitmap = BitmapFactory.decodeStream(stream, null, options)
-                    stream?.close()
-                    
-                    if (fullBitmap == null) {
-                        mainHandler.post { onComplete(false, "Could not decode image.") }
-                        return@thread
-                    }
-                    
-                    // The coordinate mapping (inverseTransform) assumes the FULL ORIGINAL width/height.
-                    // Because we downsampled the bitmap to save RAM, we must scale our crop circle coordinates to match the new size!
-                    val scaleX = fullBitmap.width.toFloat() / fullWidth.toFloat()
-                    val scaleY = fullBitmap.height.toFloat() / fullHeight.toFloat()
-                    
-                    val scaledCx = videoCx * scaleX
-                    val scaledCy = videoCy * scaleY
-                    val scaledRadius = videoRadius * Math.max(scaleX, scaleY)
-                    
-                    val frame = extractAndDownsampleFrame(fullBitmap, scaledCx, scaledCy, scaledRadius)
+
                     if (frame != null) {
                         val totalFrames = imageDurationSec * targetFps
                         for (i in 0 until totalFrames) {
@@ -201,9 +384,7 @@ object VideoProcessor {
                             rawFrames.add(frame)
                         }
                     }
-                    fullBitmap.recycle()
-                    
-                    mainHandler.post { onProgress(50) }
+                    mainHandler.post { onProgress(85) }
                 }
 
                 if (rawFrames.isEmpty()) {
@@ -216,17 +397,37 @@ object VideoProcessor {
                 val center = (MATRIX_SIZE - 1) / 2f
                 val radiusSq = (MATRIX_SIZE / 2f) * (MATRIX_SIZE / 2f)
 
+                val tone = LedTone.ToneState()
+
                 for ((index, frame) in rawFrames.withIndex()) {
                     if (isCancelled.get()) {
                         mainHandler.post { onComplete(false, "Cancelled by user.") }
                         return@thread
                     }
+
+                    if (enhancementMode != 2) {
+                        val params = if (enhancementMode == 1) LedTone.MAX else LedTone.NORMAL
+                        val mapped = LedTone.toneMap(frame, tone, p = params, brightnessMulti = brightnessMulti)
+                        val out = ByteArray(MATRIX_SIZE * MATRIX_SIZE)
+                        for (idx in mapped.indices) {
+                            if (!LedTone.mask[idx]) { out[idx] = 0; continue }
+                            val adj = ((mapped[idx] / 255f - 0.5f) * contrastMulti + 0.5f).coerceIn(0f, 1f)
+                            var v = (adj * 255f).toInt()
+                            if (invertColors) v = 255 - v
+                            out[idx] = v.coerceIn(0, 255).toByte()
+                        }
+                        finalFrames.add(out)
+                        mainHandler.post { onProgress(85 + (index.toFloat() / rawFrames.size * 10).toInt()) }
+                        continue
+                    }
+
                     val processedFrame = ByteArray(MATRIX_SIZE * MATRIX_SIZE)
                     
                     // Extract to 2D grid for spatial filtering
                     val grid = Array(MATRIX_SIZE) { FloatArray(MATRIX_SIZE) }
                     var frameMin = 255f
                     var frameMax = 0f
+                    val activeLuma = ArrayList<Float>(500)
                     for (y in 0 until MATRIX_SIZE) {
                         for (x in 0 until MATRIX_SIZE) {
                             val distSq = (x - center) * (x - center) + (y - center) * (y - center)
@@ -235,21 +436,26 @@ object VideoProcessor {
                             if (distSq <= radiusSq) {
                                 if (v < frameMin) frameMin = v
                                 if (v > frameMax) frameMax = v
+                                activeLuma.add(v)
                             }
                         }
                     }
                     
                     if (frameMax <= frameMin) frameMax = frameMin + 1
-                    val frameRange = frameMax - frameMin
+                    
+                    // Auto-detect dynamic range and compute adaptive contrast stretch & sharpening weights
+                    val adaptiveRange = calculateAdaptiveRange(frameMin, frameMax, activeLuma, mode = enhancementMode)
+                    val (centerWeight, neighborWeight) = calculateSharpeningWeights(adaptiveRange.adaptiveGain)
 
                     // Apply 3x3 Sharpening kernel
                     val sharpenedGrid = Array(MATRIX_SIZE) { FloatArray(MATRIX_SIZE) }
                     for (y in 0 until MATRIX_SIZE) {
                         for (x in 0 until MATRIX_SIZE) {
-                            if (y == 0 || y == MATRIX_SIZE - 1 || x == 0 || x == MATRIX_SIZE - 1 || !sharpen) {
+                            if (y == 0 || y == MATRIX_SIZE - 1 || x == 0 || x == MATRIX_SIZE - 1 || !sharpen || enhancementMode != 2) {
                                 sharpenedGrid[y][x] = grid[y][x]
                             } else {
-                                val sum = 5 * grid[y][x] - grid[y-1][x] - grid[y+1][x] - grid[y][x-1] - grid[y][x+1]
+                                val sum = centerWeight * grid[y][x] - 
+                                          neighborWeight * (grid[y-1][x] + grid[y+1][x] + grid[y][x-1] + grid[y][x+1])
                                 sharpenedGrid[y][x] = sum.coerceIn(0f, 255f)
                             }
                         }
@@ -262,12 +468,19 @@ object VideoProcessor {
                             if (distSq <= radiusSq) {
                                 val original = sharpenedGrid[y][x]
                                 
-                                val stretched = ((original - frameMin) / frameRange).coerceIn(0f, 1f)
+                                val stretched = ((original - adaptiveRange.effectiveMin) / adaptiveRange.effectiveRange).coerceIn(0f, 1f)
+                                
+                                // Perceptual LED curve: lift shadow midtones so facial features & contours don't crush into black
+                                val lifted = if (adaptiveRange.gammaLift < 1.0f) {
+                                    Math.pow(stretched.toDouble(), adaptiveRange.gammaLift.toDouble()).toFloat()
+                                } else {
+                                    stretched
+                                }
                                 
                                 // Apply contrast multiplier
-                                val adjustedStretched = ((stretched - 0.5f) * contrastMulti + 0.5f).coerceIn(0f, 1f)
+                                val adjustedStretched = ((lifted - 0.5f) * contrastMulti + 0.5f).coerceIn(0f, 1f)
                                 
-                                var contrasted = adjustedStretched * adjustedStretched * (3f - 2f * adjustedStretched)
+                                val contrasted = adjustedStretched * adjustedStretched * (3f - 2f * adjustedStretched)
                                 var finalValue = (contrasted * 255f * brightnessMulti).toInt()
                                 
                                 if (invertColors) {
@@ -281,7 +494,7 @@ object VideoProcessor {
                     }
                     finalFrames.add(processedFrame)
                     
-                    val prog = 50 + (index.toFloat() / rawFrames.size * 40).toInt()
+                    val prog = 85 + (index.toFloat() / rawFrames.size * 10).toInt()
                     mainHandler.post { onProgress(prog) }
                 }
 
@@ -337,7 +550,7 @@ object VideoProcessor {
         }
     }
 
-    private fun extractAndDownsampleFrame(bitmap: Bitmap, videoCx: Float, videoCy: Float, videoRadius: Float): ByteArray? {
+    private fun extractAndDownsampleFrame(bitmap: Bitmap, videoCx: Float, videoCy: Float, videoRadius: Float, enhancementMode: Int = 0): ByteArray? {
         val cropSide = (videoRadius * 2).toInt()
         val left = (videoCx - videoRadius).toInt().coerceIn(0, bitmap.width - 1)
         val top = (videoCy - videoRadius).toInt().coerceIn(0, bitmap.height - 1)
@@ -347,57 +560,55 @@ object VideoProcessor {
         if (width <= 0 || height <= 0) return null
 
         val square = Bitmap.createBitmap(bitmap, left, top, width, height)
-        val result = downsampleSquareFrame(square)
+        val result = downsampleSquareFrame(square, mode = enhancementMode)
         if (square != bitmap) square.recycle()
         return result
     }
 
-    private fun downsampleSquareFrame(square: Bitmap): ByteArray? {
-        val small = Bitmap.createBitmap(MATRIX_SIZE, MATRIX_SIZE, Bitmap.Config.ARGB_8888)
-        val scaleX = square.width.toFloat() / MATRIX_SIZE
-        val scaleY = square.height.toFloat() / MATRIX_SIZE
+    fun downsampleSquareFrame(square: Bitmap, mode: Int = 0): ByteArray? {
+        val w = square.width
+        val h = square.height
+        val pixels = IntArray(w * h)
+        square.getPixels(pixels, 0, w, 0, 0, w, h)
         
-        val pixels = IntArray(square.width * square.height)
-        square.getPixels(pixels, 0, square.width, 0, 0, square.width, square.height)
-        
-        val outPixels = IntArray(MATRIX_SIZE * MATRIX_SIZE)
-        for (y in 0 until MATRIX_SIZE) {
-            for (x in 0 until MATRIX_SIZE) {
-                var rSum = 0L
-                var gSum = 0L
-                var bSum = 0L
-                var count = 0
-                
-                val startX = (x * scaleX).toInt()
-                val endX = ((x + 1) * scaleX).toInt().coerceAtMost(square.width)
-                val startY = (y * scaleY).toInt()
-                val endY = ((y + 1) * scaleY).toInt().coerceAtMost(square.height)
-                
-                for (sy in startY until endY) {
-                    val offset = sy * square.width
-                    for (sx in startX until endX) {
-                        val px = pixels[offset + sx]
-                        rSum += android.graphics.Color.red(px)
-                        gSum += android.graphics.Color.green(px)
-                        bSum += android.graphics.Color.blue(px)
-                        count++
+        if (mode == 2) {
+            // --- MODE 2: STRICT 100% LEGACY BOX FILTER ---
+            val small = Bitmap.createBitmap(MATRIX_SIZE, MATRIX_SIZE, Bitmap.Config.ARGB_8888)
+            val scaleX = w.toFloat() / MATRIX_SIZE
+            val scaleY = h.toFloat() / MATRIX_SIZE
+            val outPixels = IntArray(MATRIX_SIZE * MATRIX_SIZE)
+            for (y in 0 until MATRIX_SIZE) {
+                for (x in 0 until MATRIX_SIZE) {
+                    var rSum = 0L; var gSum = 0L; var bSum = 0L; var count = 0
+                    val startX = (x * scaleX).toInt()
+                    val endX = Math.min(w, ((x + 1) * scaleX).toInt())
+                    val startY = (y * scaleY).toInt()
+                    val endY = Math.min(h, ((y + 1) * scaleY).toInt())
+                    for (sy in startY until endY) {
+                        val offset = sy * w
+                        for (sx in startX until endX) {
+                            val px = pixels[offset + sx]
+                            rSum += (px shr 16) and 0xFF
+                            gSum += (px shr 8) and 0xFF
+                            bSum += px and 0xFF
+                            count++
+                        }
+                    }
+                    if (count > 0) {
+                        outPixels[y * MATRIX_SIZE + x] = android.graphics.Color.rgb(
+                            (rSum / count).toInt(), (gSum / count).toInt(), (bSum / count).toInt()
+                        )
                     }
                 }
-                
-                if (count > 0) {
-                    outPixels[y * MATRIX_SIZE + x] = android.graphics.Color.rgb(
-                        (rSum / count).toInt(),
-                        (gSum / count).toInt(),
-                        (bSum / count).toInt()
-                    )
-                }
             }
+            small.setPixels(outPixels, 0, MATRIX_SIZE, 0, 0, MATRIX_SIZE, MATRIX_SIZE)
+            val grayFrame = convertToGrayscaleByteArray(small)
+            small.recycle()
+            return grayFrame
         }
-        small.setPixels(outPixels, 0, MATRIX_SIZE, 0, 0, MATRIX_SIZE, MATRIX_SIZE)
         
-        val grayFrame = convertToGrayscaleByteArray(small)
-        small.recycle()
-        return grayFrame
+        // --- MODE 0 (AUTO) & MODE 1 (ON): HIGH-DPI SUPER-RESOLUTION & SALIENT FEATURE DOWNSAMPLER ---
+        return LedTone.downsampleArea(pixels, w, h)
     }
 
     private fun convertToGrayscaleByteArray(bitmap: Bitmap): ByteArray {

@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
@@ -28,17 +29,38 @@ class GalleryActivity : AppCompatActivity() {
 
     private lateinit var rvPresets: RecyclerView
     private lateinit var tvEmpty: TextView
+    private lateinit var layoutEmptyState: View
+    private lateinit var tvVaultCount: TextView
+    private lateinit var btnBack: android.widget.ImageView
     private lateinit var adapter: PresetAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowInsetsUtil.setupEdgeToEdge(this)
         setContentView(R.layout.activity_gallery)
 
+        val appBarLayout = findViewById<com.google.android.material.appbar.AppBarLayout>(R.id.appBarLayout)
+        WindowInsetsUtil.applySystemBarsPadding(appBarLayout, applyTop = true)
+
+        btnBack = findViewById(R.id.btnBack)
+        btnBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
+        TouchSpringAnimator.attach(btnBack)
+
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
-        toolbar.setNavigationOnClickListener { finish() }
+        toolbar?.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                NavigationHelper.finishWithPop(this@GalleryActivity)
+            }
+        })
 
         rvPresets = findViewById(R.id.rvPresets)
+        WindowInsetsUtil.applySystemBarsPadding(rvPresets, applyBottom = true)
+
         tvEmpty = findViewById(R.id.tvEmpty)
+        layoutEmptyState = findViewById(R.id.layoutEmptyState)
+        tvVaultCount = findViewById(R.id.tvVaultCount)
 
         rvPresets.layoutManager = LinearLayoutManager(this)
         
@@ -47,12 +69,13 @@ class GalleryActivity : AppCompatActivity() {
 
     private fun loadPresets() {
         val presets = PresetManager.getPresets(this)
+        tvVaultCount.text = if (presets.isNotEmpty()) "${presets.size} presets" else ""
         if (presets.isEmpty()) {
             rvPresets.visibility = View.GONE
-            tvEmpty.visibility = View.VISIBLE
+            layoutEmptyState.visibility = View.VISIBLE
         } else {
             rvPresets.visibility = View.VISIBLE
-            tvEmpty.visibility = View.GONE
+            layoutEmptyState.visibility = View.GONE
             adapter = PresetAdapter(presets, this::onPresetClicked, this::onDeleteClicked)
             rvPresets.adapter = adapter
         }
@@ -92,77 +115,101 @@ class GalleryActivity : AppCompatActivity() {
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
         dialogView.findViewById<TextView>(R.id.tvOptionsTitle).text = preset.name
+        dialogView.findViewById<TextView>(R.id.tvOptionsBadge).text = if (preset.type == "LYRIC") {
+            "Synced Lyric Animation"
+        } else {
+            "25×25 Matrix Preset"
+        }
 
         val ivLargePreview = dialogView.findViewById<android.widget.ImageView>(R.id.ivLargePreview)
         var isPlaying = true
         val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        var animRunnable: Runnable? = null
 
         val binFile = java.io.File(PresetManager.getPresetsDir(this), "${preset.id}.bin")
         if (binFile.exists() && binFile.length() > 637) {
-            try {
-                val bytes = binFile.readBytes()
-                val headerSize = if (preset.type == "LYRIC") 16 else 12
-                val buffer = java.nio.ByteBuffer.wrap(bytes).order(java.nio.ByteOrder.LITTLE_ENDIAN)
-                val numFrames = buffer.getInt()
-                val fps = buffer.getInt().let { if (it <= 0) 12 else it }
-                val frameDelay = 1000L / fps
+            kotlin.concurrent.thread {
+                try {
+                    val bytes = binFile.readBytes()
+                    val headerSize = if (preset.type == "LYRIC") 16 else 12
+                    val buffer = java.nio.ByteBuffer.wrap(bytes).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+                    val numFrames = buffer.getInt()
+                    val fps = buffer.getInt().let { if (it <= 0) 12 else it }
+                    val frameDelay = 1000L / fps
 
-                val frames = mutableListOf<android.graphics.Bitmap>()
-                var offset = headerSize
+                    val framePixelsList = mutableListOf<IntArray>()
+                    var offset = headerSize
 
-                for (i in 0 until numFrames) {
-                    if (offset + 625 > bytes.size) break
-                    val pixels = IntArray(625)
-                    for (p in 0 until 625) {
-                        val bright = bytes[offset + p].toInt() and 0xFF
-                        pixels[p] = android.graphics.Color.argb(255, bright, bright, bright)
-                    }
-                    val bitmap = android.graphics.Bitmap.createBitmap(25, 25, android.graphics.Bitmap.Config.ARGB_8888)
-                    bitmap.setPixels(pixels, 0, 25, 0, 0, 25, 25)
-                    frames.add(bitmap)
-                    offset += 625
-                }
-
-                if (frames.isNotEmpty()) {
-                    var currentFrameIndex = 0
-                    val runnable = object : Runnable {
-                        override fun run() {
-                            if (!isPlaying) return
-                            ivLargePreview.setImageBitmap(frames[currentFrameIndex])
-                            currentFrameIndex = (currentFrameIndex + 1) % frames.size
-                            handler.postDelayed(this, frameDelay)
+                    for (i in 0 until numFrames) {
+                        if (offset + 625 > bytes.size) break
+                        val pixels = IntArray(625)
+                        for (p in 0 until 625) {
+                            val bright = bytes[offset + p].toInt() and 0xFF
+                            pixels[p] = android.graphics.Color.argb(255, bright, bright, bright)
                         }
+                        framePixelsList.add(pixels)
+                        offset += 625
                     }
-                    handler.post(runnable)
+
+                    if (framePixelsList.isNotEmpty() && isPlaying) {
+                        val reusableBitmap = android.graphics.Bitmap.createBitmap(25, 25, android.graphics.Bitmap.Config.ARGB_8888)
+                        var currentFrameIndex = 0
+                        val runnable = object : Runnable {
+                            override fun run() {
+                                if (!isPlaying) return
+                                reusableBitmap.setPixels(framePixelsList[currentFrameIndex], 0, 25, 0, 0, 25, 25)
+                                ivLargePreview.setImageBitmap(reusableBitmap)
+                                currentFrameIndex = (currentFrameIndex + 1) % framePixelsList.size
+                                handler.postDelayed(this, frameDelay)
+                            }
+                        }
+                        animRunnable = runnable
+                        handler.post(runnable)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
         }
 
         dialog.setOnDismissListener {
             isPlaying = false
+            animRunnable?.let { handler.removeCallbacks(it) }
+            handler.removeCallbacksAndMessages(null)
         }
 
-        dialogView.findViewById<MaterialButton>(R.id.btnSlot1).setOnClickListener {
+        val btnSlot1 = dialogView.findViewById<MaterialButton>(R.id.btnSlot1)
+        val btnSlot2 = dialogView.findViewById<MaterialButton>(R.id.btnSlot2)
+        val btnSlot3 = dialogView.findViewById<MaterialButton>(R.id.btnSlot3)
+        val btnShare = dialogView.findViewById<MaterialButton>(R.id.btnShare)
+        val btnDelete = dialogView.findViewById<MaterialButton>(R.id.btnDelete)
+        btnShare.setTextColor(android.graphics.Color.WHITE)
+
+        btnSlot1.applyLiquidGlass(pressedScale = 0.96f)
+        btnSlot2.applyLiquidGlass(pressedScale = 0.96f)
+        btnSlot3.applyLiquidGlass(pressedScale = 0.96f)
+        btnShare.applyLiquidGlass(pressedScale = 0.96f)
+        btnDelete.applyLiquidGlass(pressedScale = 0.96f)
+
+        btnSlot1.setOnClickListener {
             assignToSlot(preset, 1)
             dialog.dismiss()
         }
-        dialogView.findViewById<MaterialButton>(R.id.btnSlot2).setOnClickListener {
+        btnSlot2.setOnClickListener {
             assignToSlot(preset, 2)
             dialog.dismiss()
         }
-        dialogView.findViewById<MaterialButton>(R.id.btnSlot3).setOnClickListener {
+        btnSlot3.setOnClickListener {
             assignToSlot(preset, 3)
             dialog.dismiss()
         }
 
-        dialogView.findViewById<MaterialButton>(R.id.btnShare).setOnClickListener {
+        btnShare.setOnClickListener {
             sharePreset(preset)
             dialog.dismiss()
         }
 
-        dialogView.findViewById<MaterialButton>(R.id.btnDelete).setOnClickListener {
+        btnDelete.setOnClickListener {
             showDeleteConfirmationDialog(preset) {
                 PresetManager.deletePreset(this, preset.id)
                 loadPresets()
@@ -260,6 +307,8 @@ class PresetAdapter(
         
         holder.itemView.setOnClickListener { onClick(p) }
         holder.btnQuickDelete.setOnClickListener { onDelete(p) }
+        holder.itemView.applyLiquidGlass(pressedScale = 0.98f)
+        holder.btnQuickDelete.applyLiquidGlass(pressedScale = 0.95f)
         
         // Load thumbnail from bin file
         val context = holder.itemView.context

@@ -36,6 +36,12 @@ class SplashActivity : AppCompatActivity() {
         setContentView(R.layout.activity_splash)
         
         tvGlitchText = findViewById(R.id.tvGlitchText)
+        try {
+            val ndotTypeface = androidx.core.content.res.ResourcesCompat.getFont(this, R.font.ndot57)
+            if (ndotTypeface != null) {
+                tvGlitchText.typeface = ndotTypeface
+            }
+        } catch (_: Exception) {}
         
         // Start Glitch Animation
         handler.postDelayed(glitchRunnable, 100)

@@ -32,7 +32,7 @@ class LiveLyricsToyService : Service(), MusicPlaybackState.StateChangeListener, 
     private lateinit var visualizerHelper: AudioVisualizerHelper
     private var currentParsedLyrics: List<Pair<Long, String>> = emptyList()
     private var currentTrackId = ""
-    private var fontStyle = GlyphFontEngine.FontStyle.SMOOTH
+    private var fontStyle = GlyphFontEngine.FontStyle.PIXEL_TINY
     
     private lateinit var prefs: SharedPreferences
     private var fallbackEnabled = true
@@ -50,9 +50,10 @@ class LiveLyricsToyService : Service(), MusicPlaybackState.StateChangeListener, 
             
             val fontStyleInt = prefs.getInt("live_font_style", 0)
             fontStyle = when (fontStyleInt) {
-                1 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
-                2 -> GlyphFontEngine.FontStyle.PIXEL_TINY
-                else -> GlyphFontEngine.FontStyle.SMOOTH
+                0 -> GlyphFontEngine.FontStyle.PIXEL_TINY
+                1 -> GlyphFontEngine.FontStyle.SMOOTH
+                2 -> GlyphFontEngine.FontStyle.BLOCK_BOLD
+                else -> GlyphFontEngine.FontStyle.PIXEL_TINY
             }
             
             // Initial fetch if active
@@ -81,6 +82,7 @@ class LiveLyricsToyService : Service(), MusicPlaybackState.StateChangeListener, 
             if (!isEnabled || !MusicPlaybackState.hasActiveSession || !MusicPlaybackState.isPlaying) {
                 if (lastFrameHash != -1) {
                     glyphManager?.turnOff()
+                    GlyphFrameBus.postFrame(ByteArray(625))
                     lastFrameHash = -1
                 }
                 visualizerHelper.stop()
@@ -189,8 +191,9 @@ class LiveLyricsToyService : Service(), MusicPlaybackState.StateChangeListener, 
         mainHandler.removeCallbacks(playbackRunnable)
         prefs.unregisterOnSharedPreferenceChangeListener(this)
         visualizerHelper.stop()
-        glyphManager?.turnOff()
-        glyphManager?.unInit()
+        try { glyphManager?.turnOff() } catch (_: Exception) {}
+        GlyphFrameBus.postFrame(ByteArray(625))
+        try { glyphManager?.unInit() } catch (_: Exception) {}
         glyphManager = null
         super.onDestroy()
     }
@@ -220,21 +223,64 @@ class LiveLyricsToyService : Service(), MusicPlaybackState.StateChangeListener, 
     }
 
     override fun onMetadataChanged(title: String, artist: String) {
-        val trackId = "$title-$artist"
-        if (currentTrackId != trackId && title.isNotEmpty()) {
-            currentTrackId = trackId
-            currentParsedLyrics = emptyList() // clear old
-            
-            thread {
-                val query = LrcQueryCleaner.clean("$title $artist")
-                val results = LRCLibClient.searchLyrics(query)
-                val syncedMatch = results.firstOrNull { it.syncedLyrics != null }
-                if (syncedMatch != null) {
-                    val parsed = LrcUtils.parseLrc(syncedMatch.syncedLyrics!!)
+        onTrackIdentityChanged(MusicPlaybackState.currentIdentity())
+    }
+
+    override fun onTrackIdentityChanged(identity: MediaTrackIdentity) {
+        if (identity.isEmpty()) {
+            currentTrackId = ""
+            currentParsedLyrics = emptyList()
+            return
+        }
+
+        val trackId = "${identity.title}-${identity.artist}"
+        if (currentTrackId == trackId && currentParsedLyrics.isNotEmpty()) return
+        currentTrackId = trackId
+
+        val repo = SavedLyricsRepository.getInstance(this)
+        val saved = repo.findMatch(identity)
+        if (saved != null) {
+            val parsed = LrcUtils.parseLrc(saved.syncedLyrics)
+            if (parsed.isNotEmpty()) {
+                currentParsedLyrics = parsed
+                return
+            }
+        }
+
+        currentParsedLyrics = emptyList() // Fallback active while resolving
+
+        thread {
+            val exact = LRCLibClient.getExactLyrics(
+                trackName = identity.cleanTitle(),
+                artistName = identity.primaryArtist(),
+                albumName = identity.album.ifEmpty { null },
+                durationSeconds = if (identity.durationMs > 0) (identity.durationMs / 1000).toInt() else null
+            )
+            if (exact != null && !exact.syncedLyrics.isNullOrBlank()) {
+                val parsed = LrcUtils.parseLrc(exact.syncedLyrics)
+                if (parsed.isNotEmpty()) {
+                    repo.saveAutoVerifiedMatch(identity, exact, exact.syncedLyrics, 95)
                     mainHandler.post {
                         if (currentTrackId == trackId) {
                             currentParsedLyrics = parsed
                         }
+                    }
+                    return@thread
+                }
+            }
+
+            var candidates = LRCLibClient.searchCandidates(identity.cleanTitle(), identity.primaryArtist())
+            if (candidates.isEmpty()) {
+                candidates = LRCLibClient.searchLyrics("${identity.cleanTitle()} ${identity.primaryArtist()}".trim())
+            }
+            val resolution = LyricMatchScorer.scoreCandidates(identity, candidates)
+            if (resolution.status == LyricConfidenceLevel.HIGH_CONFIDENCE) {
+                val top = resolution.topMatch!!.candidate
+                val parsed = LrcUtils.parseLrc(top.syncedLyrics!!)
+                repo.saveAutoVerifiedMatch(identity, top, top.syncedLyrics, resolution.topMatch.totalScore)
+                mainHandler.post {
+                    if (currentTrackId == trackId) {
+                        currentParsedLyrics = parsed
                     }
                 }
             }
