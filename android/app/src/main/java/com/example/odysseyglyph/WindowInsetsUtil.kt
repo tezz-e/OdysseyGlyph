@@ -71,7 +71,7 @@ object WindowInsetsUtil {
     fun applySystemBarsPadding(
         view: View,
         applyTop: Boolean = false,
-        applyBottom: Boolean = true,
+        applyBottom: Boolean = false,
         applyLeft: Boolean = false,
         applyRight: Boolean = false,
         overlayView: View? = null,
@@ -96,13 +96,13 @@ object WindowInsetsUtil {
             val computedBottom = if (applyBottom) {
                 initialBottom + calculateBottomInset(systemBars.bottom, imeBottom, extraBottom)
             } else {
-                v.paddingBottom
+                initialBottom
             }
 
             v.updatePadding(
-                left = if (applyLeft) initialLeft + systemBars.left else v.paddingLeft,
-                top = if (applyTop) initialTop + systemBars.top else v.paddingTop,
-                right = if (applyRight) initialRight + systemBars.right else v.paddingRight,
+                left = if (applyLeft) initialLeft + systemBars.left else initialLeft,
+                top = if (applyTop) initialTop + systemBars.top else initialTop,
+                right = if (applyRight) initialRight + systemBars.right else initialRight,
                 bottom = computedBottom
             )
 

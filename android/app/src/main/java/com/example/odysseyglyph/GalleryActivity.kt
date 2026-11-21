@@ -40,7 +40,7 @@ class GalleryActivity : AppCompatActivity() {
         setContentView(R.layout.activity_gallery)
 
         val appBarLayout = findViewById<com.google.android.material.appbar.AppBarLayout>(R.id.appBarLayout)
-        WindowInsetsUtil.applySystemBarsPadding(appBarLayout, applyTop = true)
+        WindowInsetsUtil.applySystemBarsPadding(appBarLayout, applyTop = true, applyBottom = false)
 
         btnBack = findViewById(R.id.btnBack)
         btnBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }

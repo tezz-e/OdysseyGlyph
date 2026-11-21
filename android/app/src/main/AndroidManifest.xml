@@ -84,6 +84,7 @@
         <activity
             android:name=".TrackMatchPickerActivity"
             android:exported="false"
+            android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.OdysseyGlyph" />
 
         <activity
@@ -94,6 +95,7 @@
         <activity
             android:name=".QuickSignalActivity"
             android:exported="false"
+            android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.OdysseyGlyph" />
 
         <service

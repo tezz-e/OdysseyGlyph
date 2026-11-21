@@ -66,11 +66,11 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
         setContentView(R.layout.activity_live_lyrics)
         
         val appBarLayout = findViewById<com.google.android.material.appbar.AppBarLayout>(R.id.appBarLayout)
-        WindowInsetsUtil.applySystemBarsPadding(appBarLayout, applyTop = true)
+        WindowInsetsUtil.applySystemBarsPadding(appBarLayout, applyTop = true, applyBottom = false)
         val scrollView = findViewById<androidx.core.widget.NestedScrollView>(R.id.scrollView)
         scrollView.isSmoothScrollingEnabled = true
         scrollView.overScrollMode = View.OVER_SCROLL_NEVER
-        WindowInsetsUtil.applySystemBarsPadding(scrollView, applyBottom = true)
+        WindowInsetsUtil.applySystemBarsPadding(scrollView, applyTop = false, applyBottom = true)
         
         prefs = getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE)
         

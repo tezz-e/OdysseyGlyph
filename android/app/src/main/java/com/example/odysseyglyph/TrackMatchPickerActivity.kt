@@ -58,9 +58,9 @@ class TrackMatchPickerActivity : AppCompatActivity() {
         setContentView(R.layout.activity_track_match_picker)
 
         val appBar = findViewById<com.google.android.material.appbar.AppBarLayout>(R.id.appBarLayout)
-        WindowInsetsUtil.applySystemBarsPadding(appBar, applyTop = true)
+        WindowInsetsUtil.applySystemBarsPadding(appBar, applyTop = true, applyBottom = false)
         val scrollView = findViewById<androidx.core.widget.NestedScrollView>(R.id.scrollView)
-        WindowInsetsUtil.applySystemBarsPadding(scrollView, applyBottom = true)
+        WindowInsetsUtil.applySystemBarsPadding(scrollView, applyTop = false, applyBottom = true)
 
         repo = SavedLyricsRepository.getInstance(this)
 
