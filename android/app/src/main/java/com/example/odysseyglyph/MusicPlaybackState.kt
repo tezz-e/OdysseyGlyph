@@ -4,23 +4,23 @@ import android.graphics.Bitmap
 import android.media.session.PlaybackState
 
 object MusicPlaybackState {
-    var trackTitle: String = ""
-    var artist: String = ""
-    var album: String = ""
-    var durationMs: Long = 0L
-    var packageName: String = ""
-    var mediaId: String = ""
-    var albumArt: Bitmap? = null
+    @Volatile var trackTitle: String = ""
+    @Volatile var artist: String = ""
+    @Volatile var album: String = ""
+    @Volatile var durationMs: Long = 0L
+    @Volatile var packageName: String = ""
+    @Volatile var mediaId: String = ""
+    @Volatile var albumArt: Bitmap? = null
     
-    var isPlaying: Boolean = false
-    var position: Long = 0
-    var lastUpdateTime: Long = 0
-    var playbackSpeed: Float = 1.0f
+    @Volatile var isPlaying: Boolean = false
+    @Volatile var position: Long = 0
+    @Volatile var lastUpdateTime: Long = 0
+    @Volatile var playbackSpeed: Float = 1.0f
     
-    var hasActiveSession: Boolean = false
+    @Volatile var hasActiveSession: Boolean = false
     @Volatile var manualOverrideLyrics: List<Pair<Long, String>>? = null
     @Volatile var manualOverrideTrackName: String = ""
-    var activeSource: String = "" // e.g. "Spotify" or "YT Music"
+    @Volatile var activeSource: String = "" // e.g. "Spotify" or "YT Music"
     
     fun currentIdentity(): MediaTrackIdentity {
         return MediaTrackIdentity(
@@ -39,12 +39,10 @@ object MusicPlaybackState {
         fun onPlaybackStateChanged(isPlaying: Boolean) {}
     }
     
-    private val listeners = mutableListOf<StateChangeListener>()
+    private val listeners = java.util.concurrent.CopyOnWriteArrayList<StateChangeListener>()
     
     fun addListener(listener: StateChangeListener) {
-        if (!listeners.contains(listener)) {
-            listeners.add(listener)
-        }
+        listeners.addIfAbsent(listener)
     }
     
     fun removeListener(listener: StateChangeListener) {

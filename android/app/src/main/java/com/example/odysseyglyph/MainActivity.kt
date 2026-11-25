@@ -86,6 +86,48 @@ class MainActivity : AppCompatActivity() {
 
     private var nothingOverflowMenu: NothingOverflowMenu? = null
     private var glitchAnimator: ValueAnimator? = null
+    private var pendingVisualizerLaunch = false
+    private var pendingVisualizerStyle = 2
+
+    private val visualizerPermLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+    ) { _ ->
+        if (!pendingVisualizerLaunch) return@registerForActivityResult
+        pendingVisualizerLaunch = false
+        val needsMic = pendingVisualizerStyle == 2 || pendingVisualizerStyle == 3 || pendingVisualizerStyle == 5 || pendingVisualizerStyle == 8
+        val hasMic = checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (needsMic && !hasMic) {
+            Snackbar.make(
+                findViewById(android.R.id.content),
+                "Microphone permission is required for audio-reactive visualizers.",
+                Snackbar.LENGTH_LONG
+            ).applyNothingStyle().show()
+            return@registerForActivityResult
+        }
+        launchVisualizerService()
+    }
+
+    private fun launchVisualizerService() {
+        prefs.edit().putString("last_used_service", "visualizer").apply()
+
+        val stopLyrics = Intent(this@MainActivity, LiveLyricsService::class.java).apply { action = "STOP_LIVE_LYRICS" }
+        startService(stopLyrics)
+
+        val intent = Intent(this, VisualizerService::class.java)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
+        val hasNotif = android.os.Build.VERSION.SDK_INT < 33 ||
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        val msg = if (hasNotif) {
+            "Visualizer Started! Check your notifications to stop it."
+        } else {
+            "Visualizer Started! Use the tile or widget to stop it."
+        }
+        Snackbar.make(findViewById(android.R.id.content), msg, Snackbar.LENGTH_LONG).applyNothingStyle().show()
+    }
 
     fun loadMedia(uri: Uri) {
         VideoProcessor.clearFrameCache()
@@ -522,64 +564,46 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnLaunchVisualizer.setOnClickListener {
-            val isGranted = androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
-            if (!isGranted) {
-                val dialogView = layoutInflater.inflate(R.layout.dialog_nothing_onboarding, null)
-                val dialog = androidx.appcompat.app.AlertDialog.Builder(this).setView(dialogView).create()
-                dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-                
-                dialogView.findViewById<TextView>(R.id.tvDialogTitle).text = "PERMISSION REQUIRED"
-                dialogView.findViewById<TextView>(R.id.tvDialogMessage).text = "The visualizer needs permission to read your music player state so it knows when to automatically start and stop the LEDs.\n\nPlease enable Odyssey Glyph in the next screen."
-                dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogAction).apply {
-                    text = "GRANT PERMISSION"
-                    setOnClickListener {
-                        dialog.dismiss()
-                        startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
-                    }
-                }
-                dialog.show()
+            if (ProminentDisclosureDialog.showIfRequired(this)) {
                 return@setOnClickListener
             }
-            
+
             val bottomSheet = FallbackStyleBottomSheet()
             bottomSheet.setOnStyleSelectedListener { style ->
                 val permissionsToRequest = mutableListOf<String>()
-                
+
                 if (android.os.Build.VERSION.SDK_INT >= 33) {
                     if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
                         permissionsToRequest.add(android.Manifest.permission.POST_NOTIFICATIONS)
                     }
                 }
-                
-                if (style == 2 || style == 3 || style == 5 || style == 8) {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                        if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                            permissionsToRequest.add(android.Manifest.permission.RECORD_AUDIO)
-                        }
+
+                val needsMic = (style == 2 || style == 3 || style == 5 || style == 8)
+                if (needsMic) {
+                    if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        permissionsToRequest.add(android.Manifest.permission.RECORD_AUDIO)
                     }
                 }
-                
-                if (permissionsToRequest.isNotEmpty()) {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                        requestPermissions(permissionsToRequest.toTypedArray(), 101)
-                        Snackbar.make(findViewById(android.R.id.content), "Please grant permissions, then try again.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
-                        return@setOnStyleSelectedListener
-                    }
+
+                if (permissionsToRequest.isEmpty()) {
+                    launchVisualizerService()
+                    return@setOnStyleSelectedListener
                 }
-                
-                prefs.edit().putString("last_used_service", "visualizer").apply()
-                
-                // Stop live lyrics first if it's running
-                val stopLyrics = Intent(this@MainActivity, LiveLyricsService::class.java).apply { action = "STOP_LIVE_LYRICS" }
-                startService(stopLyrics)
-                
-                val intent = Intent(this, VisualizerService::class.java)
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    startForegroundService(intent)
+
+                val launchRequest = {
+                    pendingVisualizerStyle = style
+                    pendingVisualizerLaunch = true
+                    visualizerPermLauncher.launch(permissionsToRequest.toTypedArray())
+                }
+
+                if (permissionsToRequest.contains(android.Manifest.permission.RECORD_AUDIO)) {
+                    ProminentDisclosureDialog.showAudioDisclosureIfRequired(
+                        context = this,
+                        onAccepted = launchRequest
+                    )
                 } else {
-                    startService(intent)
+                    launchRequest()
                 }
-                Snackbar.make(findViewById(android.R.id.content), "Visualizer Started! Check your notifications to stop it.", Snackbar.LENGTH_LONG).applyNothingStyle().show()
             }
             bottomSheet.show(supportFragmentManager, "FallbackStyleBottomSheet")
         }

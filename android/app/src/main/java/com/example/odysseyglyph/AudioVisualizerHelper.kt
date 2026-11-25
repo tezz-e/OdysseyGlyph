@@ -16,62 +16,92 @@ import kotlin.math.sqrt
 class AudioVisualizerHelper(private val context: Context) {
 
     private var audioRecord: AudioRecord? = null
-    private var isRecording = false
+    private val isRecording = java.util.concurrent.atomic.AtomicBoolean(false)
     private var recordingThread: Thread? = null
+    private val lock = Any()
 
     private val sampleRate = 44100
     private val channelConfig = AudioFormat.CHANNEL_IN_MONO
     private val audioFormat = AudioFormat.ENCODING_PCM_16BIT
-    private val bufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat).coerceAtLeast(1024)
+    private val bufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat).coerceAtLeast(2048)
 
     // Current levels (0.0 to 1.0)
     var currentLevels = FloatArray(13) { 0f }
         private set
 
     fun start() {
-        if (isRecording) return
-        
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            Log.e("AudioVisualizer", "RECORD_AUDIO permission not granted")
-            return
-        }
+        synchronized(lock) {
+            if (isRecording.get()) return
 
-        try {
-            audioRecord = AudioRecord(
-                MediaRecorder.AudioSource.MIC,
-                sampleRate,
-                channelConfig,
-                audioFormat,
-                bufferSize
-            )
-
-            if (audioRecord?.state == AudioRecord.STATE_INITIALIZED) {
-                audioRecord?.startRecording()
-                isRecording = true
-                recordingThread = Thread { processAudio() }
-                recordingThread?.start()
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                Log.e("AudioVisualizer", "RECORD_AUDIO permission not granted")
+                return
             }
-        } catch (e: Exception) {
-            Log.e("AudioVisualizer", "Error initializing AudioRecord", e)
+
+            var record: AudioRecord? = null
+            try {
+                record = AudioRecord(
+                    MediaRecorder.AudioSource.MIC,
+                    sampleRate,
+                    channelConfig,
+                    audioFormat,
+                    bufferSize
+                )
+
+                if (record.state == AudioRecord.STATE_INITIALIZED) {
+                    record.startRecording()
+                    audioRecord = record
+                    isRecording.set(true)
+                    recordingThread = Thread({ processAudio(record) }, "AudioVisualizerThread").apply {
+                        start()
+                    }
+                } else {
+                    try { record.release() } catch (_: Exception) {}
+                }
+            } catch (e: Exception) {
+                isRecording.set(false)
+                audioRecord = null
+                try { record?.release() } catch (_: Exception) {}
+                Log.e("AudioVisualizer", "Error initializing AudioRecord", e)
+            }
         }
     }
 
     fun stop() {
-        if (!isRecording) return
-        isRecording = false
-        audioRecord?.stop()
-        audioRecord?.release()
-        audioRecord = null
-        recordingThread = null
+        synchronized(lock) {
+            val threadToJoin = recordingThread
+            val recordToRelease = audioRecord
+            if (!isRecording.get() && recordToRelease == null && threadToJoin == null) return
+
+            isRecording.set(false)
+            recordingThread = null
+            audioRecord = null
+
+            try {
+                recordToRelease?.stop()
+            } catch (_: Exception) {}
+            try {
+                threadToJoin?.join(150)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+            }
+            try {
+                recordToRelease?.release()
+            } catch (_: Exception) {}
+        }
     }
 
-    private fun processAudio() {
+    private fun processAudio(record: AudioRecord) {
         val buffer = ShortArray(1024)
         val doubleBuffer = DoubleArray(1024)
         val imagBuffer = DoubleArray(1024)
 
-        while (isRecording) {
-            val readSize = audioRecord?.read(buffer, 0, buffer.size) ?: 0
+        while (isRecording.get()) {
+            val readSize = try {
+                record.read(buffer, 0, buffer.size)
+            } catch (_: Exception) {
+                break
+            }
             if (readSize > 0) {
                 // Apply Hann window and copy to double array
                 for (i in 0 until readSize) {

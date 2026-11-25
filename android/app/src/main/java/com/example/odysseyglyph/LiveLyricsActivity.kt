@@ -94,13 +94,12 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             it.foreground = null
         }
 
-        // Frame bus subscription for live mirror
+        // Frame bus subscription for live mirror (subscribed in onStart / unsubscribed in onStop)
         frameBusSubscription = { frame ->
             runOnUiThread {
                 liveMatrixMirror.updateFrame(frame)
             }
         }
-        frameBusSubscription?.let { GlyphFrameBus.subscribe(it) }
 
         // Touch spring physics
         TouchSpringAnimator.attach(btnBack)
@@ -316,14 +315,15 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             tvFallbackDesc.visibility = vis
             
             if (isChecked) {
-                // If it's turning on and a mic option is selected, check permission
+                // If it's turning on and a mic option is selected, check permission with disclosure
                 val style = prefs.getInt("fallback_style", 0)
                 if (style == 2 || style == 3 || style == 5 || style == 8) {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                        if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    ProminentDisclosureDialog.showAudioDisclosureIfRequired(
+                        context = this,
+                        onAccepted = {
                             requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO), 101)
                         }
-                    }
+                    )
                 }
             }
         }
@@ -332,27 +332,37 @@ class LiveLyricsActivity : AppCompatActivity(), MusicPlaybackState.StateChangeLi
             val bottomSheet = FallbackStyleBottomSheet()
             bottomSheet.setOnStyleSelectedListener { style ->
                 if (style == 2 || style == 3 || style == 5 || style == 8) {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                        if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    ProminentDisclosureDialog.showAudioDisclosureIfRequired(
+                        context = this,
+                        onAccepted = {
                             requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO), 101)
                         }
-                    }
+                    )
                 }
             }
             bottomSheet.show(supportFragmentManager, "FallbackStyleBottomSheet")
         }
         
         btnGrantPermission.setOnClickListener {
-            ProminentDisclosureDialog.showIfRequired(this) {
-                try {
-                    startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-                } catch (_: Exception) {}
-            }
+            ProminentDisclosureDialog.showIfRequired(this)
         }
         
         btnOpenManager.setOnClickListener {
             GlyphOSIntegration.openGlyphAppOrToys(this, findViewById(android.R.id.content))
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        frameBusSubscription?.let {
+            GlyphFrameBus.unsubscribe(it)
+            GlyphFrameBus.subscribe(it)
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        frameBusSubscription?.let { GlyphFrameBus.unsubscribe(it) }
     }
 
     override fun onResume() {

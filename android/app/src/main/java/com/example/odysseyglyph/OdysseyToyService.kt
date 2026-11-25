@@ -112,12 +112,7 @@ abstract class BaseToyService : Service() {
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
-        mainHandler.removeCallbacks(playbackRunnable)
-        try { glyphManager?.turnOff() } catch (_: Exception) {}
-        try { glyphManager?.unInit() } catch (_: Exception) {}
-        glyphManager = null
-        mediaPlayer?.release()
-        mediaPlayer = null
+        teardownResources()
         return false
     }
 
@@ -146,9 +141,22 @@ abstract class BaseToyService : Service() {
         )
     }
 
+    private fun teardownResources() {
+        mainHandler.removeCallbacksAndMessages(null)
+        try { glyphManager?.turnOff() } catch (_: Exception) {}
+        try { glyphManager?.unInit() } catch (_: Exception) {}
+        glyphManager = null
+        try { mediaPlayer?.release() } catch (_: Exception) {}
+        mediaPlayer = null
+    }
+
     override fun onDestroy() {
+        teardownResources()
         super.onDestroy()
-        broadcastReceiver?.let { unregisterReceiver(it) }
+        try {
+            broadcastReceiver?.let { unregisterReceiver(it) }
+        } catch (_: Exception) {}
+        broadcastReceiver = null
     }
 
     /** Reads frames.bin written by VideoProcessor */
@@ -171,39 +179,54 @@ abstract class BaseToyService : Service() {
                     frameIntervalMs = (1000L / fps).coerceAtLeast(1L)
                 }
                 
-                // Initialize MediaPlayer if audio exists
+                // Initialize MediaPlayer asynchronously on the main thread if audio exists
                 val audioFile = java.io.File(filesDir, getFramesFileName().replace("frames_", "audio_").replace(".bin", ".mp3"))
                 mainHandler.post {
-                    mediaPlayer?.release()
+                    mainHandler.removeCallbacks(playbackRunnable)
+                    try { mediaPlayer?.release() } catch (_: Exception) {}
                     mediaPlayer = null
+                    frameIndex = 0
+
                     if (audioFile.exists()) {
                         try {
-                            mediaPlayer = android.media.MediaPlayer().apply {
-                                setDataSource(audioFile.absolutePath)
-                                isLooping = (currentPlaybackMode == 1 || currentPlaybackMode == 2)
-                                prepare()
-                                setVolume(1.0f, 1.0f)
+                            val mp = android.media.MediaPlayer()
+                            mediaPlayer = mp
+                            mp.setDataSource(audioFile.absolutePath)
+                            mp.isLooping = (currentPlaybackMode == 1 || currentPlaybackMode == 2)
+                            mp.setVolume(1.0f, 1.0f)
+                            mp.setOnErrorListener { failedMp, _, _ ->
+                                try { failedMp.release() } catch (_: Exception) {}
+                                if (mediaPlayer === failedMp) mediaPlayer = null
+                                startElapsedMs = android.os.SystemClock.elapsedRealtime()
+                                mainHandler.post(playbackRunnable)
+                                true
                             }
+                            mp.setOnPreparedListener { preparedMp ->
+                                if (mediaPlayer !== preparedMp) return@setOnPreparedListener
+                                if (!isPaused) {
+                                    preparedMp.setOnSeekCompleteListener { seekedMp ->
+                                        if (mediaPlayer !== seekedMp) return@setOnSeekCompleteListener
+                                        if (!isPaused) seekedMp.start()
+                                        startElapsedMs = android.os.SystemClock.elapsedRealtime()
+                                        mainHandler.post(playbackRunnable)
+                                    }
+                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                                        preparedMp.seekTo(currentAudioOffsetMs.toLong(), android.media.MediaPlayer.SEEK_CLOSEST)
+                                    } else {
+                                        preparedMp.seekTo(currentAudioOffsetMs)
+                                    }
+                                } else {
+                                    startElapsedMs = android.os.SystemClock.elapsedRealtime()
+                                    mainHandler.post(playbackRunnable)
+                                }
+                            }
+                            mp.prepareAsync()
                         } catch (e: Exception) {
                             e.printStackTrace()
-                        }
-                    }
-                }
-                
-                frameIndex = 0
-                mainHandler.post {
-                    mainHandler.removeCallbacks(playbackRunnable)
-                    val mp = mediaPlayer
-                    if (!isPaused && mp != null) {
-                        mp.setOnSeekCompleteListener { mp2 ->
-                            mp2.start()
+                            try { mediaPlayer?.release() } catch (_: Exception) {}
+                            mediaPlayer = null
                             startElapsedMs = android.os.SystemClock.elapsedRealtime()
                             mainHandler.post(playbackRunnable)
-                        }
-                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                            mp.seekTo(currentAudioOffsetMs.toLong(), android.media.MediaPlayer.SEEK_CLOSEST)
-                        } else {
-                            mp.seekTo(currentAudioOffsetMs)
                         }
                     } else {
                         startElapsedMs = android.os.SystemClock.elapsedRealtime()

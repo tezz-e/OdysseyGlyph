@@ -119,6 +119,10 @@ class MediaSessionListenerService : NotificationListenerService() {
         return START_NOT_STICKY
     }
 
+    private val activeSessionsListener = MediaSessionManager.OnActiveSessionsChangedListener { newSessions ->
+        updateActiveSessions(newSessions)
+    }
+
     override fun onListenerConnected() {
         super.onListenerConnected()
         isConnected = true
@@ -129,9 +133,8 @@ class MediaSessionListenerService : NotificationListenerService() {
         try {
             refreshSessions()
             
-            mediaSessionManager?.addOnActiveSessionsChangedListener({ newSessions ->
-                updateActiveSessions(newSessions)
-            }, componentName)
+            mediaSessionManager?.removeOnActiveSessionsChangedListener(activeSessionsListener)
+            mediaSessionManager?.addOnActiveSessionsChangedListener(activeSessionsListener, componentName)
             
         } catch (e: SecurityException) {
             Log.e("MusicListener", "Missing Notification Access permission", e)
@@ -141,7 +144,21 @@ class MediaSessionListenerService : NotificationListenerService() {
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
         isConnected = false
+        try {
+            mediaSessionManager?.removeOnActiveSessionsChangedListener(activeSessionsListener)
+        } catch (_: Exception) {}
         disconnectActiveSession()
+        handler.removeCallbacksAndMessages(null)
+    }
+
+    override fun onDestroy() {
+        isConnected = false
+        try {
+            mediaSessionManager?.removeOnActiveSessionsChangedListener(activeSessionsListener)
+        } catch (_: Exception) {}
+        disconnectActiveSession()
+        handler.removeCallbacksAndMessages(null)
+        super.onDestroy()
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {

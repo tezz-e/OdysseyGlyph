@@ -91,7 +91,8 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
     }
     
     private var lastFrameHash = -1
-    
+    private var emptyGapStartMs = 0L
+
     private lateinit var visualizerHelper: AudioVisualizerHelper
 
     private val playbackRunnable = object : Runnable {
@@ -104,12 +105,13 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
             val lyricsToUse = MusicPlaybackState.manualOverrideLyrics ?: currentParsedLyrics
             
             if (!isEnabled || !MusicPlaybackState.hasActiveSession || !MusicPlaybackState.isPlaying) {
+                emptyGapStartMs = 0L
                 if (lastFrameHash != -1) {
                     try { 
                         glyphManager?.turnOff() 
                         lastFrameHash = -1
                     } catch (e: Exception) {
-                        try { glyphManager?.setMatrixFrame(IntArray(33) { 0 }) } catch (e2: Exception) {}
+                        try { glyphManager?.setMatrixFrame(IntArray(625) { 0 }) } catch (e2: Exception) {}
                     }
                 }
                 visualizerHelper.stop()
@@ -118,6 +120,7 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
             }
             
             if (lyricsToUse.isEmpty()) {
+                emptyGapStartMs = 0L
                 if (fallbackEnabled) {
                     if (isMicStyle(fallbackStyle)) {
                         visualizerHelper.start()
@@ -139,7 +142,7 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
                             lastFrameHash = -1
                             GlyphFrameBus.clear()
                         } catch (e: Exception) {
-                            try { glyphManager?.setMatrixFrame(IntArray(33) { 0 }) } catch (e2: Exception) {}
+                            try { glyphManager?.setMatrixFrame(IntArray(625) { 0 }) } catch (e2: Exception) {}
                         }
                     }
                     visualizerHelper.stop()
@@ -162,12 +165,17 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
             
             if (frameData == null) {
                 if (fallbackEnabled) {
+                    val now = SystemClock.elapsedRealtime()
+                    if (emptyGapStartMs == 0L) emptyGapStartMs = now
                     if (isMicStyle(fallbackStyle)) {
-                        visualizerHelper.start()
+                        // Debounce mic hardware capture across brief pauses between lyric lines
+                        if (now - emptyGapStartMs >= 800L) {
+                            visualizerHelper.start()
+                        }
                     } else {
                         visualizerHelper.stop()
                     }
-                    val frameBytes = GlyphFontEngine.renderFallbackFrame(visualizerHelper.currentLevels, fallbackStyle, SystemClock.elapsedRealtime())
+                    val frameBytes = GlyphFontEngine.renderFallbackFrame(visualizerHelper.currentLevels, fallbackStyle, now)
                     val currentHash = frameBytes.contentHashCode()
                     if (currentHash != lastFrameHash) {
                         lastFrameHash = currentHash
@@ -175,18 +183,20 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
                         try { glyphManager?.setMatrixFrame(toIntArray(frameBytes)) } catch (e: Exception) {}
                     }
                 } else {
+                    emptyGapStartMs = 0L
                     if (lastFrameHash != -1) {
                         try { 
                             glyphManager?.turnOff() 
                             lastFrameHash = -1
                             GlyphFrameBus.clear()
                         } catch (e: Exception) {
-                            try { glyphManager?.setMatrixFrame(IntArray(33) { 0 }) } catch (e2: Exception) {}
+                            try { glyphManager?.setMatrixFrame(IntArray(625) { 0 }) } catch (e2: Exception) {}
                         }
                     }
                     visualizerHelper.stop()
                 }
             } else {
+                emptyGapStartMs = 0L
                 visualizerHelper.stop()
                 val frameText = frameData.first
                 val offsetX = frameData.second
@@ -243,46 +253,76 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
             }
             "fallback_style" -> {
                 fallbackStyle = sharedPreferences?.getInt("fallback_style", 1) ?: 1
+                if (isRunning) {
+                    startForegroundSafely(buildNotification(), fallbackEnabled && isMicStyle(fallbackStyle))
+                }
             }
             "fallback_enabled" -> {
                 fallbackEnabled = sharedPreferences?.getBoolean("fallback_enabled", true) ?: true
+                if (isRunning) {
+                    startForegroundSafely(buildNotification(), fallbackEnabled && isMicStyle(fallbackStyle))
+                }
             }
         }
     }
 
+    private fun startForegroundSafely(notification: Notification, needsMic: Boolean) {
+        val hasMicPerm = checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            val baseType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            val fullType = if (needsMic && hasMicPerm) {
+                baseType or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+            } else {
+                baseType
+            }
+            try {
+                startForeground(NOTIFICATION_ID, notification, fullType)
+            } catch (_: Exception) {
+                try {
+                    startForeground(NOTIFICATION_ID, notification, baseType)
+                } catch (_: Exception) {}
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (needsMic && hasMicPerm) {
+                try {
+                    startForeground(NOTIFICATION_ID, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+                } catch (_: Exception) {
+                    startForeground(NOTIFICATION_ID, notification)
+                }
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent != null) {
             when (intent.action) {
                 "START_LIVE_LYRICS" -> {
-                    // Cancel any pending delayed stop — user turned it back on quickly
                     pendingStopRunnable?.let { mainHandler.removeCallbacks(it) }
                     pendingStopRunnable = null
 
-                    // Call startForeground IMMEDIATELY — before ANY pref reads or async work.
-                    // This is critical on Android 14+ to avoid ForegroundServiceDidNotStartInTimeException.
+                    // Call startForeground IMMEDIATELY before any async work (Android 14+ requirement)
                     createNotificationChannel()
-                    val notification = buildNotification()
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                        var types = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-                        if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                                types = types or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-                            }
-                        }
-                        try {
-                            startForeground(NOTIFICATION_ID, notification, types)
-                        } catch (e: Exception) {
-                            try {
-                                startForeground(NOTIFICATION_ID, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
-                            } catch (e2: Exception) {
-                                startForeground(NOTIFICATION_ID, notification)
-                            }
-                        }
-                    } else {
-                        startForeground(NOTIFICATION_ID, notification)
-                    }
+                    startForegroundSafely(buildNotification(), fallbackEnabled && isMicStyle(fallbackStyle))
+
                     isRunning = true
+
+                    if (VisualizerService.isRunning) {
+                        try {
+                            startService(Intent(this, VisualizerService::class.java).apply { action = "STOP_VISUALIZER" })
+                        } catch (_: Exception) {}
+                    }
+                    if (QuickSignalService.isRunning) {
+                        try {
+                            startService(Intent(this, QuickSignalService::class.java).apply {
+                                action = QuickSignalService.ACTION_STOP_SIGNAL
+                                putExtra(QuickSignalService.EXTRA_RESTORE_PREVIOUS, false)
+                            })
+                        } catch (_: Exception) {}
+                    }
                     getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE).edit().putBoolean("live_lyrics_enabled", true).apply()
                     
                     if (MusicPlaybackState.hasActiveSession) {
@@ -309,23 +349,18 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
                     getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE).edit().putBoolean("live_lyrics_enabled", false).apply()
                     isRunning = false
                     isRegistered = false
+                    emptyGapStartMs = 0L
                     mainHandler.removeCallbacks(playbackRunnable)
                     visualizerHelper.stop()
-                    try { glyphManager?.turnOff() } catch (e: Exception) {}
-                    GlyphFrameBus.postFrame(ByteArray(625))
-                    if (!VisualizerService.isRunning) {
+                    if (!VisualizerService.isRunning && !QuickSignalService.isRunning) {
+                        try { glyphManager?.turnOff() } catch (e: Exception) {}
+                        GlyphFrameBus.postFrame(ByteArray(625))
                         try { glyphManager?.unInit() } catch (e: Exception) {}
                     }
                     stopForeground(STOP_FOREGROUND_REMOVE)
                     LiveLyricsTileService.requestTileUpdate(this)
                     OdysseyWidgetProvider.updateAllWidgets(this)
-                    // Delay actual destroy so a rapid restart can reuse this instance
-                    val stopRunnable = Runnable {
-                        pendingStopRunnable = null
-                        stopSelf()
-                    }
-                    pendingStopRunnable = stopRunnable
-                    mainHandler.postDelayed(stopRunnable, 600)
+                    stopSelf()
                 }
                 "UPDATE_STYLE" -> {
                     val fontStyleInt = intent.getIntExtra("font_style", getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE).getInt("live_font_style", 0))
@@ -343,7 +378,6 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
 
     override fun onDestroy() {
         isRunning = false
-        // Cancel any pending delayed stop to avoid ghost callbacks
         pendingStopRunnable?.let { mainHandler.removeCallbacks(it) }
         pendingStopRunnable = null
         LiveLyricsTileService.requestTileUpdate(this)
@@ -354,11 +388,10 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
         MusicPlaybackState.removeListener(this)
         mainHandler.removeCallbacks(playbackRunnable)
         visualizerHelper.stop()
-        try {
-            glyphManager?.turnOff()
-        } catch (e: Exception) {}
-        
-        if (!VisualizerService.isRunning) {
+        if (!VisualizerService.isRunning && !QuickSignalService.isRunning) {
+            try {
+                glyphManager?.turnOff()
+            } catch (e: Exception) {}
             try { glyphManager?.unInit() } catch (_: Exception) {}
         }
         glyphManager = null
@@ -372,10 +405,12 @@ class LiveLyricsService : Service(), MusicPlaybackState.StateChangeListener, Sha
 
     private fun flashReady() {
         try {
-            val frame = IntArray(33) { 100 }
+            val frame = IntArray(625) { 100 }
             glyphManager?.setMatrixFrame(frame)
-            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                try { glyphManager?.turnOff() } catch (e: Exception) {}
+            mainHandler.postDelayed({
+                if (lastFrameHash == -1 && isRunning) {
+                    try { glyphManager?.turnOff() } catch (e: Exception) {}
+                }
             }, 150)
         } catch (e: Exception) {}
     }

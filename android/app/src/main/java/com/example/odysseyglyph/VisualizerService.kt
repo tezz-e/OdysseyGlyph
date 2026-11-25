@@ -50,7 +50,7 @@ class VisualizerService : Service(), SharedPreferences.OnSharedPreferenceChangeL
                         glyphManager?.turnOff() 
                         lastFrameHash = -1
                     } catch (e: Exception) {
-                        try { glyphManager?.setMatrixFrame(IntArray(33) { 0 }) } catch (e2: Exception) {}
+                        try { glyphManager?.setMatrixFrame(IntArray(625) { 0 }) } catch (e2: Exception) {}
                     }
                 }
                 visualizerHelper.stop()
@@ -124,34 +124,28 @@ class VisualizerService : Service(), SharedPreferences.OnSharedPreferenceChangeL
         }
         
         prefs.edit().putBoolean("live_lyrics_enabled", false).apply()
-        try {
-            val stopLyrics = Intent(this, LiveLyricsService::class.java).apply { action = "STOP_LIVE_LYRICS" }
-            startService(stopLyrics)
-        } catch (e: Exception) {}
+        activeStyle = prefs.getInt("fallback_style", 2)
 
         val notification = createNotification()
-        
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            var types = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-            if (isMicStyle(activeStyle) && checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                    types = types or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-                }
-            }
-            try {
-                startForeground(2, notification, types)
-            } catch (e: Exception) {
-                try {
-                    startForeground(2, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
-                } catch (e2: Exception) {
-                    startForeground(2, notification)
-                }
-            }
-        } else {
-            startForeground(2, notification)
-        }
-        
+        startForegroundSafely(notification, isMicStyle(activeStyle))
+
         isRunning = true
+
+        if (LiveLyricsService.isRunning) {
+            try {
+                val stopLyrics = Intent(this, LiveLyricsService::class.java).apply { action = "STOP_LIVE_LYRICS" }
+                startService(stopLyrics)
+            } catch (_: Exception) {}
+        }
+        if (QuickSignalService.isRunning) {
+            try {
+                val stopSignal = Intent(this, QuickSignalService::class.java).apply {
+                    action = QuickSignalService.ACTION_STOP_SIGNAL
+                    putExtra(QuickSignalService.EXTRA_RESTORE_PREVIOUS, false)
+                }
+                startService(stopSignal)
+            } catch (_: Exception) {}
+        }
         
         if (isMicStyle(activeStyle)) {
             visualizerHelper.start()
@@ -170,22 +164,35 @@ class VisualizerService : Service(), SharedPreferences.OnSharedPreferenceChangeL
         return style == 2 || style == 3 || style == 5 || style == 8
     }
 
+    private fun startForegroundSafely(notification: android.app.Notification, needsMic: Boolean) {
+        val hasMicPerm = checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            var types = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            if (needsMic && hasMicPerm) {
+                types = types or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+            }
+            try {
+                startForeground(2, notification, types)
+            } catch (_: Exception) {
+                // On API 34+ microphone FGS can fail if eligibility isn't active; stay valid on specialUse.
+                startForeground(2, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+            }
+        } else if (needsMic && hasMicPerm) {
+            startForeground(2, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+        } else {
+            startForeground(2, notification)
+        }
+    }
+
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         if (key == "fallback_style") {
             sharedPreferences?.let {
                 activeStyle = it.getInt("fallback_style", 2)
-                if (isMicStyle(activeStyle)) {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q && isRunning) {
-                        var types = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-                        if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                                types = types or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-                            }
-                        }
-                        try {
-                            startForeground(2, createNotification(), types)
-                        } catch (_: Exception) {}
-                    }
+                val needsMic = isMicStyle(activeStyle)
+                if (isRunning) {
+                    startForegroundSafely(createNotification(), needsMic)
+                }
+                if (needsMic) {
                     visualizerHelper.start()
                 } else {
                     visualizerHelper.stop()
@@ -200,12 +207,9 @@ class VisualizerService : Service(), SharedPreferences.OnSharedPreferenceChangeL
         prefs.unregisterOnSharedPreferenceChangeListener(this)
         mainHandler.removeCallbacks(visualizerRunnable)
         visualizerHelper.stop()
-        
-        try {
-            glyphManager?.turnOff()
-        } catch (e: Exception) {}
-        
-        if (!LiveLyricsService.isRunning) {
+
+        if (!LiveLyricsService.isRunning && !QuickSignalService.isRunning) {
+            try { glyphManager?.turnOff() } catch (_: Exception) {}
             try { glyphManager?.unInit() } catch (_: Exception) {}
         }
         glyphManager = null

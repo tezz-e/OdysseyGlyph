@@ -68,13 +68,12 @@ class QuickSignalActivity : AppCompatActivity(), QuickSignalService.StateListene
         setupFontSelector()
         setupDurationSelector()
 
-        // Listen for live matrix frames when signal is actively streaming
+        // Listen for live matrix frames when signal is actively streaming (subscribed in onStart / unsubscribed in onStop)
         frameBusSubscription = { frame ->
             if (QuickSignalService.isRunning) {
                 runOnUiThread { matrixMirror.updateFrame(frame) }
             }
         }
-        frameBusSubscription?.let { GlyphFrameBus.subscribe(it) }
 
         updateLocalPreview()
     }
@@ -351,6 +350,19 @@ class QuickSignalActivity : AppCompatActivity(), QuickSignalService.StateListene
         }
         startService(intent)
         btnToggleSignal.vibrateTick()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        frameBusSubscription?.let {
+            GlyphFrameBus.unsubscribe(it)
+            GlyphFrameBus.subscribe(it)
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        frameBusSubscription?.let { GlyphFrameBus.unsubscribe(it) }
     }
 
     override fun onResume() {

@@ -35,6 +35,7 @@ class QuickSignalService : Service() {
         const val EXTRA_TEXT = "extra_signal_text"
         const val EXTRA_DURATION_SEC = "extra_duration_sec"
         const val EXTRA_FONT_STYLE = "extra_font_style"
+        const val EXTRA_RESTORE_PREVIOUS = "extra_restore_previous"
 
         var isRunning: Boolean = false
             private set
@@ -161,7 +162,8 @@ class QuickSignalService : Service() {
                 startSignal(text, duration, fontStyleInt)
             }
             ACTION_STOP_SIGNAL -> {
-                stopSignal()
+                val restorePrevious = intent.getBooleanExtra(EXTRA_RESTORE_PREVIOUS, true)
+                stopSignal(restorePrevious = restorePrevious)
             }
         }
         return START_NOT_STICKY
@@ -228,40 +230,47 @@ class QuickSignalService : Service() {
         notifyStateChanged()
     }
 
-    private fun stopSignal() {
+    private fun stopSignal(restorePrevious: Boolean = true) {
         isRunning = false
         mainHandler.removeCallbacks(frameRunnable)
         mainHandler.removeCallbacks(countdownRunnable)
 
-        try {
-            glyphManager?.turnOff()
-        } catch (_: Exception) {}
-        GlyphFrameBus.clear()
+        if (!LiveLyricsService.isRunning && !VisualizerService.isRunning) {
+            try {
+                glyphManager?.turnOff()
+            } catch (_: Exception) {}
+            GlyphFrameBus.clear()
+        }
 
         notifyStateChanged()
         stopForeground(STOP_FOREGROUND_REMOVE)
 
-        // Restore prior matrix owner if active before signal started
-        if (wasLyricsActive) {
+        // Restore prior matrix owner only when user/timer cleared the signal
+        if (restorePrevious) {
+            if (wasLyricsActive) {
+                wasLyricsActive = false
+                try {
+                    val startLyrics = Intent(this, LiveLyricsService::class.java).apply { action = "START_LIVE_LYRICS" }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(startLyrics)
+                    } else {
+                        startService(startLyrics)
+                    }
+                } catch (_: Exception) {}
+            } else if (wasVisualizerActive) {
+                wasVisualizerActive = false
+                try {
+                    val startVis = Intent(this, VisualizerService::class.java)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(startVis)
+                    } else {
+                        startService(startVis)
+                    }
+                } catch (_: Exception) {}
+            }
+        } else {
             wasLyricsActive = false
-            try {
-                val startLyrics = Intent(this, LiveLyricsService::class.java).apply { action = "START_LIVE_LYRICS" }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    startForegroundService(startLyrics)
-                } else {
-                    startService(startLyrics)
-                }
-            } catch (_: Exception) {}
-        } else if (wasVisualizerActive) {
             wasVisualizerActive = false
-            try {
-                val startVis = Intent(this, VisualizerService::class.java)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    startForegroundService(startVis)
-                } else {
-                    startService(startVis)
-                }
-            } catch (_: Exception) {}
         }
 
         stopSelf()
@@ -338,10 +347,12 @@ class QuickSignalService : Service() {
         isRunning = false
         mainHandler.removeCallbacks(frameRunnable)
         mainHandler.removeCallbacks(countdownRunnable)
-        try {
-            glyphManager?.turnOff()
-            glyphManager?.unInit()
-        } catch (_: Exception) {}
+        if (!LiveLyricsService.isRunning && !VisualizerService.isRunning) {
+            try {
+                glyphManager?.turnOff()
+                glyphManager?.unInit()
+            } catch (_: Exception) {}
+        }
         glyphManager = null
         notifyStateChanged()
         super.onDestroy()

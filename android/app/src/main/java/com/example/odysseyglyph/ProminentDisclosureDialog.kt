@@ -28,7 +28,12 @@ import android.widget.TextView
 class ProminentDisclosureDialog(
     context: Context,
     private val onAccepted: (() -> Unit)? = null,
-    private val onDeclined: (() -> Unit)? = null
+    private val onDeclined: (() -> Unit)? = null,
+    private val badgeText: String? = null,
+    private val titleText: String? = null,
+    private val messageText: String? = null,
+    private val acceptText: String? = null,
+    private val launchNotificationSettings: Boolean = true
 ) : Dialog(context) {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,23 +49,30 @@ class ProminentDisclosureDialog(
         )
         window?.setGravity(Gravity.CENTER)
 
+        badgeText?.let { findViewById<TextView>(R.id.tvDisclosureBadge)?.text = it }
+        titleText?.let { findViewById<TextView>(R.id.tvDisclosureTitle)?.text = it }
+        messageText?.let { findViewById<TextView>(R.id.tvDisclosureMessage)?.text = it }
+
         val btnAccept = findViewById<Button>(R.id.btnDisclosureAccept)
         val btnDecline = findViewById<Button>(R.id.btnDisclosureDecline)
+        acceptText?.let { btnAccept?.text = it }
 
         btnAccept?.setOnClickListener {
             dismiss()
             onAccepted?.invoke()
-            try {
-                val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (launchNotificationSettings) {
+                try {
+                    val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(intent)
+                } catch (_: Exception) {
+                    // Fallback to general settings if OEM lacks direct listener intent
+                    val fallbackIntent = Intent(Settings.ACTION_SETTINGS).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(fallbackIntent)
                 }
-                context.startActivity(intent)
-            } catch (_: Exception) {
-                // Fallback to general settings if OEM lacks direct listener intent
-                val fallbackIntent = Intent(Settings.ACTION_SETTINGS).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(fallbackIntent)
             }
         }
 
@@ -71,18 +83,48 @@ class ProminentDisclosureDialog(
     }
 
     companion object {
-        fun showIfRequired(context: Context, onAccepted: (() -> Unit)? = null): Boolean {
-            val enabledListeners = Settings.Secure.getString(
-                context.contentResolver,
-                "enabled_notification_listeners"
-            ) ?: ""
-            val isEnabled = enabledListeners.contains(context.packageName)
+        fun showIfRequired(
+            context: Context,
+            onAccepted: (() -> Unit)? = null,
+            onDeclined: (() -> Unit)? = null
+        ): Boolean {
+            val isEnabled = androidx.core.app.NotificationManagerCompat
+                .getEnabledListenerPackages(context)
+                .contains(context.packageName)
 
             if (!isEnabled) {
-                ProminentDisclosureDialog(context, onAccepted).show()
+                ProminentDisclosureDialog(
+                    context = context,
+                    onAccepted = onAccepted,
+                    onDeclined = onDeclined
+                ).show()
                 return true
             }
             return false
+        }
+
+        fun showAudioDisclosureIfRequired(
+            context: Context,
+            onAccepted: () -> Unit,
+            onDeclined: (() -> Unit)? = null
+        ): Boolean {
+            val hasMic = androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.RECORD_AUDIO
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            if (hasMic) return false
+
+            ProminentDisclosureDialog(
+                context = context,
+                onAccepted = onAccepted,
+                onDeclined = onDeclined,
+                badgeText = "MICROPHONE DISCLOSURE",
+                titleText = "Real-Time Audio Visualizer",
+                messageText = "Glyph Odyssey uses the microphone strictly on-device in volatile memory to drive live 25x25 Glyph LED patterns. Audio is never recorded, stored, or transmitted off your device.",
+                acceptText = "CONTINUE",
+                launchNotificationSettings = false
+            ).show()
+            return true
         }
     }
 }

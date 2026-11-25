@@ -21,7 +21,7 @@ data class LrcTrack(
 
 object LRCLibClient {
     private const val BASE_URL = "https://lrclib.net/api"
-    private const val USER_AGENT = "OdysseyGlyphApp/2.0 (https://github.com/example/OdysseyGlyph)"
+    private const val USER_AGENT = "GlyphOdyssey/2.1.0 (https://github.com/tezz-e/OdysseyGlyph)"
     private const val TIMEOUT_MS = 6000
 
     private fun openConnection(urlString: String): HttpURLConnection {
@@ -59,6 +59,29 @@ object LRCLibClient {
         )
     }
 
+    private fun executeGet(urlString: String): String? {
+        var conn: HttpURLConnection? = null
+        return try {
+            conn = openConnection(urlString)
+            if (conn.responseCode == HttpURLConnection.HTTP_OK) {
+                BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
+            } else {
+                null
+            }
+        } finally {
+            conn?.disconnect()
+        }
+    }
+
+    private fun parseTrackArray(response: String): List<LrcTrack> {
+        val results = mutableListOf<LrcTrack>()
+        val jsonArray = JSONArray(response)
+        for (i in 0 until jsonArray.length()) {
+            results.add(parseTrackJson(jsonArray.getJSONObject(i)))
+        }
+        return results
+    }
+
     /**
      * Exact lookup via /api/get
      */
@@ -79,14 +102,8 @@ object LRCLibClient {
                 params.append("&duration=").append(durationSeconds)
             }
 
-            val conn = openConnection("$BASE_URL/get?$params")
-            if (conn.responseCode == HttpURLConnection.HTTP_OK) {
-                val reader = BufferedReader(InputStreamReader(conn.inputStream))
-                val response = reader.readText()
-                reader.close()
-                val obj = JSONObject(response)
-                return parseTrackJson(obj)
-            }
+            val response = executeGet("$BASE_URL/get?$params") ?: return null
+            return parseTrackJson(JSONObject(response))
         } catch (e: Exception) {
             // Silently proceed to candidate search on failure / 404
         }
@@ -97,7 +114,6 @@ object LRCLibClient {
      * Candidate search with track_name and artist_name parameters.
      */
     fun searchCandidates(trackName: String, artistName: String): List<LrcTrack> {
-        val results = mutableListOf<LrcTrack>()
         try {
             val params = StringBuilder()
             params.append("track_name=").append(URLEncoder.encode(trackName, "UTF-8"))
@@ -105,45 +121,25 @@ object LRCLibClient {
                 params.append("&artist_name=").append(URLEncoder.encode(artistName, "UTF-8"))
             }
 
-            val conn = openConnection("$BASE_URL/search?$params")
-            if (conn.responseCode == HttpURLConnection.HTTP_OK) {
-                val reader = BufferedReader(InputStreamReader(conn.inputStream))
-                val response = reader.readText()
-                reader.close()
-
-                val jsonArray = JSONArray(response)
-                for (i in 0 until jsonArray.length()) {
-                    results.add(parseTrackJson(jsonArray.getJSONObject(i)))
-                }
-            }
+            val response = executeGet("$BASE_URL/search?$params") ?: return emptyList()
+            return parseTrackArray(response)
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        return results
+        return emptyList()
     }
 
     /**
      * General freeform search query (q=...).
      */
     fun searchLyrics(query: String): List<LrcTrack> {
-        val results = mutableListOf<LrcTrack>()
         try {
             val encodedQuery = URLEncoder.encode(query, "UTF-8")
-            val conn = openConnection("$BASE_URL/search?q=$encodedQuery")
-
-            if (conn.responseCode == HttpURLConnection.HTTP_OK) {
-                val reader = BufferedReader(InputStreamReader(conn.inputStream))
-                val response = reader.readText()
-                reader.close()
-
-                val jsonArray = JSONArray(response)
-                for (i in 0 until jsonArray.length()) {
-                    results.add(parseTrackJson(jsonArray.getJSONObject(i)))
-                }
-            }
+            val response = executeGet("$BASE_URL/search?q=$encodedQuery") ?: return emptyList()
+            return parseTrackArray(response)
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        return results
+        return emptyList()
     }
 }
