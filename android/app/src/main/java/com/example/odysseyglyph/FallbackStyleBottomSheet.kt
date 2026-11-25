@@ -43,12 +43,27 @@ class FallbackStyleBottomSheet : BottomSheetDialogFragment() {
         return inflater.inflate(R.layout.dialog_fallback_style, container, false)
     }
 
+    override fun onStart() {
+        super.onStart()
+        dialog?.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)?.let { sheet ->
+            sheet.setBackgroundColor(Color.TRANSPARENT)
+            com.google.android.material.bottomsheet.BottomSheetBehavior.from(sheet).apply {
+                state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
+                skipCollapsed = true
+            }
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Transparent background for bottom sheet dialog container so rounded glass corners show
-        dialog?.window?.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)?.let { sheet ->
-            sheet.setBackgroundColor(Color.TRANSPARENT)
+        view.findViewById<View>(R.id.sheetScrollView)?.let { scrollView ->
+            WindowInsetsUtil.applySystemBarsPadding(
+                scrollView,
+                applyTop = false,
+                applyBottom = true,
+                includeIme = false
+            )
         }
 
         val prefs = requireContext().getSharedPreferences("OdysseyPrefs", android.content.Context.MODE_PRIVATE)

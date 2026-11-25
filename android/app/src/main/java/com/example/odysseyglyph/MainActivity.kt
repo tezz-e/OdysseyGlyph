@@ -173,7 +173,16 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        handleIntent(intent)
+        val savedUriStr = savedInstanceState?.getString("selected_media_uri")
+        if (savedUriStr != null) {
+            try {
+                loadMedia(Uri.parse(savedUriStr))
+            } catch (_: Exception) {
+                resetToLauncher()
+            }
+        } else if (savedInstanceState == null) {
+            handleIntent(intent)
+        }
 
         if (!prefs.getBoolean("spotlight_tour_done_v1", false)) {
             window.decorView.postDelayed({
@@ -310,6 +319,13 @@ class MainActivity : AppCompatActivity() {
         nothingOverflowMenu?.dismiss()
         if (currentMediaType == 0) {
             videoView.pause()
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        selectedMediaUri?.let { uri ->
+            outState.putString("selected_media_uri", uri.toString())
         }
     }
 
@@ -610,6 +626,24 @@ class MainActivity : AppCompatActivity() {
         val dialog = BottomSheetDialog(this)
         val view = layoutInflater.inflate(R.layout.bottom_sheet_advanced_settings, null)
         dialog.setContentView(view)
+        dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        dialog.setOnShowListener {
+            dialog.window?.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)?.let { sheet ->
+                sheet.setBackgroundColor(Color.TRANSPARENT)
+                com.google.android.material.bottomsheet.BottomSheetBehavior.from(sheet).apply {
+                    state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
+                    skipCollapsed = true
+                }
+            }
+        }
+        view.findViewById<View>(R.id.sheetScrollView)?.let { scrollView ->
+            WindowInsetsUtil.applySystemBarsPadding(
+                scrollView,
+                applyTop = false,
+                applyBottom = true,
+                includeIme = true
+            )
+        }
 
         val etFps = view.findViewById<TextInputEditText>(R.id.etFps)
         val cbInvert = view.findViewById<MaterialSwitch>(R.id.cbInvert)

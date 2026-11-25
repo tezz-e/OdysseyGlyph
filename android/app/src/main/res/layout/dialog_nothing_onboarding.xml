@@ -1,66 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
     android:background="@drawable/bg_glass_card"
-    android:padding="22dp">
+    android:overScrollMode="never">
 
-    <TextView
-        android:id="@+id/tvDialogTitle"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="TITLE"
-        android:fontFamily="@font/ndot57"
-        app:fontFamily="@font/ndot57"
-        android:textSize="18sp"
-        android:letterSpacing="0.06"
-        android:textColor="#FFFFFF"
-        android:layout_marginBottom="12dp" />
+        android:orientation="vertical"
+        android:padding="22dp">
 
-    <TextView
-        android:id="@+id/tvDialogMessage"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Message goes here."
-        android:fontFamily="@font/font_geist"
-        app:fontFamily="@font/font_geist"
-        android:textSize="13sp"
-        android:textColor="#B0B0B0"
-        android:lineSpacingExtra="3dp"
-        android:layout_marginBottom="22dp" />
+        <TextView
+            android:id="@+id/tvDialogTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TITLE"
+            android:fontFamily="@font/ndot57"
+            app:fontFamily="@font/ndot57"
+            android:textSize="18sp"
+            android:letterSpacing="0.06"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="12dp" />
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnDialogAction"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:text="GOT IT"
-        android:fontFamily="@font/font_geist"
-        app:fontFamily="@font/font_geist"
-        android:textStyle="bold"
-        android:textSize="12sp"
-        android:letterSpacing="0.04"
-        android:textColor="#000000"
-        app:backgroundTint="#FFFFFF"
-        app:cornerRadius="20dp" />
+        <TextView
+            android:id="@+id/tvDialogMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Message goes here."
+            android:fontFamily="@font/font_geist"
+            app:fontFamily="@font/font_geist"
+            android:textSize="13sp"
+            android:textColor="#B0B0B0"
+            android:lineSpacingExtra="3dp"
+            android:layout_marginBottom="22dp" />
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnDialogSecondary"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:layout_marginTop="8dp"
-        android:visibility="gone"
-        android:text="REPLAY FEATURE TOUR"
-        android:fontFamily="@font/font_geist"
-        app:fontFamily="@font/font_geist"
-        android:textStyle="bold"
-        android:textSize="12sp"
-        android:letterSpacing="0.04"
-        android:textColor="#FFFFFF"
-        app:backgroundTint="#1AFFFFFF"
-        app:strokeColor="#33FFFFFF"
-        app:strokeWidth="1dp"
-        app:cornerRadius="20dp" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDialogAction"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:text="GOT IT"
+            android:fontFamily="@font/font_geist"
+            app:fontFamily="@font/font_geist"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:letterSpacing="0.04"
+            android:textColor="#000000"
+            app:backgroundTint="#FFFFFF"
+            app:cornerRadius="20dp" />
 
-</LinearLayout>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDialogSecondary"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"
+            android:text="REPLAY FEATURE TOUR"
+            android:fontFamily="@font/font_geist"
+            app:fontFamily="@font/font_geist"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:letterSpacing="0.04"
+            android:textColor="#FFFFFF"
+            app:backgroundTint="#1AFFFFFF"
+            app:strokeColor="#33FFFFFF"
+            app:strokeWidth="1dp"
+            app:cornerRadius="20dp" />
+
+    </LinearLayout>
+</ScrollView>

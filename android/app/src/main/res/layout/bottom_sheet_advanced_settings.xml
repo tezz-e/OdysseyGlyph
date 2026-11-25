@@ -4,159 +4,184 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="22dp"
     android:background="@drawable/bg_sheet_glass">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="ADVANCED SETTINGS"
-        android:fontFamily="@font/ndot57"
-        app:fontFamily="@font/ndot57"
-        android:textSize="18sp"
-        android:letterSpacing="0.06"
-        android:textColor="#FFFFFF"
-        android:layout_marginBottom="20dp" />
+    <View
+        android:layout_width="36dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/bg_glass_pill" />
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/fpsInputLayout"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/sheetScrollView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        app:boxCornerRadiusTopStart="12dp"
-        app:boxCornerRadiusTopEnd="12dp"
-        app:boxCornerRadiusBottomStart="12dp"
-        app:boxCornerRadiusBottomEnd="12dp"
-        android:hint="Target FPS (Max 30)">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etFps"
+        android:clipToPadding="false"
+        android:overScrollMode="never">
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/font_geist"
-            app:fontFamily="@font/font_geist"
-            android:inputType="number"
-            android:text="12" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:orientation="vertical"
+            android:paddingHorizontal="22dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="22dp">
 
-    <com.google.android.material.materialswitch.MaterialSwitch
-        android:id="@+id/cbInvert"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:fontFamily="@font/font_geist"
-        app:fontFamily="@font/font_geist"
-        android:textStyle="bold"
-        android:textSize="13sp"
-        android:layout_marginBottom="8dp"
-        android:text="INVERT COLORS" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="ADVANCED SETTINGS"
+                android:fontFamily="@font/ndot57"
+                app:fontFamily="@font/ndot57"
+                android:textSize="18sp"
+                android:letterSpacing="0.06"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="20dp" />
 
-    <com.google.android.material.materialswitch.MaterialSwitch
-        android:id="@+id/sharpenSwitch"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:fontFamily="@font/font_geist"
-        app:fontFamily="@font/font_geist"
-        android:textStyle="bold"
-        android:textSize="13sp"
-        android:layout_marginBottom="16dp"
-        android:text="SHARPEN IMAGE"
-        android:checked="true" />
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/fpsInputLayout"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
+                android:hint="Target FPS (Max 30)">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etFps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/font_geist"
+                    app:fontFamily="@font/font_geist"
+                    android:inputType="number"
+                    android:text="12" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-    <TextView
-        android:id="@+id/tvEnhancementLabel"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:fontFamily="@font/font_geist"
-        app:fontFamily="@font/font_geist"
-        android:textStyle="bold"
-        android:textSize="12sp"
-        android:letterSpacing="0.04"
-        android:textColor="#FFFFFF"
-        android:text="DYNAMIC RANGE &amp; FACE BOOST"
-        android:layout_marginBottom="6dp" />
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/cbInvert"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/font_geist"
+                app:fontFamily="@font/font_geist"
+                android:textStyle="bold"
+                android:textSize="13sp"
+                android:layout_marginBottom="8dp"
+                android:text="INVERT COLORS" />
 
-    <com.example.odysseyglyph.LiquidGlassSegmentedBar
-        android:id="@+id/toggleEnhancement"
-        android:layout_width="match_parent"
-        android:layout_height="44dp"
-        android:layout_marginBottom="16dp" />
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/sharpenSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/font_geist"
+                app:fontFamily="@font/font_geist"
+                android:textStyle="bold"
+                android:textSize="13sp"
+                android:layout_marginBottom="16dp"
+                android:text="SHARPEN IMAGE"
+                android:checked="true" />
 
-    <TextView
-        android:id="@+id/contrastLabel"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:fontFamily="@font/font_geist"
-        app:fontFamily="@font/font_geist"
-        android:textStyle="bold"
-        android:textSize="12sp"
-        android:letterSpacing="0.04"
-        android:textColor="#FFFFFF"
-        android:text="CONTRAST MULTIPLIER: 1.0x"
-        android:layout_marginTop="8dp" />
-    <com.google.android.material.slider.Slider
-        android:id="@+id/contrastSlider"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:valueFrom="0.5"
-        android:valueTo="3.0"
-        android:value="1.0"
-        android:stepSize="0.1"
-        app:trackHeight="4dp"
-        app:thumbRadius="10dp"
-        app:thumbElevation="2dp"
-        app:haloRadius="0dp"
-        app:labelBehavior="gone" />
+            <TextView
+                android:id="@+id/tvEnhancementLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/font_geist"
+                app:fontFamily="@font/font_geist"
+                android:textStyle="bold"
+                android:textSize="12sp"
+                android:letterSpacing="0.04"
+                android:textColor="#FFFFFF"
+                android:text="DYNAMIC RANGE &amp; FACE BOOST"
+                android:layout_marginBottom="6dp" />
 
-    <TextView
-        android:id="@+id/brightnessLabel"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:fontFamily="@font/font_geist"
-        app:fontFamily="@font/font_geist"
-        android:textStyle="bold"
-        android:textSize="12sp"
-        android:letterSpacing="0.04"
-        android:textColor="#FFFFFF"
-        android:text="LED BRIGHTNESS: 100%" />
-    <com.google.android.material.slider.Slider
-        android:id="@+id/brightnessSlider"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:valueFrom="10.0"
-        android:valueTo="150.0"
-        android:value="100.0"
-        android:stepSize="1.0"
-        app:trackHeight="4dp"
-        app:thumbRadius="10dp"
-        app:thumbElevation="2dp"
-        app:haloRadius="0dp"
-        app:labelBehavior="gone" />
+            <com.example.odysseyglyph.LiquidGlassSegmentedBar
+                android:id="@+id/toggleEnhancement"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginBottom="16dp" />
 
-    <TextView
-        android:id="@+id/durationLabel"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:fontFamily="@font/font_geist"
-        app:fontFamily="@font/font_geist"
-        android:textStyle="bold"
-        android:textSize="12sp"
-        android:letterSpacing="0.04"
-        android:textColor="#FFFFFF"
-        android:text="IMAGE DURATION: 5s"
-        android:visibility="gone" />
-    <com.google.android.material.slider.Slider
-        android:id="@+id/durationSlider"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:valueFrom="1.0"
-        android:valueTo="60.0"
-        android:value="5.0"
-        android:stepSize="1.0"
-        android:visibility="gone"
-        app:trackHeight="4dp"
-        app:thumbRadius="10dp"
-        app:thumbElevation="2dp"
-        app:haloRadius="0dp"
-        app:labelBehavior="gone" />
+            <TextView
+                android:id="@+id/contrastLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/font_geist"
+                app:fontFamily="@font/font_geist"
+                android:textStyle="bold"
+                android:textSize="12sp"
+                android:letterSpacing="0.04"
+                android:textColor="#FFFFFF"
+                android:text="CONTRAST MULTIPLIER: 1.0x"
+                android:layout_marginTop="8dp" />
+            <com.google.android.material.slider.Slider
+                android:id="@+id/contrastSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:valueFrom="0.5"
+                android:valueTo="3.0"
+                android:value="1.0"
+                android:stepSize="0.1"
+                app:trackHeight="4dp"
+                app:thumbRadius="10dp"
+                app:thumbElevation="2dp"
+                app:haloRadius="0dp"
+                app:labelBehavior="gone" />
+
+            <TextView
+                android:id="@+id/brightnessLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/font_geist"
+                app:fontFamily="@font/font_geist"
+                android:textStyle="bold"
+                android:textSize="12sp"
+                android:letterSpacing="0.04"
+                android:textColor="#FFFFFF"
+                android:text="LED BRIGHTNESS: 100%" />
+            <com.google.android.material.slider.Slider
+                android:id="@+id/brightnessSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:valueFrom="10.0"
+                android:valueTo="150.0"
+                android:value="100.0"
+                android:stepSize="1.0"
+                app:trackHeight="4dp"
+                app:thumbRadius="10dp"
+                app:thumbElevation="2dp"
+                app:haloRadius="0dp"
+                app:labelBehavior="gone" />
+
+            <TextView
+                android:id="@+id/durationLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/font_geist"
+                app:fontFamily="@font/font_geist"
+                android:textStyle="bold"
+                android:textSize="12sp"
+                android:letterSpacing="0.04"
+                android:textColor="#FFFFFF"
+                android:text="IMAGE DURATION: 5s"
+                android:visibility="gone" />
+            <com.google.android.material.slider.Slider
+                android:id="@+id/durationSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:valueFrom="1.0"
+                android:valueTo="60.0"
+                android:value="5.0"
+                android:stepSize="1.0"
+                android:visibility="gone"
+                app:trackHeight="4dp"
+                app:thumbRadius="10dp"
+                app:thumbElevation="2dp"
+                app:haloRadius="0dp"
+                app:labelBehavior="gone" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
 </LinearLayout>

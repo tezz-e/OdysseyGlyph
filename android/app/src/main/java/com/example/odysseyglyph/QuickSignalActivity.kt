@@ -60,6 +60,7 @@ class QuickSignalActivity : AppCompatActivity(), QuickSignalService.StateListene
         WindowInsetsUtil.applySystemBarsPadding(scrollView, applyTop = false, applyBottom = true)
 
         prefs = getSharedPreferences("OdysseyPrefs", Context.MODE_PRIVATE)
+        selectedDurationSec = savedInstanceState?.getInt("selected_duration_sec", 15) ?: 15
 
         bindViews()
         setupCuratedSymbols()
@@ -251,8 +252,12 @@ class QuickSignalActivity : AppCompatActivity(), QuickSignalService.StateListene
     }
 
     private fun setupDurationSelector() {
-        durationSegmentedBar.setSegments(listOf("15 SEC", "1 MIN", "UNTIL CLEARED"), initialIndex = 0)
-        selectedDurationSec = 15
+        val initialIdx = when (selectedDurationSec) {
+            60 -> 1
+            -1 -> 2
+            else -> 0
+        }
+        durationSegmentedBar.setSegments(listOf("15 SEC", "1 MIN", "UNTIL CLEARED"), initialIndex = initialIdx)
         durationSegmentedBar.onSegmentSelected = { idx, _ ->
             selectedDurationSec = when (idx) {
                 0 -> 15
@@ -260,6 +265,11 @@ class QuickSignalActivity : AppCompatActivity(), QuickSignalService.StateListene
                 else -> -1
             }
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt("selected_duration_sec", selectedDurationSec)
     }
 
     private fun updateLocalPreview() {
